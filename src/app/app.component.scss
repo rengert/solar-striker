@@ -21,10 +21,18 @@
 }
 
 .player {
-  width: 20px;
-  height: 20px;
+  width: 64px;
+  height: 64px;
   border-radius: 25%;
-  background-color: #2dd36f;
+  background: url("/assets/mainship.png") 0 -75px no-repeat;
+}
+
+.player.left {
+  background: url("/assets/mainship.png") -64px -75px no-repeat;
+}
+
+.player.right {
+  background: url("/assets/mainship.png") -196px -9px no-repeat;
 }
 
 .shot {

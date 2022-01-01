@@ -4,6 +4,12 @@ import { tap } from 'rxjs/operators';
 import { RenderObject } from '../models/render-object.model';
 import { ShotObject } from '../models/shot-object.model';
 
+const CONFIG = {
+  player: {
+    width: 64,
+  },
+};
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   player = new RenderObject(200, 800);
@@ -16,7 +22,7 @@ export class GameService {
   }
 
   init(clientWidth: number, clientHeight: number): void {
-    this.player = new RenderObject(200, clientHeight - 25);
+    this.player = new RenderObject(200, clientHeight - CONFIG.player.width);
 
     // TODO: check if the subscription needs to be cleanup
     interval(5).pipe(
@@ -32,12 +38,20 @@ export class GameService {
   }
 
   handleMouseMove(event: MouseEvent): void {
+    if (this.player.x > event.clientX) {
+      this.player.direction = -1;
+    } else if (this.player.x < event.clientX) {
+      this.player.direction = 1;
+    } else {
+      this.player.direction = 0;
+    }
+
     this.player.x = event.clientX;
   }
 
   click(): void {
-    this.shots.push(new ShotObject(this.player.x, this.player.y));
-    this.shots.push(new ShotObject(this.player.x + 20, this.player.y));
+    this.shots.push(new ShotObject(this.player.x + 10, this.player.y));
+    this.shots.push(new ShotObject(this.player.x + CONFIG.player.width - 10, this.player.y));
   }
 
   private crash(): void {

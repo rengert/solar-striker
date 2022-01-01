@@ -2,6 +2,7 @@ import { LocatedObject } from './located-object.model';
 
 export class RenderObject implements LocatedObject {
   destroyed = false;
+  direction: -1 | 0 | 1 = 0;
 
   x: number;
   y: number;
