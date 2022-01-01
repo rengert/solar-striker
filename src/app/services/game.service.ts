@@ -67,17 +67,20 @@ export class GameService {
   deaths = 0;
   kills = 0;
 
-  constructor() { }
+  constructor() {
+  }
 
   init(clientWidth: number, clientHeight: number): void {
     console.log(`game init: ${clientWidth} * ${clientHeight}`);
+
+    this.player = new RenderObject(200, clientHeight - 25);
 
     // TODO: check if the subscription needs to be cleanup
     interval(5).pipe(
       tap(value => {
         this.crash();
         if (value % 200 === 0) {
-          this.enemies.push(new RenderObject(value % 300, 0));
+          this.enemies.push(new RenderObject(value % clientWidth, 0));
         }
         this.enemies.forEach(enemy => enemy.update());
         this.shots.forEach(shot => shot.update());
@@ -85,6 +88,14 @@ export class GameService {
     ).subscribe();
   }
 
+  handleMouseMove(event: MouseEvent): void {
+    this.player.x = event.clientX;
+  }
+
+  click(): void {
+    this.shots.push(new ShotObject(this.player.x, this.player.y));
+    this.shots.push(new ShotObject(this.player.x + 20, this.player.y));
+  }
 
   private crash(): void {
     this.shots.forEach(shot => {
@@ -102,14 +113,5 @@ export class GameService {
       this.deaths++;
     }
     this.enemies = this.enemies.filter(enemy => !enemy.destroyed && enemy.y < 2000);
-  }
-
-  handleMouseMove(event: MouseEvent): void {
-    this.player.x = event.clientX;
-  }
-
-  click(): void {
-    this.shots.push(new ShotObject(this.player.x, this.player.y));
-    this.shots.push(new ShotObject(this.player.x + 20, this.player.y));
   }
 }

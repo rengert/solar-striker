@@ -8,7 +8,10 @@ import { GameService } from './services/game.service';
   providers: [GameService],
 })
 export class AppComponent {
-  constructor(elementRef: ElementRef, readonly game: GameService) {
+  constructor(
+    elementRef: ElementRef,
+    readonly game: GameService,
+  ) {
     game.init(elementRef.nativeElement.clientWidth, elementRef.nativeElement.clientHeight);
   }
 
