@@ -1,0 +1,4 @@
+Kills: {{ kills }} Deaths: {{ deaths }} Enemies: {{ enemies.length }} Shots: {{ shots.length }}
+<div class="absolute player" [style.left.px]="player.x" [style.top.px]="player.y"></div>
+<div *ngFor="let enemy of enemies" class="absolute enemy" [style.left.px]="enemy.x" [style.top.px]="enemy.y"></div>
+<div *ngFor="let shot of shots" class="absolute shot" [style.left.px]="shot.x" [style.top.px]="shot.y"></div>

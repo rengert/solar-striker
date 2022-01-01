@@ -1,0 +1,35 @@
+:host {
+  display: block;
+  background-color: lightcyan;
+  height: 100vh;
+  width: 320px;
+  position: relative;
+  cursor: none;
+  overflow: hidden;
+  user-select: none;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.enemy {
+  width: 20px;
+  height: 20px;
+  border-radius: 25%;
+  background-color: #3a7be0;
+}
+
+.player {
+  width: 20px;
+  height: 20px;
+  border-radius: 25%;
+  background-color: #2dd36f;
+}
+
+.shot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: red;
+}
