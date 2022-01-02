@@ -3,6 +3,7 @@ import { interval } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { RenderObject } from '../models/render-object.model';
 import { ShotObject } from '../models/shot-object.model';
+import { SoundService } from './sound.service';
 
 const CONFIG = {
   player: {
@@ -18,7 +19,7 @@ export class GameService {
   deaths = 0;
   kills = 0;
 
-  constructor() {
+  constructor(private readonly sound: SoundService) {
   }
 
   init(clientWidth: number, clientHeight: number): void {
@@ -51,7 +52,9 @@ export class GameService {
 
   click(): void {
     this.shots.push(new ShotObject(this.player.x + 10, this.player.y));
+    void this.sound.playSound();
     this.shots.push(new ShotObject(this.player.x + CONFIG.player.width - 10, this.player.y));
+    void this.sound.playSound();
   }
 
   private crash(): void {
