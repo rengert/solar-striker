@@ -16,7 +16,7 @@ export class SoundService {
     const promises = [data1, data2].map(
       (data, index) => new Promise<void>(async(resolve) => {
         setTimeout(() => {
-          this.playStringsAsSound(data.split(' '), types[index], index);
+          this.playStringsAsSound(data.split(' '), types[index]);
           resolve();
         }, index * delay);
       }),
@@ -25,7 +25,7 @@ export class SoundService {
     await Promise.all(promises);
   }
 
-  async playStringsAsSound(data: string [], type: OscillatorType, index: number): Promise<void> {
+  async playStringsAsSound(data: string [], type: OscillatorType): Promise<void> {
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
     oscillator.type = type;
