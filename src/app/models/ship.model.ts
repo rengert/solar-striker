@@ -7,6 +7,7 @@ export enum Weapon {
   One,
   Two,
   Three,
+  Auto
 }
 
 export class Ship extends RenderObject {
@@ -16,11 +17,29 @@ export class Ship extends RenderObject {
     super(x, y);
   }
 
-  shot() {
-    if (this.weapon === Weapon.One) {
+  override update(): void {
+    if (this.weapon === Weapon.Auto) {
+      this.shot();
+    }
+  }
+
+  shot(): void {
+    if (this.weapon === Weapon.One || this.weapon === Weapon.Auto) {
       this.game.shots.push(new ShotObject(this.x + this.width / 2, this.y));
       return;
     }
     void this.sound.playSound();
+  }
+
+  move(clientX: number): void {
+    if (this.x > clientX) {
+      this.direction = -1;
+    } else if (this.x < clientX) {
+      this.direction = 1;
+    } else {
+      this.direction = 0;
+    }
+
+    this.x = clientX;
   }
 }

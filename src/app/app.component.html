@@ -1,4 +1,7 @@
-Kills: {{ game.kills }} Deaths: {{ game.deaths }} Enemies: {{ game.enemies.length }} Shots: {{ game.shots.length }}
+<section class="states">
+  <span>Punkte: {{ game.kills }}</span>
+  <span>Leben: {{ 1000 - game.deaths }}</span>
+</section>
 <div class="absolute player"
      [class.left]="game.player.direction === -1"
      [class.right]="game.player.direction === 1"
@@ -6,3 +9,7 @@ Kills: {{ game.kills }} Deaths: {{ game.deaths }} Enemies: {{ game.enemies.lengt
      [style.top.px]="game.player.y"></div>
 <div *ngFor="let enemy of game.enemies" class="absolute enemy" [style.left.px]="enemy.x" [style.top.px]="enemy.y"></div>
 <div *ngFor="let shot of game.shots" class="absolute shot" [style.left.px]="shot.x" [style.top.px]="shot.y"></div>
+<div *ngFor="let collectable of game.collectable"
+     class="absolute collectable"
+     [style.left.px]="collectable.x"
+     [style.top.px]="collectable.y"></div>

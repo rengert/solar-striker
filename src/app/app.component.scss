@@ -9,13 +9,20 @@
   user-select: none;
 }
 
+section.states {
+  display: flex;
+  flex-direction: row;
+  padding: 0 25px;
+  justify-content: space-between;
+}
+
 .absolute {
   position: absolute;
 }
 
 .enemy {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 25%;
   background-color: #3a7be0;
 }
@@ -33,6 +40,13 @@
 
 .player.right {
   background: url("/assets/mainship.png") -196px -9px no-repeat;
+}
+
+.collectable {
+  width: 20px;
+  height: 20px;
+  border-radius: 25%;
+  background-color: chartreuse;
 }
 
 .shot {
