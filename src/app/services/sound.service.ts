@@ -1,13 +1,18 @@
 import { Injectable } from '@angular/core';
+import { SettingsService } from './settings.service';
 
 @Injectable({ providedIn: 'root' })
 export class SoundService {
   readonly context = new AudioContext();
 
-  constructor() {
+  constructor(private readonly settings: SettingsService) {
   }
 
   async playSound(): Promise<void> {
+    if (!this.settings.sound) {
+      return;
+    }
+
     const delay = 15;
     const types: OscillatorType[] = ['sine', 'sawtooth', 'square', 'triangle'];
     const data1 = 'Lorem ipsum';
@@ -25,7 +30,7 @@ export class SoundService {
     await Promise.all(promises);
   }
 
-  async playStringsAsSound(data: string [], type: OscillatorType): Promise<void> {
+  private async playStringsAsSound(data: string [], type: OscillatorType): Promise<void> {
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
     oscillator.type = type;
