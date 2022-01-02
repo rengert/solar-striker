@@ -30,7 +30,7 @@ export class GameService {
       tap(value => {
         this.crash();
         if (value % 200 === 0) {
-          this.enemies.push(new RenderObject(value % clientWidth, 0));
+          this.enemies.push(new RenderObject(value % clientWidth, 0, 20, 20));
         }
         this.enemies.forEach(enemy => enemy.update());
         this.shots.forEach(shot => shot.update());

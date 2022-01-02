@@ -40,7 +40,6 @@ export class SoundService {
       for (let i = 0; i < term.length; i++) {
         frequency += Math.round(0.75 * term.charCodeAt(i));
       }
-      console.log(index, term, frequency);
       try {
         oscillator.frequency.value = frequency;
         gain.gain.exponentialRampToValueAtTime(0.00001, this.context.currentTime + 0.1);

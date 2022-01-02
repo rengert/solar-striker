@@ -5,6 +5,8 @@ export class ShotObject implements LocatedObject {
 
   x: number;
   y: number;
+  readonly width = 5;
+  readonly height = 5;
 
   constructor(x: number, y: number) {
     this.x = x;
