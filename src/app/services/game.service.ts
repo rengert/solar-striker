@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { interval } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { RenderObject } from '../models/render-object.model';
+import { Ship } from '../models/ship.model';
 import { ShotObject } from '../models/shot-object.model';
 import { SoundService } from './sound.service';
 
@@ -13,7 +14,7 @@ const CONFIG = {
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
-  player = new RenderObject(200, 800);
+  player!: Ship;
   enemies: RenderObject[] = [];
   shots: ShotObject[] = [];
   deaths = 0;
@@ -23,7 +24,7 @@ export class GameService {
   }
 
   init(clientWidth: number, clientHeight: number): void {
-    this.player = new RenderObject(200, clientHeight - CONFIG.player.width);
+    this.player = new Ship(200, clientHeight - CONFIG.player.width, this, this.sound);
 
     // TODO: check if the subscription needs to be cleanup
     interval(5).pipe(
@@ -51,10 +52,7 @@ export class GameService {
   }
 
   click(): void {
-    this.shots.push(new ShotObject(this.player.x + 10, this.player.y));
-    void this.sound.playSound();
-    this.shots.push(new ShotObject(this.player.x + CONFIG.player.width - 10, this.player.y));
-    void this.sound.playSound();
+    this.player.shot();
   }
 
   private crash(): void {
