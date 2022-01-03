@@ -3,7 +3,7 @@ import { interval } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Collectable } from '../models/collectable.model';
 import { RenderObject } from '../models/render-object.model';
-import { Ship } from '../models/ship.model';
+import { Ship, Weapon } from '../models/ship.model';
 import { ShotObject } from '../models/shot-object.model';
 import { SoundService } from './sound.service';
 
@@ -35,9 +35,9 @@ export class GameService {
         this.enemies.forEach(enemy => enemy.update());
         this.collectable.forEach(collectable => collectable.update());
         this.player.update();
-        this.crash();
-        if (value % 200 === 0) {
-          this.enemies.push(new RenderObject(value % clientWidth, 0, 40, 40));
+        this.checkHits();
+        if (value % 600 === 0) {
+          this.spawnEnemy(value % clientWidth);
         }
       }),
     ).subscribe();
@@ -51,8 +51,21 @@ export class GameService {
     this.player.shot();
   }
 
-  private crash(): void {
-    // shots
+  private spawnCollectable(enemy: RenderObject) {
+    this.collectable.push(new Collectable(enemy.x, enemy.y));
+  }
+
+  private spawnEnemy(position: number) {
+    this.enemies.push(new RenderObject(position, 0, 40, 40));
+  }
+
+  private checkHits(): void {
+    this.hitEnemy();
+    this.hitShip();
+    this.collect();
+  }
+
+  private hitEnemy(): void {
     this.shots.forEach(shot => {
       const enemy = this.enemies.find(enemy => enemy.collidate(shot));
       if (enemy) {
@@ -63,23 +76,23 @@ export class GameService {
       }
     });
     this.shots = this.shots.filter(shot => !shot.destroyed && (shot.y > 0));
-    // enemies
+  }
+
+  private hitShip(): void {
     const enemy = this.enemies.find(enemy => !enemy.destroyed && enemy.collidate(this.player));
     if (enemy) {
       enemy.destroyed = true;
       this.deaths++;
     }
     this.enemies = this.enemies.filter(enemy => !enemy.destroyed && enemy.y < 2000);
-    // collectable
+  }
+
+  private collect() {
     const collectable = this.collectable.find(collectable => !collectable.destroyed && collectable.collidate(this.player));
     if (collectable) {
       collectable.destroyed = true;
-      this.player.weapon = collectable.type;
+      this.player.weapon = (this.player.weapon + 1) % Weapon.Auto;
     }
     this.collectable = this.collectable.filter(collectable => !collectable.destroyed && collectable.y < 2000);
-  }
-
-  private spawnCollectable(enemy: RenderObject) {
-    this.collectable.push(new Collectable(enemy.x, enemy.y));
   }
 }
