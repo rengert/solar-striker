@@ -109,9 +109,21 @@
           "options": {
             "baseHref": "/solar-striker/"
           }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
+          }
         }
       }
     }
   },
-  "defaultProject": "solar-striker"
+  "defaultProject": "solar-striker",
+  "cli": {
+    "defaultCollection": "@angular-eslint/schematics"
+  }
 }
