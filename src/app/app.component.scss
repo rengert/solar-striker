@@ -43,10 +43,10 @@ section.states {
 }
 
 .collectable {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 25%;
-  background-color: chartreuse;
+  background: url("power-up.png") 0 0 no-repeat;
 }
 
 .shot {

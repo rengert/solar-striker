@@ -52,7 +52,7 @@ export class GameService {
   }
 
   private spawnCollectable(enemy: RenderObject) {
-    this.collectable.push(new Collectable(enemy.x, enemy.y));
+    this.collectable.push(new Collectable(enemy.x, enemy.y, 16, 16));
   }
 
   private spawnEnemy(position: number) {
