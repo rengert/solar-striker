@@ -31,15 +31,15 @@ section.states {
   width: 64px;
   height: 64px;
   border-radius: 25%;
-  background: url("/assets/mainship.png") 0 -75px no-repeat;
+  background: url("mainship.png") 0 -75px no-repeat;
 }
 
 .player.left {
-  background: url("/assets/mainship.png") -64px -75px no-repeat;
+  background: url("mainship.png") -64px -75px no-repeat;
 }
 
 .player.right {
-  background: url("/assets/mainship.png") -196px -9px no-repeat;
+  background: url("mainship.png") -196px -9px no-repeat;
 }
 
 .collectable {
