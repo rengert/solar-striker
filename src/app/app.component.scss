@@ -22,10 +22,9 @@ section.states {
 }
 
 .enemy {
-  width: 40px;
-  height: 40px;
-  border-radius: 25%;
-  background-color: #3a7be0;
+  width: 32px;
+  height: 16px;
+  background: url("enemy-medium.png") 0 0 no-repeat;
 }
 
 .player {

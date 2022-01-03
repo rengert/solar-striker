@@ -37,7 +37,7 @@ export class GameService {
         this.player.update();
         this.checkHits();
         if (value % 600 === 0) {
-          this.spawnEnemy(value % clientWidth);
+          this.spawnEnemy(value % clientWidth + 16);
         }
       }),
     ).subscribe();
@@ -56,7 +56,7 @@ export class GameService {
   }
 
   private spawnEnemy(position: number) {
-    this.enemies.push(new RenderObject(position, 0, 40, 40));
+    this.enemies.push(new RenderObject(position, 0, 32, 16));
   }
 
   private checkHits(): void {
