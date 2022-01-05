@@ -24,6 +24,7 @@ export class Ship extends RenderObject {
   }
 
   shot(): void {
+    void this.sound.playSound();
     if (this.weapon === Weapon.One || this.weapon === Weapon.Auto) {
       this.game.shots.push(new ShotObject(this.x + this.width / 2, this.y));
       return;
@@ -39,7 +40,6 @@ export class Ship extends RenderObject {
       this.game.shots.push(new ShotObject(this.x + this.width - 7, this.y));
       return;
     }
-    void this.sound.playSound();
   }
 
   move(clientX: number): void {
