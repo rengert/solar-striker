@@ -31,6 +31,9 @@ export class PixiGameService {
   }
 
   handleMouseMove(event: MouseEvent): void {
+    if (!this.player) {
+      return;
+    }
     this.player.x = event.clientX;
   }
 
@@ -70,6 +73,7 @@ export class PixiGameService {
       this.shots.forEach(shot => {
         shot.y -= delta * 1;
       });
+      this.hitEnemy();
       // spawn enemy
       const enemySpawnCheck = Math.floor(eleapsed);
       if (enemySpawnCheck % 250 === 0 && enemySpawnCheck !== lastEnemySpawn) {
@@ -89,4 +93,30 @@ export class PixiGameService {
     this.enemies.push(enemy);
     this.app.stage.addChild(enemy);
   }
+
+  private hitEnemy(): void {
+    this.shots.forEach(shot => {
+      if (shot.y < 0) {
+        shot.destroy();
+        return;
+      }
+      const enemy = this.enemies.find(enemy => !enemy.destroyed && testForAABB(enemy, shot));
+      if (enemy) {
+        enemy.destroy();
+        shot.destroy();
+      }
+    });
+    this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
+    this.shots = this.shots.filter(shot => !shot.destroyed);
+  }
+}
+
+function testForAABB(object1: Sprite, object2: Sprite): boolean {
+  const bounds1 = object1.getBounds();
+  const bounds2 = object2.getBounds();
+
+  return bounds1.x < bounds2.x + bounds2.width
+    && bounds1.x + bounds1.width > bounds2.x
+    && bounds1.y < bounds2.y + bounds2.height
+    && bounds1.y + bounds1.height > bounds2.y;
 }
