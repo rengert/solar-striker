@@ -1,0 +1,31 @@
+{"frames": {
+
+"crazy_01.png":
+{
+	"frame": {"x":0,"y":0,"w":26,"h":30},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":26,"h":30},
+	"sourceSize": {"w":26,"h":30}
+},
+"crazy_02.png":
+{
+	"frame": {"x":26,"y":0,"w":26,"h":30},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":26,"h":30},
+	"sourceSize": {"w":26,"h":30}
+}},
+"animations": {
+	"crazy": ["crazy_01.png","crazy_02.png"]
+},
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.0",
+	"image": "space_ship.png",
+	"format": "RGBA8888",
+	"size": {"w":52,"h":30},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:59dac4c7d111e0b4aa8eb6a2ab392f22:a9f37f74d9aad146734ba867ee37c3f2:38379029b3ebe30730e859f3d5cc1bf2$"
+}
+}
