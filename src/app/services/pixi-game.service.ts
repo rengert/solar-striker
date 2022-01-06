@@ -1,5 +1,5 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { AnimatedSprite, Application, Sprite, Spritesheet } from 'pixi.js';
+import { AnimatedSprite, Application, InteractionEvent, Sprite, Spritesheet } from 'pixi.js';
 
 @Injectable()
 export class PixiGameService {
@@ -32,14 +32,15 @@ export class PixiGameService {
     elementRef.nativeElement.appendChild(this.app.view);
   }
 
-  handleMouseMove(event: MouseEvent): void {
+  private handleMouseMove(event: InteractionEvent): void {
     if (!this.player) {
       return;
     }
-    this.player.x = event.clientX;
+    // @ts-ignore
+    this.player.x = event.data.originalEvent.clientX ?? event.data.originalEvent.touches[0].clientX;
   }
 
-  handleClick(): void {
+  private handleClick(): void {
     const shot = new AnimatedSprite(this.laser.animations['laser']);
     shot.animationSpeed = 0.167;
     shot.play();
@@ -60,15 +61,27 @@ export class PixiGameService {
     const ship = new AnimatedSprite(this.ship.animations['ship']);
     ship.animationSpeed = 0.167;
     ship.play();
-    ship.x = Math.floor(app.screen.height / 2);
-    ship.y = app.screen.height - 20;
+    ship.x = Math.floor(app.screen.width / 2);
+    ship.y = app.screen.height - 80;
     this.app.stage.addChild(ship);
     this.player = ship;
 
     let eleapsed = 0;
     let lastEnemySpawn = -1;
+    let lastShot = -1;
+    app.stage.interactive = true;
+
+    let autoFire = false;
+    app.renderer.plugins['interaction'].on('pointerdown', () => autoFire = true);
+    app.renderer.plugins['interaction'].on('pointerup', () => autoFire = false);
+    app.renderer.plugins['interaction'].on('pointermove', (event: InteractionEvent) => this.handleMouseMove(event));
+
     app.ticker.add(delta => {
       eleapsed += delta;
+      const mouseCoords = app.renderer.plugins['interaction'].mouse.global;
+      if (mouseCoords.x >= 0) {
+        // this.player.x = mouseCoords.x;
+      }
       // move enemies
       this.enemies.forEach(enemy => {
         enemy.y += delta * 1;
@@ -78,10 +91,14 @@ export class PixiGameService {
       });
       this.hitEnemy();
       // spawn enemy
-      const enemySpawnCheck = Math.floor(eleapsed);
-      if (enemySpawnCheck % 250 === 0 && enemySpawnCheck !== lastEnemySpawn) {
-        lastEnemySpawn = enemySpawnCheck;
+      const check = Math.floor(eleapsed);
+      if (check % 250 === 0 && check !== lastEnemySpawn) {
+        lastEnemySpawn = check;
         this.spawnEnemy(eleapsed % (this.app.screen.width - 100) + 25);
+      }
+      if (autoFire && check % 10 === 0 && check !== lastShot) {
+        lastShot = check;
+        this.handleClick();
       }
     });
   }

@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, NgZone, OnInit } from '@angular/core';
+import { Component, ElementRef, NgZone, OnInit } from '@angular/core';
 import { PixiGameService } from '../../services/pixi-game.service';
 
 @Component({
@@ -19,15 +19,5 @@ export class PixijsComponent implements OnInit {
     this.ngZone.runOutsideAngular(() => {
       this.pixiGame.init(this.elementRef);
     });
-  }
-
-  @HostListener('mousemove', ['$event'])
-  private move(event: MouseEvent): void {
-    this.pixiGame.handleMouseMove(event);
-  }
-
-  @HostListener('click')
-  private shot(): void {
-    this.pixiGame.handleClick();
   }
 }
