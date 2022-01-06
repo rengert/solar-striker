@@ -9,6 +9,7 @@ export class PixiGameService {
   private enemySprite!: Spritesheet;
   private ship!: Spritesheet;
   private laser!: Spritesheet;
+  private explosion!: Spritesheet;
 
   private player!: AnimatedSprite;
 
@@ -25,6 +26,7 @@ export class PixiGameService {
       .add('assets/enemy.json')
       .add('assets/ship.json')
       .add('assets/laser.json')
+      .add('assets/explosion.json')
       .load(() => this.setup());
 
     elementRef.nativeElement.appendChild(this.app.view);
@@ -53,6 +55,7 @@ export class PixiGameService {
     this.enemySprite = app.loader.resources['assets/enemy.json'].spritesheet !;
     this.ship = app.loader.resources['assets/ship.json'].spritesheet !;
     this.laser = app.loader.resources['assets/laser.json'].spritesheet !;
+    this.explosion = app.loader.resources['assets/explosion.json'].spritesheet !;
 
     const ship = new AnimatedSprite(this.ship.animations['ship']);
     ship.animationSpeed = 0.167;
@@ -102,8 +105,17 @@ export class PixiGameService {
       }
       const enemy = this.enemies.find(enemy => !enemy.destroyed && testForAABB(enemy, shot));
       if (enemy) {
+        // explode
+        const explosion = new AnimatedSprite(this.explosion.animations['explosion']);
+        explosion.animationSpeed = 0.167;
+        explosion.loop = false;
+        explosion.x = enemy.x;
+        explosion.y = enemy.y;
+        explosion.onComplete = () => explosion.destroy();
+        this.app.stage.addChild(explosion);
         enemy.destroy();
         shot.destroy();
+        explosion.play();
       }
     });
     this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
