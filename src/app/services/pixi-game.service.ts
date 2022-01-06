@@ -74,7 +74,7 @@ export class PixiGameService {
         enemy.y += delta * 1;
       });
       this.shots.forEach(shot => {
-        shot.y -= delta * 1;
+        shot.y -= delta * 3;
       });
       this.hitEnemy();
       // spawn enemy
