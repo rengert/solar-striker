@@ -1,5 +1,5 @@
 import { Component, ElementRef, NgZone, OnInit } from '@angular/core';
-import { AnimatedSprite, Application, Sprite, Texture } from 'pixi.js';
+import { AnimatedSprite, Application, Sprite, Spritesheet } from 'pixi.js';
 
 @Component({
   selector: 'app-pixijs',
@@ -9,6 +9,8 @@ import { AnimatedSprite, Application, Sprite, Texture } from 'pixi.js';
 export class PixijsComponent implements OnInit {
   private app!: Application;
   private enemies: Sprite[] = [];
+
+  private enemySprite!: Spritesheet;
 
   constructor(private readonly elementRef: ElementRef, private readonly ngZone: NgZone) {
   }
@@ -27,10 +29,20 @@ export class PixijsComponent implements OnInit {
     this.elementRef.nativeElement.appendChild(this.app.view);
   }
 
-  private setup() {
+  spawnEnemy(position: number): void {
+    const bunny = new AnimatedSprite(this.enemySprite.animations['frame']);
+    bunny.animationSpeed = 0.167;
+    bunny.play();
+    bunny.anchor.set(0.5);
+    bunny.x = position;
+    bunny.y = 10;
+    this.enemies.push(bunny);
+    this.app.stage.addChild(bunny);
+  }
+
+  private setup(): void {
     const app = this.app;
-    const enemyTexture = Texture.from('assets/enemy-big.png');
-    const enemyAnimation = app.loader.resources['assets/enemy.json'].spritesheet !;
+    this.enemySprite = app.loader.resources['assets/enemy.json'].spritesheet !;
     let eleapsed = 0;
     let lastEnemySpawn = -1;
     app.ticker.add(delta => {
@@ -43,16 +55,7 @@ export class PixijsComponent implements OnInit {
       const enemySpawnCheck = Math.floor(eleapsed);
       if (enemySpawnCheck % 250 === 0 && enemySpawnCheck !== lastEnemySpawn) {
         lastEnemySpawn = enemySpawnCheck;
-        console.log(enemyAnimation);
-        // @ts-ignore
-        const bunny = new AnimatedSprite(enemyAnimation.animations['frame']);
-        bunny.animationSpeed = 0.167;
-        bunny.play();
-        bunny.anchor.set(0.5);
-        bunny.x = eleapsed % (this.elementRef.nativeElement.clientWidth - 100) + 25;
-        bunny.y = 10;
-        this.enemies.push(bunny);
-        app.stage.addChild(bunny);
+        this.spawnEnemy(eleapsed % (this.elementRef.nativeElement.clientWidth - 100) + 25);
       }
     });
   }
