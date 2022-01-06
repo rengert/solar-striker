@@ -5,8 +5,10 @@ import { AnimatedSprite, Application, Sprite, Spritesheet } from 'pixi.js';
 export class PixiGameService {
   private app!: Application;
   private enemies: Sprite[] = [];
+  private shots: Sprite[] = [];
   private enemySprite!: Spritesheet;
   private ship!: Spritesheet;
+  private laser!: Spritesheet;
 
   private player!: AnimatedSprite;
 
@@ -22,6 +24,7 @@ export class PixiGameService {
     this.app.loader
       .add('assets/enemy.json')
       .add('assets/ship.json')
+      .add('assets/laser.json')
       .load(() => this.setup());
 
     elementRef.nativeElement.appendChild(this.app.view);
@@ -31,10 +34,22 @@ export class PixiGameService {
     this.player.x = event.clientX;
   }
 
+  handleClick(): void {
+    const shot = new AnimatedSprite(this.laser.animations['laser']);
+    shot.animationSpeed = 0.167;
+    shot.play();
+    shot.anchor.set(0.5);
+    shot.x = this.player.x;
+    shot.y = this.player.y;
+    this.shots.push(shot);
+    this.app.stage.addChild(shot);
+  }
+
   private setup(): void {
     const app = this.app;
     this.enemySprite = app.loader.resources['assets/enemy.json'].spritesheet !;
     this.ship = app.loader.resources['assets/ship.json'].spritesheet !;
+    this.laser = app.loader.resources['assets/laser.json'].spritesheet !;
 
     const ship = new AnimatedSprite(this.ship.animations['ship']);
     ship.animationSpeed = 0.167;
@@ -51,6 +66,9 @@ export class PixiGameService {
       // move enemies
       this.enemies.forEach(enemy => {
         enemy.y += delta * 1;
+      });
+      this.shots.forEach(shot => {
+        shot.y -= delta * 1;
       });
       // spawn enemy
       const enemySpawnCheck = Math.floor(eleapsed);

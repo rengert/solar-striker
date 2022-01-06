@@ -25,4 +25,9 @@ export class PixijsComponent implements OnInit {
   private move(event: MouseEvent): void {
     this.pixiGame.handleMouseMove(event);
   }
+
+  @HostListener('click')
+  private shot(): void {
+    this.pixiGame.handleClick();
+  }
 }
