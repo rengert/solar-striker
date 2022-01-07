@@ -1,11 +1,12 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { AnimatedSprite, Application, InteractionEvent, Sprite, Spritesheet } from 'pixi.js';
+import { AnimatedSprite, Application, InteractionEvent, Spritesheet } from 'pixi.js';
+import { GameSprite } from '../models/pixijs/game-sprite';
 
 @Injectable()
 export class PixiGameService {
   private app!: Application;
-  private enemies: Sprite[] = [];
-  private shots: Sprite[] = [];
+  private enemies: GameSprite[] = [];
+  private shots: GameSprite[] = [];
   private enemySprite!: Spritesheet;
   private ship!: Spritesheet;
   private laser!: Spritesheet;
@@ -41,7 +42,7 @@ export class PixiGameService {
   }
 
   private handleClick(): void {
-    const shot = new AnimatedSprite(this.laser.animations['laser']);
+    const shot = new GameSprite(-3, this.laser.animations['laser']);
     shot.animationSpeed = 0.167;
     shot.play();
     shot.anchor.set(0.5);
@@ -78,20 +79,12 @@ export class PixiGameService {
 
     app.ticker.add(delta => {
       eleapsed += delta;
-      const mouseCoords = app.renderer.plugins['interaction'].mouse.global;
-      if (mouseCoords.x >= 0) {
-        // this.player.x = mouseCoords.x;
-      }
       // move enemies
-      this.enemies.forEach(enemy => {
-        enemy.y += delta * 1;
-        if (enemy.y > this.app.screen.height + 50) {
+      this.enemies
+        .filter(enemy => enemy.y > this.app.screen.height + 50)
+        .forEach(enemy => {
           enemy.y = 0;
-        }
-      });
-      this.shots.forEach(shot => {
-        shot.y -= delta * 3;
-      });
+        });
       this.hitEnemy();
       // spawn enemy
       const check = Math.floor(eleapsed);
@@ -107,7 +100,7 @@ export class PixiGameService {
   }
 
   private spawnEnemy(position: number): void {
-    const enemy = new AnimatedSprite(this.enemySprite.animations['frame']);
+    const enemy = new GameSprite(1, this.enemySprite.animations['frame']);
     enemy.animationSpeed = 0.167;
     enemy.play();
     enemy.anchor.set(0.5);
@@ -123,7 +116,7 @@ export class PixiGameService {
         shot.destroy();
         return;
       }
-      const enemy = this.enemies.find(enemy => !enemy.destroyed && testForAABB(enemy, shot));
+      const enemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (enemy) {
         // explode
         const explosion = new AnimatedSprite(this.explosion.animations['explosion']);
@@ -143,12 +136,4 @@ export class PixiGameService {
   }
 }
 
-function testForAABB(object1: Sprite, object2: Sprite): boolean {
-  const bounds1 = object1.getBounds();
-  const bounds2 = object2.getBounds();
 
-  return bounds1.x < bounds2.x + bounds2.width
-    && bounds1.x + bounds1.width > bounds2.x
-    && bounds1.y < bounds2.y + bounds2.height
-    && bounds1.y + bounds1.height > bounds2.y;
-}
