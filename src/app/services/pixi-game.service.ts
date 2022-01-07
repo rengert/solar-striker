@@ -6,19 +6,6 @@ import { GameSprite } from '../models/pixijs/game-sprite';
 
 @Injectable()
 export class PixiGameService {
-  private app!: Application;
-  private enemies: GameSprite[] = [];
-  private shots: GameSprite[] = [];
-  private enemySprite!: Spritesheet;
-  private ship!: Spritesheet;
-  private laser!: Spritesheet;
-  private explosion!: Spritesheet;
-
-  private player!: GameSprite;
-  private points!: Text;
-
-  private autoFire: boolean = false;
-
   private readonly config = {
     player: {
       autoFireSpeed: 6, // per second
@@ -27,17 +14,52 @@ export class PixiGameService {
       autoSpawnSpeed: 0.25, // per second
     },
   };
+  private app!: Application;
 
-  private readonly kills = new BehaviorSubject(0);
-
+  private enemies: GameSprite[] = [];
+  private shots: GameSprite[] = [];
   private readonly landscapes: BackgroundSprite[] = [];
+  private enemySprite!: Spritesheet;
+  private ship!: Spritesheet;
+  private laser!: Spritesheet;
+  private explosion!: Spritesheet;
+
+  private player!: GameSprite;
+  private points!: Text;
+  private lifesLabel!: Text;
+  private levelLabel!: Text;
+
+  private autoFire: boolean = false;
+
+  private readonly lifes = new BehaviorSubject(3);
+  private readonly level = new BehaviorSubject(1);
+  private readonly kills = new BehaviorSubject(0);
 
   constructor() {
     this.kills.pipe(
       distinctUntilChanged(),
       filter(value => !!value),
     ).subscribe(
-      value => this.points.text = value.toString().padStart(7, '0'),
+      value => {
+        this.points.text = value.toString().padStart(7, '0');
+        this.level.next(Math.ceil(value / 10));
+      },
+    );
+    this.lifes.pipe(
+      distinctUntilChanged(),
+      filter(() => !!this.lifesLabel),
+    ).subscribe(
+      value => this.lifesLabel.text = 'Leben: ' + value.toString(),
+    );
+    this.level.pipe(
+      distinctUntilChanged(),
+      filter(() => !!this.levelLabel),
+    ).subscribe(
+      value => {
+        this.levelLabel.text = 'Level: ' + value.toString();
+        this.levelLabel.updateText(true);
+        this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
+      },
     );
   }
 
@@ -108,7 +130,8 @@ export class PixiGameService {
       this.dead();
       // spawn enemy
       const check = Math.floor(elapsed);
-      if ((check % (60 / this.config.enemy.autoSpawnSpeed) === 0) && (check !== lastEnemySpawn)) {
+      if (((check % Math.floor(60 / (this.config.enemy.autoSpawnSpeed + (0.1 * (this.level.value - 1))))) === 0)
+        && (check !== lastEnemySpawn)) {
         lastEnemySpawn = check;
         this.spawnEnemy(elapsed % (this.app.screen.width - 100) + 25);
       }
@@ -149,7 +172,7 @@ export class PixiGameService {
   }
 
   private spawnEnemy(position: number): void {
-    const enemy = new GameSprite(1, this.enemySprite.animations['frame']);
+    const enemy = new GameSprite(1 + (0.25 * (this.level.value - 1)), this.enemySprite.animations['frame']);
     enemy.animationSpeed = 0.167;
     enemy.play();
     enemy.anchor.set(0.5);
@@ -199,11 +222,14 @@ export class PixiGameService {
       explosion.y = enemy.y;
       explosion.onComplete = () => {
         explosion.destroy();
-        alert('you are dead!');
+        this.lifes.next(this.lifes.value - 1);
+        if (this.lifes.value === 0) {
+          alert('you are dead!');
+          this.player.destroy();
+        }
       };
       this.app.stage.addChild(explosion);
       enemy.destroy();
-      this.player.destroy();
       explosion.play();
 
       this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
@@ -213,7 +239,7 @@ export class PixiGameService {
   private setupScreen() {
     const style = new TextStyle({
       fontFamily: 'Arial',
-      fontSize: 32,
+      fontSize: 24,
       fontStyle: 'normal',
       fontWeight: 'bold',
       fill: ['#ffffff', '#00ff99'], // gradient
@@ -224,12 +250,23 @@ export class PixiGameService {
       dropShadowBlur: 4,
       dropShadowAngle: Math.PI / 6,
       dropShadowDistance: 3,
+      align: 'right',
     });
-    const richText = new Text('0000000', style);
-    richText.x = 10;
-    richText.y = this.app.screen.height - 50;
-    this.points = richText;
-    this.app.stage.addChild(richText);
+
+    this.points = new Text('0000000', style);
+    this.points.x = 5;
+    this.points.y = this.app.screen.height - 45;
+    this.app.stage.addChild(this.points);
+
+    this.lifesLabel = new Text('Leben: 3', style);
+    this.lifesLabel.x = 5;
+    this.lifesLabel.y = this.app.screen.height - 75;
+    this.app.stage.addChild(this.lifesLabel);
+
+    this.levelLabel = new Text('Level: 1', style);
+    this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
+    this.levelLabel.y = this.app.screen.height - 75;
+    this.app.stage.addChild(this.levelLabel);
   }
 }
 
