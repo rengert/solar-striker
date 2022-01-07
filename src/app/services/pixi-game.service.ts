@@ -1,14 +1,11 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { AnimatedSprite, Application, InteractionEvent, Spritesheet, Texture } from 'pixi.js';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { AnimatedSprite, Application, InteractionEvent, Spritesheet, Text, TextStyle, Texture } from 'pixi.js';
+import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
 import { GameSprite } from '../models/pixijs/game-sprite';
 
 @Injectable()
 export class PixiGameService {
-  readonly death$: Observable<number>;
-  readonly kills$: Observable<number>;
-
   private app!: Application;
   private enemies: GameSprite[] = [];
   private shots: GameSprite[] = [];
@@ -18,6 +15,7 @@ export class PixiGameService {
   private explosion!: Spritesheet;
 
   private player!: GameSprite;
+  private points!: Text;
 
   private autoFire: boolean = false;
 
@@ -30,14 +28,17 @@ export class PixiGameService {
     },
   };
 
-  private readonly deaths = new BehaviorSubject(0);
   private readonly kills = new BehaviorSubject(0);
 
   private readonly landscapes: BackgroundSprite[] = [];
 
   constructor() {
-    this.death$ = this.deaths.asObservable();
-    this.kills$ = this.kills.asObservable();
+    this.kills.pipe(
+      distinctUntilChanged(),
+      filter(value => !!value),
+    ).subscribe(
+      value => this.points.text = value.toString().padStart(7, '0'),
+    );
   }
 
   init(elementRef: ElementRef): void {
@@ -83,8 +84,10 @@ export class PixiGameService {
   private setup(): void {
     const app = this.app;
 
+    // setup the game area / landscape / stuff
     this.loadSpritesheets();
     this.setupLandscape();
+    this.setupScreen();
     this.spawnPlayer();
     this.setupInteractions();
 
@@ -109,7 +112,7 @@ export class PixiGameService {
         lastEnemySpawn = check;
         this.spawnEnemy(elapsed % (this.app.screen.width - 100) + 25);
       }
-      if (this.autoFire && (check % (60 / this.config.player.autoFireSpeed) === 0) && check !== lastShot) {
+      if (this.autoFire && (check % (60 / this.config.player.autoFireSpeed) === 0) && (check !== lastShot)) {
         lastShot = check;
         this.shot();
       }
@@ -205,6 +208,28 @@ export class PixiGameService {
 
       this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
     }
+  }
+
+  private setupScreen() {
+    const style = new TextStyle({
+      fontFamily: 'Arial',
+      fontSize: 32,
+      fontStyle: 'normal',
+      fontWeight: 'bold',
+      fill: ['#ffffff', '#00ff99'], // gradient
+      stroke: '#4a1850',
+      strokeThickness: 5,
+      dropShadow: true,
+      dropShadowColor: '#000000',
+      dropShadowBlur: 4,
+      dropShadowAngle: Math.PI / 6,
+      dropShadowDistance: 3,
+    });
+    const richText = new Text('0000000', style);
+    richText.x = 10;
+    richText.y = this.app.screen.height - 50;
+    this.points = richText;
+    this.app.stage.addChild(richText);
   }
 }
 
