@@ -17,7 +17,7 @@ export class PixiGameService {
   private laser!: Spritesheet;
   private explosion!: Spritesheet;
 
-  private player!: AnimatedSprite;
+  private player!: GameSprite;
 
   private autoFire: boolean = false;
 
@@ -58,7 +58,7 @@ export class PixiGameService {
   }
 
   private handleMouseMove(event: InteractionEvent): void {
-    if (!this.player) {
+    if (!this.player || this.player.destroyed) {
       return;
     }
     // @ts-ignore
@@ -66,6 +66,10 @@ export class PixiGameService {
   }
 
   private shot(): void {
+    if (!this.player || this.player.destroyed) {
+      return;
+    }
+
     const shot = new GameSprite(-3, this.laser.animations['laser']);
     shot.animationSpeed = 0.167;
     shot.play();
@@ -98,6 +102,7 @@ export class PixiGameService {
           enemy.y = 0;
         });
       this.hitEnemy();
+      this.dead();
       // spawn enemy
       const check = Math.floor(elapsed);
       if ((check % (60 / this.config.enemy.autoSpawnSpeed) === 0) && (check !== lastEnemySpawn)) {
@@ -118,7 +123,7 @@ export class PixiGameService {
   }
 
   private spawnPlayer() {
-    const ship = new AnimatedSprite(this.ship.animations['ship']);
+    const ship = new GameSprite(0, this.ship.animations['ship']);
     ship.animationSpeed = 0.167;
     ship.play();
     ship.x = Math.floor(this.app.screen.width / 2);
@@ -177,6 +182,30 @@ export class PixiGameService {
     this.shots = this.shots.filter(shot => !shot.destroyed);
   }
 
+  private dead() {
+    if (!this.player || this.player.destroyed) {
+      return;
+    }
+
+    const enemy = this.enemies.find(enemy => !enemy.destroyed && this.player.hit(enemy));
+    if (enemy) {
+      const explosion = new AnimatedSprite(this.explosion.animations['explosion']);
+      explosion.animationSpeed = 0.167;
+      explosion.loop = false;
+      explosion.x = enemy.x;
+      explosion.y = enemy.y;
+      explosion.onComplete = () => {
+        explosion.destroy();
+        alert('you are dead!');
+      };
+      this.app.stage.addChild(explosion);
+      enemy.destroy();
+      this.player.destroy();
+      explosion.play();
+
+      this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
+    }
+  }
 }
 
 
