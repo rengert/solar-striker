@@ -1,6 +1,7 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { AnimatedSprite, Application, InteractionEvent, Spritesheet } from 'pixi.js';
+import { AnimatedSprite, Application, InteractionEvent, Spritesheet, Texture } from 'pixi.js';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { BackgroundSprite } from '../models/pixijs/background-sprite';
 import { GameSprite } from '../models/pixijs/game-sprite';
 
 @Injectable()
@@ -32,6 +33,8 @@ export class PixiGameService {
   private readonly deaths = new BehaviorSubject(0);
   private readonly kills = new BehaviorSubject(0);
 
+  private readonly landscapes: BackgroundSprite[] = [];
+
   constructor() {
     this.death$ = this.deaths.asObservable();
     this.kills$ = this.kills.asObservable();
@@ -48,6 +51,7 @@ export class PixiGameService {
       .add('assets/ship.json')
       .add('assets/laser.json')
       .add('assets/explosion.json')
+      .add('background', 'assets/desert-background-looped.png')
       .load(() => this.setup());
 
     elementRef.nativeElement.appendChild(this.app.view);
@@ -76,6 +80,7 @@ export class PixiGameService {
     const app = this.app;
 
     this.loadSpritesheets();
+    this.setupLandscape();
     this.spawnPlayer();
     this.setupInteractions();
 
@@ -85,6 +90,7 @@ export class PixiGameService {
 
     app.ticker.add(delta => {
       elapsed += delta;
+      this.landscapes.forEach(item => item.update(delta));
       // loop enemies
       this.enemies
         .filter(enemy => enemy.y > this.app.screen.height + 50)
@@ -119,6 +125,12 @@ export class PixiGameService {
     ship.y = this.app.screen.height - 80;
     this.app.stage.addChild(ship);
     this.player = ship;
+  }
+
+  private setupLandscape(): void {
+    const background = new BackgroundSprite(0.25, Texture.from('background'), this.app.screen.width, this.app.screen.height);
+    this.landscapes.push(background);
+    this.app.stage.addChild(background);
   }
 
   private loadSpritesheets() {
@@ -164,6 +176,7 @@ export class PixiGameService {
     this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
     this.shots = this.shots.filter(shot => !shot.destroyed);
   }
+
 }
 
 
