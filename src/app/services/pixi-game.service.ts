@@ -1,9 +1,13 @@
 import { ElementRef, Injectable } from '@angular/core';
 import { AnimatedSprite, Application, InteractionEvent, Spritesheet } from 'pixi.js';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { GameSprite } from '../models/pixijs/game-sprite';
 
 @Injectable()
 export class PixiGameService {
+  readonly death$: Observable<number>;
+  readonly kills$: Observable<number>;
+
   private app!: Application;
   private enemies: GameSprite[] = [];
   private shots: GameSprite[] = [];
@@ -14,7 +18,23 @@ export class PixiGameService {
 
   private player!: AnimatedSprite;
 
+  private autoFire: boolean = false;
+
+  private readonly config = {
+    player: {
+      autoFireSpeed: 6, // per second
+    },
+    enemy: {
+      autoSpawnSpeed: 0.25, // per second
+    },
+  };
+
+  private readonly deaths = new BehaviorSubject(0);
+  private readonly kills = new BehaviorSubject(0);
+
   constructor() {
+    this.death$ = this.deaths.asObservable();
+    this.kills$ = this.kills.asObservable();
   }
 
   init(elementRef: ElementRef): void {
@@ -41,7 +61,7 @@ export class PixiGameService {
     this.player.x = event.data.originalEvent.clientX ?? event.data.originalEvent.touches[0].clientX;
   }
 
-  private handleClick(): void {
+  private shot(): void {
     const shot = new GameSprite(-3, this.laser.animations['laser']);
     shot.animationSpeed = 0.167;
     shot.play();
@@ -54,32 +74,18 @@ export class PixiGameService {
 
   private setup(): void {
     const app = this.app;
-    this.enemySprite = app.loader.resources['assets/enemy.json'].spritesheet !;
-    this.ship = app.loader.resources['assets/ship.json'].spritesheet !;
-    this.laser = app.loader.resources['assets/laser.json'].spritesheet !;
-    this.explosion = app.loader.resources['assets/explosion.json'].spritesheet !;
 
-    const ship = new AnimatedSprite(this.ship.animations['ship']);
-    ship.animationSpeed = 0.167;
-    ship.play();
-    ship.x = Math.floor(app.screen.width / 2);
-    ship.y = app.screen.height - 80;
-    this.app.stage.addChild(ship);
-    this.player = ship;
+    this.loadSpritesheets();
+    this.spawnPlayer();
+    this.setupInteractions();
 
-    let eleapsed = 0;
+    let elapsed = 0;
     let lastEnemySpawn = -1;
     let lastShot = -1;
-    app.stage.interactive = true;
-
-    let autoFire = false;
-    app.renderer.plugins['interaction'].on('pointerdown', () => autoFire = true);
-    app.renderer.plugins['interaction'].on('pointerup', () => autoFire = false);
-    app.renderer.plugins['interaction'].on('pointermove', (event: InteractionEvent) => this.handleMouseMove(event));
 
     app.ticker.add(delta => {
-      eleapsed += delta;
-      // move enemies
+      elapsed += delta;
+      // loop enemies
       this.enemies
         .filter(enemy => enemy.y > this.app.screen.height + 50)
         .forEach(enemy => {
@@ -87,16 +93,39 @@ export class PixiGameService {
         });
       this.hitEnemy();
       // spawn enemy
-      const check = Math.floor(eleapsed);
-      if (check % 250 === 0 && check !== lastEnemySpawn) {
+      const check = Math.floor(elapsed);
+      if ((check % (60 / this.config.enemy.autoSpawnSpeed) === 0) && (check !== lastEnemySpawn)) {
         lastEnemySpawn = check;
-        this.spawnEnemy(eleapsed % (this.app.screen.width - 100) + 25);
+        this.spawnEnemy(elapsed % (this.app.screen.width - 100) + 25);
       }
-      if (autoFire && check % 10 === 0 && check !== lastShot) {
+      if (this.autoFire && (check % (60 / this.config.player.autoFireSpeed) === 0) && check !== lastShot) {
         lastShot = check;
-        this.handleClick();
+        this.shot();
       }
     });
+  }
+
+  private setupInteractions(): void {
+    this.app.renderer.plugins['interaction'].on('pointerdown', () => this.autoFire = true);
+    this.app.renderer.plugins['interaction'].on('pointerup', () => this.autoFire = false);
+    this.app.renderer.plugins['interaction'].on('pointermove', (event: InteractionEvent) => this.handleMouseMove(event));
+  }
+
+  private spawnPlayer() {
+    const ship = new AnimatedSprite(this.ship.animations['ship']);
+    ship.animationSpeed = 0.167;
+    ship.play();
+    ship.x = Math.floor(this.app.screen.width / 2);
+    ship.y = this.app.screen.height - 80;
+    this.app.stage.addChild(ship);
+    this.player = ship;
+  }
+
+  private loadSpritesheets() {
+    this.enemySprite = this.app.loader.resources['assets/enemy.json'].spritesheet !;
+    this.ship = this.app.loader.resources['assets/ship.json'].spritesheet !;
+    this.laser = this.app.loader.resources['assets/laser.json'].spritesheet !;
+    this.explosion = this.app.loader.resources['assets/explosion.json'].spritesheet !;
   }
 
   private spawnEnemy(position: number): void {
@@ -129,6 +158,7 @@ export class PixiGameService {
         enemy.destroy();
         shot.destroy();
         explosion.play();
+        this.kills.next(this.kills.value + 1);
       }
     });
     this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
