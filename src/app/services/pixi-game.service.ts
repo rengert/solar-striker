@@ -85,6 +85,9 @@ export class PixiGameService {
       // move enemies
       this.enemies.forEach(enemy => {
         enemy.y += delta * 1;
+        if (enemy.y > this.app.screen.height + 50) {
+          enemy.y = 0;
+        }
       });
       this.shots.forEach(shot => {
         shot.y -= delta * 3;
