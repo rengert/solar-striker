@@ -75,6 +75,7 @@ export class PixiGameService {
       .add('assets/laser.json')
       .add('assets/explosion.json')
       .add('background', 'assets/desert-background-looped.png')
+      .add('clouds', 'assets/clouds-transparent.png')
       .load(() => this.setup());
 
     elementRef.nativeElement.appendChild(this.app.view);
@@ -159,9 +160,19 @@ export class PixiGameService {
   }
 
   private setupLandscape(): void {
-    const background = new BackgroundSprite(0.25, Texture.from('background'), this.app.screen.width, this.app.screen.height);
+    const background = new BackgroundSprite(0.25, 0, Texture.from('background'), this.app.screen.width, this.app.screen.height);
     this.landscapes.push(background);
     this.app.stage.addChild(background);
+
+    const cloud = new BackgroundSprite(0, 0.25, Texture.from('clouds'), this.app.screen.width, 103, 0.75);
+    cloud.y = Math.floor(this.app.screen.height / 2);
+    this.landscapes.push(cloud);
+    this.app.stage.addChild(cloud);
+
+    const cloud2 = new BackgroundSprite(0, 0.27, Texture.from('clouds'), this.app.screen.width, 103, 0.8);
+    cloud2.y = Math.floor(this.app.screen.height / 4);
+    this.landscapes.push(cloud2);
+    this.app.stage.addChild(cloud2);
   }
 
   private loadSpritesheets() {
