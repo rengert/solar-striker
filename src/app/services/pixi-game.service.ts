@@ -3,6 +3,7 @@ import { AnimatedSprite, Application, InteractionEvent, Spritesheet, Text, TextS
 import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
 import { GameSprite } from '../models/pixijs/game-sprite';
+import { PowerUp, PowerUpSprite } from '../models/pixijs/power-up-sprite';
 
 @Injectable()
 export class PixiGameService {
@@ -74,6 +75,8 @@ export class PixiGameService {
       .add('assets/ship.json')
       .add('assets/laser.json')
       .add('assets/explosion.json')
+      .add('assets/power-up-1.json')
+      .add('assets/power-up-2.json')
       .add('background', 'assets/desert-background-looped.png')
       .add('clouds', 'assets/clouds-transparent.png')
       .load(() => this.setup());
@@ -193,6 +196,27 @@ export class PixiGameService {
     this.app.stage.addChild(enemy);
   }
 
+  private spawnPowerUp(x: number, y: number): void {
+    const rand = Math.random();
+    if (rand > 0.1) {
+      return;
+    }
+    const type = Math.random() > 0.5 ? PowerUp.Speed : PowerUp.Shot;
+    const powerUp = new PowerUpSprite(
+      1,
+      type === PowerUp.Speed
+        ? this.app.loader.resources['assets/power-up-1.json'].spritesheet !.animations['power-up-1']
+        : this.app.loader.resources['assets/power-up-2.json'].spritesheet !.animations['power-up-2'],
+      type,
+    );
+    powerUp.animationSpeed = 0.167;
+    powerUp.play();
+    powerUp.anchor.set(0.5);
+    powerUp.x = x;
+    powerUp.y = y;
+    this.app.stage.addChild(powerUp);
+  }
+
   private hitEnemy(): void {
     this.shots.forEach(shot => {
       if (shot.y < 0) {
@@ -207,7 +231,10 @@ export class PixiGameService {
         explosion.loop = false;
         explosion.x = enemy.x;
         explosion.y = enemy.y;
-        explosion.onComplete = () => explosion.destroy();
+        explosion.onComplete = () => {
+          this.spawnPowerUp(explosion.x, explosion.y);
+          explosion.destroy();
+        };
         this.app.stage.addChild(explosion);
         enemy.destroy();
         shot.destroy();
