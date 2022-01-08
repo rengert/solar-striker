@@ -19,6 +19,7 @@ export class PixiGameService {
 
   private enemies: GameSprite[] = [];
   private shots: GameSprite[] = [];
+  private collectables: PowerUpSprite[] = [];
   private readonly landscapes: BackgroundSprite[] = [];
   private enemySprite!: Spritesheet;
   private ship!: Spritesheet;
@@ -35,6 +36,9 @@ export class PixiGameService {
   private readonly lifes = new BehaviorSubject(3);
   private readonly level = new BehaviorSubject(1);
   private readonly kills = new BehaviorSubject(0);
+
+  private shotSpeed: number = 1;
+  private shotPower: number = 1;
 
   constructor() {
     this.kills.pipe(
@@ -110,7 +114,6 @@ export class PixiGameService {
   private setup(): void {
     const app = this.app;
 
-    // setup the game area / landscape / stuff
     this.loadSpritesheets();
     this.setupLandscape();
     this.setupScreen();
@@ -132,6 +135,7 @@ export class PixiGameService {
         });
       this.hitEnemy();
       this.dead();
+      this.collect();
       // spawn enemy
       const check = Math.floor(elapsed);
       if (((check % Math.floor(60 / (this.config.enemy.autoSpawnSpeed + (0.1 * (this.level.value - 1))))) === 0)
@@ -215,6 +219,7 @@ export class PixiGameService {
     powerUp.x = x;
     powerUp.y = y;
     this.app.stage.addChild(powerUp);
+    this.collectables.push(powerUp);
   }
 
   private hitEnemy(): void {
@@ -271,6 +276,24 @@ export class PixiGameService {
       explosion.play();
 
       this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
+    }
+  }
+
+  private collect() {
+    if (!this.player || this.player.destroyed) {
+      return;
+    }
+
+    const powerUp = this.collectables.find(collectable => !collectable.destroyed && this.player.hit(collectable));
+    if (powerUp) {
+      if (powerUp.type === PowerUp.Speed) {
+        this.shotSpeed++;
+      }
+      if (powerUp.type === PowerUp.Shot) {
+        this.shotPower++;
+      }
+      powerUp.destroy();
+      this.collectables = this.collectables.filter(collectable => !collectable.destroyed);
     }
   }
 
