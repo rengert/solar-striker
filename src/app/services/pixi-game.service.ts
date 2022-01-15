@@ -4,7 +4,7 @@ import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
 import { GameSprite } from '../models/pixijs/game-sprite';
-import { PowerUp, PowerUpSprite } from '../models/pixijs/power-up-sprite';
+import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { PixiGameScreenService } from './pixi-game-screen.service';
 
 @Injectable()
@@ -21,7 +21,6 @@ export class PixiGameService {
 
   private enemies: GameSprite[] = [];
   private shots: GameSprite[] = [];
-  private collectables: PowerUpSprite[] = [];
   private readonly landscapes: BackgroundSprite[] = [];
   private enemySprite!: Spritesheet;
   private ship!: Spritesheet;
@@ -30,17 +29,13 @@ export class PixiGameService {
 
   private player!: GameSprite;
 
-
   private autoFire: boolean = false;
 
   private readonly lifes = new BehaviorSubject(3);
   private readonly level = new BehaviorSubject(1);
   private readonly kills = new BehaviorSubject(0);
 
-  private shotSpeed: number = 1;
-  private shotPower: number = 1;
-
-  constructor() {
+  constructor(private readonly collectables: PixiGameCollectableService) {
   }
 
   init(elementRef: ElementRef): void {
@@ -50,13 +45,13 @@ export class PixiGameService {
       backgroundColor: 0x1099bb,
     });
 
+    this.collectables.app = this.app;
+
     this.app.loader
       .add('assets/enemy.json')
       .add('assets/ship.json')
       .add('assets/laser.json')
       .add('assets/explosion.json')
-      .add('assets/power-up-1.json')
-      .add('assets/power-up-2.json')
       .add('background', 'assets/desert-background-looped.png')
       .add('clouds', 'assets/clouds-transparent.png')
       .load(() => {
@@ -127,7 +122,7 @@ export class PixiGameService {
         });
       this.hitEnemy();
       this.dead();
-      this.collect();
+      this.collectables.collect();
       // spawn enemy
       const check = Math.floor(elapsed);
       if (((check % Math.floor(60 / (this.config.enemy.autoSpawnSpeed + (0.1 * (this.level.value - 1))))) === 0)
@@ -156,6 +151,7 @@ export class PixiGameService {
     ship.y = this.app.screen.height - 80;
     this.app.stage.addChild(ship);
     this.player = ship;
+    this.collectables.player = this.player;
   }
 
   private setupLandscape(): void {
@@ -192,28 +188,6 @@ export class PixiGameService {
     this.app.stage.addChild(enemy);
   }
 
-  private spawnPowerUp(x: number, y: number): void {
-    const rand = Math.random();
-    if (rand > 0.1) {
-      return;
-    }
-    const type = Math.random() > 0.5 ? PowerUp.Speed : PowerUp.Shot;
-    const powerUp = new PowerUpSprite(
-      1,
-      type === PowerUp.Speed
-        ? this.app.loader.resources['assets/power-up-1.json'].spritesheet !.animations['power-up-1']
-        : this.app.loader.resources['assets/power-up-2.json'].spritesheet !.animations['power-up-2'],
-      type,
-    );
-    powerUp.animationSpeed = 0.167;
-    powerUp.play();
-    powerUp.anchor.set(0.5);
-    powerUp.x = x;
-    powerUp.y = y;
-    this.app.stage.addChild(powerUp);
-    this.collectables.push(powerUp);
-  }
-
   private hitEnemy(): void {
     this.shots.forEach(shot => {
       if (shot.y < 0) {
@@ -229,7 +203,7 @@ export class PixiGameService {
         explosion.x = enemy.x;
         explosion.y = enemy.y;
         explosion.onComplete = () => {
-          this.spawnPowerUp(explosion.x, explosion.y);
+          this.collectables.spawn(explosion.x, explosion.y);
           explosion.destroy();
         };
         this.app.stage.addChild(explosion);
@@ -268,24 +242,6 @@ export class PixiGameService {
       explosion.play();
 
       this.enemies = this.enemies.filter(enemy => !enemy.destroyed);
-    }
-  }
-
-  private collect() {
-    if (!this.player || this.player.destroyed) {
-      return;
-    }
-
-    const powerUp = this.collectables.find(collectable => !collectable.destroyed && this.player.hit(collectable));
-    if (powerUp) {
-      if (powerUp.type === PowerUp.Speed) {
-        this.shotSpeed++;
-      }
-      if (powerUp.type === PowerUp.Shot) {
-        this.shotPower++;
-      }
-      powerUp.destroy();
-      this.collectables = this.collectables.filter(collectable => !collectable.destroyed);
     }
   }
 }

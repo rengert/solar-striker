@@ -1,11 +1,12 @@
 import { Component, ElementRef, NgZone, OnInit } from '@angular/core';
+import { PixiGameCollectableService } from '../../services/pixi-game-collectable.service';
 import { PixiGameService } from '../../services/pixi-game.service';
 
 @Component({
   selector: 'app-pixijs',
   templateUrl: './pixijs.component.html',
   styleUrls: ['./pixijs.component.scss'],
-  providers: [PixiGameService],
+  providers: [PixiGameService, PixiGameCollectableService],
 })
 export class PixijsComponent implements OnInit {
   constructor(
