@@ -18,12 +18,12 @@ export class PixiGameLandscapeService {
     this.landscapes.push(background);
     this.app.stage.addChild(background);
 
-    const cloud = new BackgroundSprite(0, 0.25, Texture.from('clouds'), this.app.screen.width, 103, 0.75);
+    const cloud = new BackgroundSprite(0, 0.25, Texture.from('clouds'), this.app.screen.width, 103, 0.75, this.app.screen.height);
     cloud.y = Math.floor(this.app.screen.height / 2);
     this.landscapes.push(cloud);
     this.app.stage.addChild(cloud);
 
-    const cloud2 = new BackgroundSprite(0, 0.27, Texture.from('clouds'), this.app.screen.width, 103, 0.8);
+    const cloud2 = new BackgroundSprite(0, 0.27, Texture.from('clouds'), this.app.screen.width, 103, 0.8, this.app.screen.height);
     cloud2.y = Math.floor(this.app.screen.height / 4);
     this.landscapes.push(cloud2);
     this.app.stage.addChild(cloud2);

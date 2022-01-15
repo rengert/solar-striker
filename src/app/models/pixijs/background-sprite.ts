@@ -1,18 +1,18 @@
 import { Sprite, Texture, TilingSprite } from 'pixi.js';
 
 export class BackgroundSprite extends TilingSprite {
-  private readonly speedTilepositionY: number = 1;
-  private readonly speedTilepositionX: number = 1;
-
-  private readonly speedY: number = 0;
-
-  constructor(speedTilepositionY: number, speedTilepositionX: number, texture: Texture, width: number, height: number, speedY = 0) {
+  constructor(
+    private readonly speedTilepositionY: number,
+    private readonly speedTilepositionX: number,
+    texture: Texture,
+    width: number,
+    height: number,
+    private readonly speedY = 0,
+    private readonly maxY = 1000) {
     super(texture, width, height);
 
     this.speedTilepositionY = speedTilepositionY;
     this.speedTilepositionX = speedTilepositionX;
-
-    this.speedY = speedY;
   }
 
   update(delta: number) {
@@ -20,7 +20,7 @@ export class BackgroundSprite extends TilingSprite {
     this.tilePosition.x += delta * this.speedTilepositionX;
 
     this.y += delta * this.speedY;
-    if (this.y > 1000) {
+    if (this.y > this.maxY) {
       this.y = -this.height;
     }
   }
