@@ -1,10 +1,10 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { AnimatedSprite, Application, InteractionEvent, Spritesheet, Texture } from 'pixi.js';
+import { AnimatedSprite, Application, InteractionEvent, Spritesheet } from 'pixi.js';
 import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { BackgroundSprite } from '../models/pixijs/background-sprite';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { PixiGameCollectableService } from './pixi-game-collectable.service';
+import { PixiGameLandscapeService } from './pixi-game-landscape.service';
 import { PixiGameScreenService } from './pixi-game-screen.service';
 
 @Injectable()
@@ -21,7 +21,6 @@ export class PixiGameService {
 
   private enemies: GameSprite[] = [];
   private shots: GameSprite[] = [];
-  private readonly landscapes: BackgroundSprite[] = [];
   private enemySprite!: Spritesheet;
   private ship!: Spritesheet;
   private laser!: Spritesheet;
@@ -47,15 +46,15 @@ export class PixiGameService {
 
     this.collectables.app = this.app;
 
+    const landscape = new PixiGameLandscapeService(this.app);
+
     this.app.loader
       .add('assets/enemy.json')
       .add('assets/ship.json')
       .add('assets/laser.json')
       .add('assets/explosion.json')
-      .add('background', 'assets/desert-background-looped.png')
-      .add('clouds', 'assets/clouds-transparent.png')
       .load(() => {
-        this.setup();
+        this.setup(landscape);
         const gameScreen = new PixiGameScreenService(this.app);
         this.kills.pipe(
           distinctUntilChanged(),
@@ -99,11 +98,11 @@ export class PixiGameService {
     this.app.stage.addChild(shot);
   }
 
-  private setup(): void {
+  private setup(landscape: PixiGameLandscapeService): void {
     const app = this.app;
 
     this.loadSpritesheets();
-    this.setupLandscape();
+    landscape.setup();
     this.spawnPlayer();
     this.setupInteractions();
 
@@ -113,7 +112,9 @@ export class PixiGameService {
 
     app.ticker.add(delta => {
       elapsed += delta;
-      this.landscapes.forEach(item => item.update(delta));
+
+      landscape.update(delta);
+
       // loop enemies
       this.enemies
         .filter(enemy => enemy.y > this.app.screen.height + 50)
@@ -152,22 +153,6 @@ export class PixiGameService {
     this.app.stage.addChild(ship);
     this.player = ship;
     this.collectables.player = this.player;
-  }
-
-  private setupLandscape(): void {
-    const background = new BackgroundSprite(0.25, 0, Texture.from('background'), this.app.screen.width, this.app.screen.height);
-    this.landscapes.push(background);
-    this.app.stage.addChild(background);
-
-    const cloud = new BackgroundSprite(0, 0.25, Texture.from('clouds'), this.app.screen.width, 103, 0.75);
-    cloud.y = Math.floor(this.app.screen.height / 2);
-    this.landscapes.push(cloud);
-    this.app.stage.addChild(cloud);
-
-    const cloud2 = new BackgroundSprite(0, 0.27, Texture.from('clouds'), this.app.screen.width, 103, 0.8);
-    cloud2.y = Math.floor(this.app.screen.height / 4);
-    this.landscapes.push(cloud2);
-    this.app.stage.addChild(cloud2);
   }
 
   private loadSpritesheets() {
