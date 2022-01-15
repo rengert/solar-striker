@@ -34,7 +34,7 @@ export class PixiGameService {
   private readonly level = new BehaviorSubject(1);
   private readonly kills = new BehaviorSubject(0);
 
-  constructor(private readonly collectables: PixiGameCollectableService) {
+  constructor() {
   }
 
   init(elementRef: ElementRef): void {
@@ -44,8 +44,8 @@ export class PixiGameService {
       backgroundColor: 0x1099bb,
     });
 
-    this.collectables.app = this.app;
 
+    const collectables = new PixiGameCollectableService(this.app);
     const landscape = new PixiGameLandscapeService(this.app);
 
     this.app.loader
@@ -54,7 +54,7 @@ export class PixiGameService {
       .add('assets/laser.json')
       .add('assets/explosion.json')
       .load(() => {
-        this.setup(landscape);
+        this.setup(landscape, collectables);
         const gameScreen = new PixiGameScreenService(this.app);
         this.kills.pipe(
           distinctUntilChanged(),
@@ -98,7 +98,7 @@ export class PixiGameService {
     this.app.stage.addChild(shot);
   }
 
-  private setup(landscape: PixiGameLandscapeService): void {
+  private setup(landscape: PixiGameLandscapeService, collectables: PixiGameCollectableService): void {
     const app = this.app;
 
     this.loadSpritesheets();
@@ -123,7 +123,7 @@ export class PixiGameService {
         });
       this.hitEnemy();
       this.dead();
-      this.collectables.collect();
+      collectables.collect(this.player);
       // spawn enemy
       const check = Math.floor(elapsed);
       if (((check % Math.floor(60 / (this.config.enemy.autoSpawnSpeed + (0.1 * (this.level.value - 1))))) === 0)
@@ -152,7 +152,6 @@ export class PixiGameService {
     ship.y = this.app.screen.height - 80;
     this.app.stage.addChild(ship);
     this.player = ship;
-    this.collectables.player = this.player;
   }
 
   private loadSpritesheets() {
@@ -188,7 +187,8 @@ export class PixiGameService {
         explosion.x = enemy.x;
         explosion.y = enemy.y;
         explosion.onComplete = () => {
-          this.collectables.spawn(explosion.x, explosion.y);
+          // todo: reenable
+          // this.collectables.spawn(explosion.x, explosion.y);
           explosion.destroy();
         };
         this.app.stage.addChild(explosion);
