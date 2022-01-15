@@ -1,5 +1,6 @@
 import { AnimatedSprite, Application } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
+import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { GAME_CONFIG } from './pixi-game-constants';
 
 export class PixiGameEnemyService {
@@ -8,7 +9,7 @@ export class PixiGameEnemyService {
   private elapsed = 0;
   private lastEnemySpawn = -1;
 
-  constructor(private readonly app: Application) {
+  constructor(private readonly app: Application, private readonly collectables: PixiGameCollectableService) {
     app.loader.add('assets/explosion.json').add('assets/enemy.json');
   }
 
@@ -47,8 +48,7 @@ export class PixiGameEnemyService {
         explosion.x = enemy.x;
         explosion.y = enemy.y;
         explosion.onComplete = () => {
-          // todo: reenable
-          // this.collectables.spawn(explosion.x, explosion.y);
+          this.collectables.spawn(explosion.x, explosion.y);
           explosion.destroy();
         };
         this.app.stage.addChild(explosion);

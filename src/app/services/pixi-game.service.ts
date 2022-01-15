@@ -37,7 +37,7 @@ export class PixiGameService {
 
     const collectables = new PixiGameCollectableService(this.app);
     const landscape = new PixiGameLandscapeService(this.app);
-    const enemy = new PixiGameEnemyService(this.app);
+    const enemy = new PixiGameEnemyService(this.app, collectables);
     const ship = new PixiGameShipService(this.app);
 
     this.app.loader.load(() => {
