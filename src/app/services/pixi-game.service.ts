@@ -1,9 +1,11 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { AnimatedSprite, Application, InteractionEvent, Spritesheet, Text, TextStyle, Texture } from 'pixi.js';
+import { AnimatedSprite, Application, InteractionEvent, Spritesheet, Texture } from 'pixi.js';
 import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { PowerUp, PowerUpSprite } from '../models/pixijs/power-up-sprite';
+import { PixiGameScreenService } from './pixi-game-screen.service';
 
 @Injectable()
 export class PixiGameService {
@@ -27,9 +29,7 @@ export class PixiGameService {
   private explosion!: Spritesheet;
 
   private player!: GameSprite;
-  private points!: Text;
-  private lifesLabel!: Text;
-  private levelLabel!: Text;
+
 
   private autoFire: boolean = false;
 
@@ -41,31 +41,6 @@ export class PixiGameService {
   private shotPower: number = 1;
 
   constructor() {
-    this.kills.pipe(
-      distinctUntilChanged(),
-      filter(value => !!value),
-    ).subscribe(
-      value => {
-        this.points.text = value.toString().padStart(7, '0');
-        this.level.next(Math.ceil(value / 10));
-      },
-    );
-    this.lifes.pipe(
-      distinctUntilChanged(),
-      filter(() => !!this.lifesLabel),
-    ).subscribe(
-      value => this.lifesLabel.text = 'Leben: ' + value.toString(),
-    );
-    this.level.pipe(
-      distinctUntilChanged(),
-      filter(() => !!this.levelLabel),
-    ).subscribe(
-      value => {
-        this.levelLabel.text = 'Level: ' + value.toString();
-        this.levelLabel.updateText(true);
-        this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
-      },
-    );
   }
 
   init(elementRef: ElementRef): void {
@@ -74,6 +49,7 @@ export class PixiGameService {
       width: elementRef.nativeElement.clientWidth,
       backgroundColor: 0x1099bb,
     });
+
     this.app.loader
       .add('assets/enemy.json')
       .add('assets/ship.json')
@@ -83,7 +59,24 @@ export class PixiGameService {
       .add('assets/power-up-2.json')
       .add('background', 'assets/desert-background-looped.png')
       .add('clouds', 'assets/clouds-transparent.png')
-      .load(() => this.setup());
+      .load(() => {
+        this.setup();
+        const gameScreen = new PixiGameScreenService(this.app);
+        this.kills.pipe(
+          distinctUntilChanged(),
+          filter(value => !!value),
+          tap(value => this.level.next(Math.ceil(value / 10))),
+          tap(value => gameScreen.kills = value),
+        ).subscribe();
+        this.lifes.pipe(
+          distinctUntilChanged(),
+          tap(value => gameScreen.lifes = value),
+        ).subscribe();
+        this.level.pipe(
+          distinctUntilChanged(),
+          tap(value => gameScreen.level = value),
+        ).subscribe();
+      });
 
     elementRef.nativeElement.appendChild(this.app.view);
   }
@@ -116,7 +109,6 @@ export class PixiGameService {
 
     this.loadSpritesheets();
     this.setupLandscape();
-    this.setupScreen();
     this.spawnPlayer();
     this.setupInteractions();
 
@@ -296,39 +288,4 @@ export class PixiGameService {
       this.collectables = this.collectables.filter(collectable => !collectable.destroyed);
     }
   }
-
-  private setupScreen() {
-    const style = new TextStyle({
-      fontFamily: 'Arial',
-      fontSize: 24,
-      fontStyle: 'normal',
-      fontWeight: 'bold',
-      fill: ['#ffffff', '#00ff99'], // gradient
-      stroke: '#4a1850',
-      strokeThickness: 5,
-      dropShadow: true,
-      dropShadowColor: '#000000',
-      dropShadowBlur: 4,
-      dropShadowAngle: Math.PI / 6,
-      dropShadowDistance: 3,
-      align: 'right',
-    });
-
-    this.points = new Text('0000000', style);
-    this.points.x = 5;
-    this.points.y = this.app.screen.height - 45;
-    this.app.stage.addChild(this.points);
-
-    this.lifesLabel = new Text('Leben: 3', style);
-    this.lifesLabel.x = 5;
-    this.lifesLabel.y = this.app.screen.height - 75;
-    this.app.stage.addChild(this.lifesLabel);
-
-    this.levelLabel = new Text('Level: 1', style);
-    this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
-    this.levelLabel.y = this.app.screen.height - 75;
-    this.app.stage.addChild(this.levelLabel);
-  }
 }
-
-
