@@ -1,0 +1,6 @@
+{
+	"appId": "net.bolzplatzarena.solarstriker",
+	"appName": "Solar Striker",
+	"webDir": "dist/solar-striker",
+	"bundledWebRuntime": false
+}
