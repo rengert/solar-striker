@@ -1,6 +1,6 @@
 import { Application } from 'pixi.js';
-import { GameSprite } from '../models/pixijs/game-sprite';
 import { PowerUp, PowerUpSprite } from '../models/pixijs/power-up-sprite';
+import { Ship } from '../models/pixijs/ship';
 
 export class PixiGameCollectableService {
   private collectables: PowerUpSprite[] = [];
@@ -32,7 +32,7 @@ export class PixiGameCollectableService {
     this.collectables.push(powerUp);
   }
 
-  collect(ship: GameSprite): void {
+  collect(ship: Ship): void {
     if (!ship || ship.destroyed) {
       return;
     }
@@ -40,7 +40,7 @@ export class PixiGameCollectableService {
     const powerUp = this.collectables.find(collectable => !collectable.destroyed && ship.hit(collectable));
     if (powerUp) {
       if (powerUp.type === PowerUp.Speed) {
-        // this.shotSpeed++;
+        ship.shotSpeed += 0.1;
       }
       if (powerUp.type === PowerUp.Shot) {
         // this.shotPower++;

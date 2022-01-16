@@ -1,10 +1,11 @@
 import { Application } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
+import { Ship } from '../models/pixijs/ship';
 import { GAME_CONFIG } from './pixi-game-constants';
 
 export class PixiGameShipService {
   autoFire: boolean = false;
-  #ship?: GameSprite;
+  #ship?: Ship;
   #shots: GameSprite[] = [];
   private elapsed = 0;
   private lastShot = 0;
@@ -13,7 +14,7 @@ export class PixiGameShipService {
     app.loader.add('assets/laser.json').add('assets/ship.json');
   }
 
-  get instance(): GameSprite {
+  get instance(): Ship {
     // to do needs to be optional?
     return this.#ship !;
   }
@@ -24,7 +25,7 @@ export class PixiGameShipService {
 
   spawn(): void {
     const ship = this.app.loader.resources['assets/ship.json'].spritesheet !;
-    this.#ship = new GameSprite(0, ship.animations['ship']);
+    this.#ship = new Ship(0, ship.animations['ship']);
     this.#ship.animationSpeed = 0.167;
     this.#ship.play();
     this.#ship.x = Math.floor(this.app.screen.width / 2);
@@ -38,7 +39,7 @@ export class PixiGameShipService {
     }
 
     const laser = this.app.loader.resources['assets/laser.json'].spritesheet !;
-    const shot = new GameSprite(-3, laser.animations['laser']);
+    const shot = new GameSprite(-this.#ship.shotSpeed, laser.animations['laser']);
     shot.animationSpeed = 0.167;
     shot.play();
     shot.anchor.set(0.5);
@@ -48,7 +49,7 @@ export class PixiGameShipService {
     this.app.stage.addChild(shot);
   }
 
-  update(delta: number) {
+  update(delta: number): void {
     this.elapsed += delta;
 
     const check = Math.floor(this.elapsed);
