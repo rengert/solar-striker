@@ -1,7 +1,6 @@
 import { Application } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { Ship } from '../models/pixijs/ship';
-import { GAME_CONFIG } from './pixi-game-constants';
 
 export class PixiGameShipService {
   autoFire: boolean = false;
@@ -53,7 +52,8 @@ export class PixiGameShipService {
     this.elapsed += delta;
 
     const check = Math.floor(this.elapsed);
-    if (this.autoFire && (check % (60 / GAME_CONFIG.ship.autoFireSpeed) === 0) && (check !== this.lastShot)) {
+    // todo: check if we want two power ups for speed
+    if (this.autoFire && (check % (60 / this.instance.shotSpeed) === 0) && (check !== this.lastShot)) {
       this.lastShot = check;
       this.shot();
     }
