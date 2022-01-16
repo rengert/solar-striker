@@ -38,14 +38,23 @@ export class PixiGameShipService {
     }
 
     const laser = this.app.loader.resources['assets/laser.json'].spritesheet !;
-    const shot = new GameSprite(-this.#ship.shotSpeed, laser.animations['laser']);
-    shot.animationSpeed = 0.167;
-    shot.play();
-    shot.anchor.set(0.5);
-    shot.x = this.#ship.x;
-    shot.y = this.#ship.y;
-    this.#shots.push(shot);
-    this.app.stage.addChild(shot);
+
+    const power = Math.min(this.instance.shotPower, 3);
+    console.log(power);
+    for (let i = 1; i <= power; i++) {
+      const shot = new GameSprite(-this.#ship.shotSpeed, laser.animations['laser']);
+      shot.animationSpeed = 0.167;
+      shot.play();
+      shot.anchor.set(0.5);
+      shot.x = ((power === 1) || (power === 3 && i == 2))
+        ? this.#ship.x
+        : (power > 1 && i == 1)
+          ? this.#ship.x - 5
+          : this.#ship.x + 5;
+      shot.y = this.#ship.y;
+      this.#shots.push(shot);
+      this.app.stage.addChild(shot);
+    }
   }
 
   update(delta: number): void {
@@ -53,7 +62,7 @@ export class PixiGameShipService {
 
     const check = Math.floor(this.elapsed);
     // todo: check if we want two power ups for speed
-    if (this.autoFire && (check % (60 / this.instance.shotSpeed) === 0) && (check !== this.lastShot)) {
+    if (this.autoFire && (check % Math.floor(60 / this.instance.shotSpeed) === 0) && (check !== this.lastShot)) {
       this.lastShot = check;
       this.shot();
     }

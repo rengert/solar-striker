@@ -43,7 +43,7 @@ export class PixiGameCollectableService {
         ship.shotSpeed += 0.1;
       }
       if (powerUp.type === PowerUp.Shot) {
-        // this.shotPower++;
+        ship.shotPower++;
       }
       powerUp.destroy();
       this.collectables = this.collectables.filter(collectable => !collectable.destroyed);
