@@ -80,7 +80,7 @@ export class PixiGameService {
       enemy.update(delta, this.level.value);
 
       const hits = enemy.hit(ship.shots);
-      this.kills.next(hits);
+      this.kills.next(this.kills.value + hits);
       if (enemy.kill(ship.instance)) {
         this.lifes.next(this.lifes.value - 1);
         if (this.lifes.value === 0) {
