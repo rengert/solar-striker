@@ -52,7 +52,7 @@ export class PixiGameShipService {
     this.elapsed += delta;
 
     const check = Math.floor(this.elapsed);
-    if (this.autoFire && (check % (60 / GAME_CONFIG.player.autoFireSpeed) === 0) && (check !== this.lastShot)) {
+    if (this.autoFire && (check % (60 / GAME_CONFIG.ship.autoFireSpeed) === 0) && (check !== this.lastShot)) {
       this.lastShot = check;
       this.shot();
     }

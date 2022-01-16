@@ -1,4 +1,3 @@
-import { Injectable } from '@angular/core';
 import { Application } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { PowerUp, PowerUpSprite } from '../models/pixijs/power-up-sprite';
@@ -33,12 +32,12 @@ export class PixiGameCollectableService {
     this.collectables.push(powerUp);
   }
 
-  collect(player: GameSprite): void {
-    if (!player || player.destroyed) {
+  collect(ship: GameSprite): void {
+    if (!ship || ship.destroyed) {
       return;
     }
 
-    const powerUp = this.collectables.find(collectable => !collectable.destroyed && player.hit(collectable));
+    const powerUp = this.collectables.find(collectable => !collectable.destroyed && ship.hit(collectable));
     if (powerUp) {
       if (powerUp.type === PowerUp.Speed) {
         // this.shotSpeed++;

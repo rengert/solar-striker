@@ -1,5 +1,5 @@
 export const GAME_CONFIG = {
-  player: {
+  ship: {
     autoFireSpeed: 6, // per second
   },
   enemy: {
