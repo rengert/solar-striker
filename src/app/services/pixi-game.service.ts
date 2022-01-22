@@ -32,7 +32,7 @@ export class PixiGameService {
     this.app = new Application({
       height: elementRef.nativeElement.clientHeight,
       width: elementRef.nativeElement.clientWidth,
-      backgroundColor: 0x1099bb,
+      backgroundColor: 0x000000,
     });
 
     const collectables = new PixiGameCollectableService(this.app);
