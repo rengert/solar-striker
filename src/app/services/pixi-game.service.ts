@@ -35,11 +35,11 @@ export class PixiGameService {
       backgroundColor: 0x000000,
     });
 
+    const collectables = new PixiGameCollectableService(this.app);
+    const landscape = new PixiGameLandscapeService(this.app);
+    const enemy = new PixiGameEnemyService(this.app, collectables);
+    const ship = new PixiGameShipService(this.app);
     this.app.loader.load(() => {
-      const collectables = new PixiGameCollectableService(this.app);
-      const landscape = new PixiGameLandscapeService(this.app);
-      const enemy = new PixiGameEnemyService(this.app, collectables);
-      const ship = new PixiGameShipService(this.app);
       this.setup(landscape, collectables, enemy, ship);
       const gameScreen = new PixiGameScreenService(this.app);
       this.kills.pipe(
