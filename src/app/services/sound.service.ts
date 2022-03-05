@@ -48,8 +48,7 @@ export class SoundService {
       try {
         oscillator.frequency.value = frequency;
         gain.gain.exponentialRampToValueAtTime(0.00001, this.context.currentTime + 0.1);
-      } catch (e) {
-        console.log(e);
+      } catch {
       }
 
       await new Promise<void>((resolve) => {

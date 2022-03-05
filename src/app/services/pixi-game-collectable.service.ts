@@ -6,7 +6,8 @@ export class PixiGameCollectableService {
   private collectables: PowerUpSprite[] = [];
 
   constructor(private readonly app: Application) {
-    this.app.loader.add('assets/power-up-1.json')
+    this.app.loader
+      .add('assets/power-up-1.json')
       .add('assets/power-up-2.json');
   }
 
@@ -18,7 +19,7 @@ export class PixiGameCollectableService {
     const type = Math.random() > 0.5 ? PowerUp.Speed : PowerUp.Shot;
     const powerUp = new PowerUpSprite(
       1,
-      type === PowerUp.Speed
+      (type === PowerUp.Speed)
         ? this.app.loader.resources['assets/power-up-1.json'].spritesheet !.animations['power-up-1']
         : this.app.loader.resources['assets/power-up-2.json'].spritesheet !.animations['power-up-2'],
       type,
