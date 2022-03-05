@@ -44,7 +44,6 @@ export class PixiGameShipService {
     const laser = this.app.loader.resources['assets/laser.json'].spritesheet !;
 
     const power = Math.min(this.instance.shotPower, 3);
-    console.log(power);
     for (let i = 1; i <= power; i++) {
       const shot = new GameSprite(-this.#ship.shotSpeed, laser.animations['laser']);
       shot.animationSpeed = 0.167;
