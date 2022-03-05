@@ -1,4 +1,4 @@
-import { AnimatedSprite, Application } from 'pixi.js';
+import { AnimatedSprite, Application, Spritesheet } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { GAME_CONFIG } from './pixi-game-constants';
@@ -9,12 +9,19 @@ export class PixiGameEnemyService {
   private elapsed = 0;
   private lastEnemySpawn = -1;
 
-  constructor(private readonly app: Application, private readonly collectables: PixiGameCollectableService) {
+  constructor(
+    private readonly app: Application,
+    private readonly collectables: PixiGameCollectableService,
+  ) {
     app.loader.add('assets/explosion.json').add('assets/enemy.json');
   }
 
   get enemies(): GameSprite[] {
     return [...this.#enemies];
+  }
+
+  private get explosionSpritesheet(): Spritesheet {
+    return this.app.loader.resources['assets/explosion.json'].spritesheet !;
   }
 
   update(delta: number, level: number): void {
@@ -41,8 +48,7 @@ export class PixiGameEnemyService {
       const enemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (enemy) {
         // explode
-        const explosionSpritesheet = this.app.loader.resources['assets/explosion.json'].spritesheet !;
-        const explosion = new AnimatedSprite(explosionSpritesheet.animations['explosion']);
+        const explosion = new AnimatedSprite(this.explosionSpritesheet.animations['explosion']);
         explosion.animationSpeed = 0.167;
         explosion.loop = false;
         explosion.x = enemy.x;
@@ -60,8 +66,6 @@ export class PixiGameEnemyService {
     });
 
     return result;
-    // this.shots = this.shots.filter(shot => !shot.destroyed);
-
   }
 
   kill(ship: GameSprite): boolean {
@@ -71,8 +75,7 @@ export class PixiGameEnemyService {
 
     const enemy = this.enemies.find(enemy => !enemy.destroyed && ship.hit(enemy));
     if (enemy) {
-      const explosionSpritesheet = this.app.loader.resources['assets/explosion.json'].spritesheet !;
-      const explosion = new AnimatedSprite(explosionSpritesheet.animations['explosion']);
+      const explosion = new AnimatedSprite(this.explosionSpritesheet.animations['explosion']);
       explosion.animationSpeed = 0.167;
       explosion.loop = false;
       explosion.x = enemy.x;

@@ -4,13 +4,17 @@ import { Ship } from '../models/pixijs/ship';
 
 export class PixiGameShipService {
   autoFire: boolean = false;
-  #ship?: Ship;
+
   #shots: GameSprite[] = [];
+  #ship?: Ship;
+
   private elapsed = 0;
   private lastShot = 0;
 
   constructor(private readonly app: Application) {
-    app.loader.add('assets/laser.json').add('assets/ship.json');
+    app.loader
+      .add('assets/laser.json')
+      .add('assets/ship.json');
   }
 
   get instance(): Ship {
@@ -40,7 +44,6 @@ export class PixiGameShipService {
     const laser = this.app.loader.resources['assets/laser.json'].spritesheet !;
 
     const power = Math.min(this.instance.shotPower, 3);
-    console.log(power);
     for (let i = 1; i <= power; i++) {
       const shot = new GameSprite(-this.#ship.shotSpeed, laser.animations['laser']);
       shot.animationSpeed = 0.167;
