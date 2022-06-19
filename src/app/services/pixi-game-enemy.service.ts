@@ -21,7 +21,10 @@ export class PixiGameEnemyService {
   }
 
   private get explosionSpritesheet(): Spritesheet {
-    return this.app.loader.resources['assets/explosion.json'].spritesheet !;
+    if (!this.app.loader.resources['assets/explosion.json'].spritesheet) {
+      throw new Error('Something totally went wrong loading the spritesheet');
+    }
+    return this.app.loader.resources['assets/explosion.json'].spritesheet;
   }
 
   update(delta: number, level: number): void {
@@ -93,7 +96,10 @@ export class PixiGameEnemyService {
 
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.app.screen.width - 20) + 10;
-    const enemySprite = this.app.loader.resources['assets/enemy.json'].spritesheet !;
+    const enemySprite = this.app.loader.resources['assets/enemy.json'].spritesheet;
+    if (!enemySprite) {
+      throw new Error('Bad idea not load this?');
+    }
     const enemy = new GameSprite(1 + (0.25 * (level)), enemySprite.animations['frame']);
     enemy.animationSpeed = 0.167;
     enemy.play();
