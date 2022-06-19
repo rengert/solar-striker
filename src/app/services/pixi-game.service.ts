@@ -13,8 +13,9 @@ function handleMouseMove(event: InteractionEvent, ship: GameSprite): void {
   if (!ship || ship.destroyed) {
     return;
   }
-  // @ts-ignore
-  ship.x = event.data.originalEvent.clientX ?? event.data.originalEvent.touches[0].clientX;
+
+  ship.x = (event.data.originalEvent as PointerEvent).clientX
+    ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
 }
 
 @Injectable()
@@ -24,9 +25,6 @@ export class PixiGameService {
   private readonly lifes = new BehaviorSubject(3);
   private readonly level = new BehaviorSubject(1);
   private readonly kills = new BehaviorSubject(0);
-
-  constructor() {
-  }
 
   init(elementRef: ElementRef): void {
     this.app = new Application({

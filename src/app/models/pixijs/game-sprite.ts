@@ -3,7 +3,10 @@ import { AnimatedSprite, FrameObject, Sprite, Texture } from 'pixi.js';
 export class GameSprite extends AnimatedSprite {
   private readonly speed: number = 1;
 
-  constructor(speed: number, textures: Texture[] | FrameObject[], autoUpdate?: boolean) {
+  constructor(
+    speed: number,
+    textures: Texture[] | FrameObject[],
+    autoUpdate?: boolean) {
     super(textures, autoUpdate);
 
     this.speed = speed;

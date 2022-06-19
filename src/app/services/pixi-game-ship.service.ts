@@ -3,7 +3,7 @@ import { GameSprite } from '../models/pixijs/game-sprite';
 import { Ship } from '../models/pixijs/ship';
 
 export class PixiGameShipService {
-  autoFire: boolean = false;
+  autoFire = false;
 
   #shots: GameSprite[] = [];
   #ship?: Ship;
@@ -18,8 +18,10 @@ export class PixiGameShipService {
   }
 
   get instance(): Ship {
-    // to do needs to be optional?
-    return this.#ship !;
+    if (!this.#ship) {
+      throw new Error('Where is my ship?');
+    }
+    return this.#ship;
   }
 
   get shots(): GameSprite[] {
@@ -27,7 +29,10 @@ export class PixiGameShipService {
   }
 
   spawn(): void {
-    const ship = this.app.loader.resources['assets/ship.json'].spritesheet !;
+    const ship = this.app.loader.resources['assets/ship.json'].spritesheet;
+    if (!ship) {
+      throw new Error('Where is my ship?');
+    }
     this.#ship = new Ship(0, ship.animations['ship']);
     this.#ship.animationSpeed = 0.167;
     this.#ship.play();
@@ -41,7 +46,10 @@ export class PixiGameShipService {
       return;
     }
 
-    const laser = this.app.loader.resources['assets/laser.json'].spritesheet !;
+    const laser = this.app.loader.resources['assets/laser.json'].spritesheet;
+    if (!laser) {
+      throw new Error('Where is my laser');
+    }
 
     const power = Math.min(this.instance.shotPower, 3);
     for (let i = 1; i <= power; i++) {
