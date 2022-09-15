@@ -35,6 +35,9 @@
             ],
             "scripts": [],
             "allowedCommonJsDependencies": [
+              "earcut",
+              "eventemitter3",
+              "object-assign",
               "url"
             ]
           },
