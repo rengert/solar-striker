@@ -1,4 +1,4 @@
-import { AnimatedSprite, Application, Spritesheet } from 'pixi.js';
+import { AnimatedSprite, Application, Assets, Spritesheet } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { GAME_CONFIG } from './pixi-game-constants';
@@ -13,18 +13,16 @@ export class PixiGameEnemyService {
     private readonly app: Application,
     private readonly collectables: PixiGameCollectableService,
   ) {
-    app.loader.add('assets/explosion.json').add('assets/enemy.json');
+    Assets.add('explosion', 'assets/explosion.json');
+    Assets.add('enemy', 'assets/enemy.json');
   }
 
   get enemies(): GameSprite[] {
     return [...this.#enemies];
   }
 
-  private get explosionSpritesheet(): Spritesheet {
-    if (!this.app.loader.resources['assets/explosion.json'].spritesheet) {
-      throw new Error('Something totally went wrong loading the spritesheet');
-    }
-    return this.app.loader.resources['assets/explosion.json'].spritesheet;
+  private async explosionSpritesheet(): Promise<Spritesheet> {
+    return await Assets.load<Spritesheet>('assets/explosion.json');
   }
 
   update(delta: number, level: number): void {
@@ -41,23 +39,23 @@ export class PixiGameEnemyService {
     if (((check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
       && (check !== this.lastEnemySpawn)) {
       this.lastEnemySpawn = check;
-      this.spawn(level);
+      void this.spawn(level);
     }
   }
 
-  hit(shots: GameSprite[]): number {
+  async hit(shots: GameSprite[]): Promise<number> {
     let result = 0;
-    shots.forEach(shot => {
+    for (const shot of shots) {
       const enemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (enemy) {
         // explode
-        const explosion = new AnimatedSprite(this.explosionSpritesheet.animations['explosion']);
+        const explosion = new AnimatedSprite((await this.explosionSpritesheet()).animations['explosion']);
         explosion.animationSpeed = 0.167;
         explosion.loop = false;
         explosion.x = enemy.x;
         explosion.y = enemy.y;
         explosion.onComplete = () => {
-          this.collectables.spawn(explosion.x, explosion.y);
+          void this.collectables.spawn(explosion.x, explosion.y);
           explosion.destroy();
         };
         this.app.stage.addChild(explosion);
@@ -66,19 +64,19 @@ export class PixiGameEnemyService {
         explosion.play();
         result++;
       }
-    });
+    }
 
     return result;
   }
 
-  kill(ship: GameSprite): boolean {
+  async kill(ship: GameSprite): Promise<boolean> {
     if (!ship || ship.destroyed) {
       return false;
     }
 
     const enemy = this.enemies.find(enemy => !enemy.destroyed && ship.hit(enemy));
     if (enemy) {
-      const explosion = new AnimatedSprite(this.explosionSpritesheet.animations['explosion']);
+      const explosion = new AnimatedSprite((await this.explosionSpritesheet()).animations['explosion']);
       explosion.animationSpeed = 0.167;
       explosion.loop = false;
       explosion.x = enemy.x;
@@ -94,9 +92,9 @@ export class PixiGameEnemyService {
     return false;
   }
 
-  private spawn(level: number): void {
+  private async spawn(level: number): Promise<void> {
     const position = Math.floor(Math.random() * this.app.screen.width - 20) + 10;
-    const enemySprite = this.app.loader.resources['assets/enemy.json'].spritesheet;
+    const enemySprite = await Assets.load<Spritesheet>('assets/enemy.json');
     if (!enemySprite) {
       throw new Error('Bad idea not load this?');
     }
