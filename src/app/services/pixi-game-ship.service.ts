@@ -1,4 +1,4 @@
-import { Application } from 'pixi.js';
+import { Application, Assets, Spritesheet } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { Ship } from '../models/pixijs/ship';
 
@@ -12,9 +12,8 @@ export class PixiGameShipService {
   private lastShot = 0;
 
   constructor(private readonly app: Application) {
-    app.loader
-      .add('assets/laser.json')
-      .add('assets/ship.json');
+    Assets.add('laser', 'assets/laser.json');
+    Assets.add('ship', 'assets/ship.json');
   }
 
   get instance(): Ship {
@@ -28,8 +27,8 @@ export class PixiGameShipService {
     return [...this.#shots];
   }
 
-  spawn(): void {
-    const ship = this.app.loader.resources['assets/ship.json'].spritesheet;
+  async spawn(): Promise<void> {
+    const ship = await Assets.load<Spritesheet>('assets/ship.json');
     if (!ship) {
       throw new Error('Where is my ship?');
     }
@@ -41,12 +40,12 @@ export class PixiGameShipService {
     this.app.stage.addChild(this.#ship);
   }
 
-  shot(): void {
+  async shot(): Promise<void> {
     if (!this.#ship || this.#ship.destroyed) {
       return;
     }
 
-    const laser = this.app.loader.resources['assets/laser.json'].spritesheet;
+    const laser = await Assets.load<Spritesheet>('assets/laser.json');
     if (!laser) {
       throw new Error('Where is my laser');
     }

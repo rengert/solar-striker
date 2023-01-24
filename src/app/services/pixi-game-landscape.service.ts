@@ -5,8 +5,8 @@ export class PixiGameLandscapeService {
   private readonly landscapes: BackgroundSprite[] = [];
 
   constructor(private readonly app: Application) {
-    app.loader.add('background', 'assets/desert-background-looped.png')
-      .add('clouds', 'assets/clouds-transparent.png');
+    //Assets.add('background', 'assets/desert-background-looped.png');
+    //Assets.add('clouds', 'assets/clouds-transparent.png');
   }
 
   setup(): void {
@@ -17,7 +17,7 @@ export class PixiGameLandscapeService {
     const background = new BackgroundSprite(
       0.25,
       0,
-      Texture.from('background'),
+      Texture.from('assets/desert-background-looped.png'),
       this.app.screen.width,
       this.app.screen.height,
     );
@@ -27,11 +27,11 @@ export class PixiGameLandscapeService {
     const cloud = new BackgroundSprite(
       0,
       0.25,
-      Texture.from('clouds'),
+      Texture.from('assets/clouds-transparent.png'),
       this.app.screen.width,
       103,
       0.75,
-      this.app.screen.height
+      this.app.screen.height,
     );
     cloud.y = Math.floor(this.app.screen.height / 2);
     this.landscapes.push(cloud);
@@ -40,11 +40,11 @@ export class PixiGameLandscapeService {
     const cloud2 = new BackgroundSprite(
       0,
       0.27,
-      Texture.from('clouds'),
+      Texture.from('assets/clouds-transparent.png'),
       this.app.screen.width,
       103,
       0.8,
-      this.app.screen.height
+      this.app.screen.height,
     );
     cloud2.y = Math.floor(this.app.screen.height / 4);
     this.landscapes.push(cloud2);

@@ -1,5 +1,5 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { Application, InteractionEvent } from 'pixi.js';
+import { Application } from 'pixi.js';
 import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { GameSprite } from '../models/pixijs/game-sprite';
@@ -9,7 +9,7 @@ import { PixiGameLandscapeService } from './pixi-game-landscape.service';
 import { PixiGameScreenService } from './pixi-game-screen.service';
 import { PixiGameShipService } from './pixi-game-ship.service';
 
-function handleMouseMove(event: InteractionEvent, ship: GameSprite): void {
+function handleMouseMove(event: { data: { originalEvent: PointerEvent | TouchEvent } }, ship: GameSprite): void {
   if (!ship || ship.destroyed) {
     return;
   }
@@ -37,8 +37,8 @@ export class PixiGameService {
     const landscape = new PixiGameLandscapeService(this.app);
     const enemy = new PixiGameEnemyService(this.app, collectables);
     const ship = new PixiGameShipService(this.app);
-    this.app.loader.load(() => {
-      this.setup(landscape, collectables, enemy, ship);
+
+    void this.setup(landscape, collectables, enemy, ship).then(() => {
       const gameScreen = new PixiGameScreenService(this.app);
       this.kills.pipe(
         distinctUntilChanged(),
@@ -54,31 +54,30 @@ export class PixiGameService {
         distinctUntilChanged(),
         tap(value => gameScreen.level = value),
       ).subscribe();
-    });
 
-    elementRef.nativeElement.appendChild(this.app.view);
+      elementRef.nativeElement.appendChild(this.app.view);
+    });
   }
 
-
-  private setup(
+  private async setup(
     landscape: PixiGameLandscapeService,
     collectables: PixiGameCollectableService,
     enemy: PixiGameEnemyService,
     ship: PixiGameShipService,
-  ): void {
+  ): Promise<void> {
     const app = this.app;
 
     landscape.setup();
-    ship.spawn();
+    await ship.spawn();
     this.setupInteractions(ship);
 
-    app.ticker.add(delta => {
+    app.ticker.add(async delta => {
       landscape.update(delta);
       enemy.update(delta, this.level.value);
 
-      const hits = enemy.hit(ship.shots);
+      const hits = await enemy.hit(ship.shots);
       this.kills.next(this.kills.value + hits);
-      if (enemy.kill(ship.instance)) {
+      if (await enemy.kill(ship.instance)) {
         this.lifes.next(this.lifes.value - 1);
         if (this.lifes.value === 0) {
           alert('you are dead!');
@@ -91,11 +90,15 @@ export class PixiGameService {
   }
 
   private setupInteractions(ship: PixiGameShipService): void {
-    this.app.renderer.plugins['interaction'].on('pointerdown', () => ship.autoFire = true);
-    this.app.renderer.plugins['interaction'].on('pointerup', () => ship.autoFire = false);
-    this.app.renderer.plugins['interaction'].on(
+    this.app.stage.interactive = true;
+    this.app.stage.hitArea = this.app.screen;
+    this.app.stage.on('pointerdown', () => ship.autoFire = true);
+    this.app.stage.on('pointerup', () => ship.autoFire = false);
+    this.app.stage.on(
       'pointermove',
-      (event: InteractionEvent) => handleMouseMove(event, ship.instance),
+      (event: unknown) => handleMouseMove(event as {
+        data: { originalEvent: PointerEvent | TouchEvent }
+      }, ship.instance),
     );
   }
 }
