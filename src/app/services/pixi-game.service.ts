@@ -96,9 +96,10 @@ export class PixiGameService {
     this.app.stage.on('pointerup', () => ship.autoFire = false);
     this.app.stage.on(
       'pointermove',
-      (event: unknown) => handleMouseMove(event as {
-        data: { originalEvent: PointerEvent | TouchEvent }
-      }, ship.instance),
+      (event: unknown) => handleMouseMove(
+        event as { data: { originalEvent: PointerEvent | TouchEvent } },
+        ship.instance,
+      ),
     );
   }
 }
