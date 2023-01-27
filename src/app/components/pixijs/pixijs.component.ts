@@ -15,9 +15,9 @@ export class PixijsComponent implements OnInit {
   ) {
   }
 
-  ngOnInit(): void {
-    this.ngZone.runOutsideAngular(() => {
-      this.pixiGame.init(this.elementRef);
+  ngOnInit(): Promise<void> {
+    return this.ngZone.runOutsideAngular(async() => {
+      await this.pixiGame.init(this.elementRef);
     });
   }
 }

@@ -26,7 +26,7 @@ export class PixiGameService {
   private readonly level = new BehaviorSubject(1);
   private readonly kills = new BehaviorSubject(0);
 
-  init(elementRef: ElementRef): void {
+  async init(elementRef: ElementRef): Promise<void> {
     this.app = new Application({
       height: elementRef.nativeElement.clientHeight,
       width: elementRef.nativeElement.clientWidth,
@@ -36,6 +36,7 @@ export class PixiGameService {
     const collectables = new PixiGameCollectableService(this.app);
     const landscape = new PixiGameLandscapeService(this.app);
     const enemy = new PixiGameEnemyService(this.app, collectables);
+    await enemy.init();
     const ship = new PixiGameShipService(this.app);
 
     void this.setup(landscape, collectables, enemy, ship).then(() => {
