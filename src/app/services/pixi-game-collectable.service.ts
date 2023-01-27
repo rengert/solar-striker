@@ -5,28 +5,32 @@ import { Ship } from '../models/pixijs/ship';
 export class PixiGameCollectableService {
   private collectables: PowerUpSprite[] = [];
 
+  private powerUpSpeedTexture!: Texture[];
+  private powerUpPowerTexture!: Texture[];
+
   constructor(private readonly app: Application) {
     Assets.add('power-up-1', 'assets/power-up-1.json');
     Assets.add('power-up-2', 'assets/power-up-2.json');
   }
 
-  async powerUpSpeedTexture(): Promise<Texture[]> {
-    const asset = await Assets.load<Spritesheet>('assets/power-up-1.json');
-    return asset.animations['power-up-1'];
+  async init(): Promise<void> {
+    const powerUp1 = await Assets.load<Spritesheet>('assets/power-up-1.json');
+    this.powerUpSpeedTexture = powerUp1.animations['power-up-1'];
+
+    const powerUp2 = await Assets.load<Spritesheet>('assets/power-up-2.json');
+    this.powerUpPowerTexture = powerUp2.animations['power-up-2'];
   }
 
-  async powerUpPowerTexture(): Promise<Texture[]> {
-    const asset = await Assets.load<Spritesheet>('assets/power-up-2.json');
-    return asset.animations['power-up-2'];
-  }
-
-  async spawn(x: number, y: number): Promise<void> {
+  spawn(x: number, y: number): void {
     const rand = Math.random();
     if (rand > 0.1) {
       return;
     }
     const type = Math.random() > 0.5 ? PowerUp.Speed : PowerUp.Shot;
-    const powerUp = new PowerUpSprite(1, (type === PowerUp.Speed) ? await this.powerUpSpeedTexture() : await this.powerUpPowerTexture(), type);
+    const texture = (type === PowerUp.Speed)
+      ? this.powerUpSpeedTexture
+      : this.powerUpPowerTexture;
+    const powerUp = new PowerUpSprite(1, texture, type);
     powerUp.animationSpeed = 0.167;
     powerUp.play();
     powerUp.anchor.set(0.5);
