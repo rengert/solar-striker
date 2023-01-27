@@ -9,8 +9,6 @@ export class PixiGameCollectableService {
   private powerUpPowerTexture!: Texture[];
 
   constructor(private readonly app: Application) {
-    Assets.add('power-up-1', 'assets/power-up-1.json');
-    Assets.add('power-up-2', 'assets/power-up-2.json');
   }
 
   async init(): Promise<void> {

@@ -34,10 +34,12 @@ export class PixiGameService {
     });
 
     const collectables = new PixiGameCollectableService(this.app);
+    await collectables.init();
     const landscape = new PixiGameLandscapeService(this.app);
     const enemy = new PixiGameEnemyService(this.app, collectables);
     await enemy.init();
     const ship = new PixiGameShipService(this.app);
+    await ship.init();
 
     void this.setup(landscape, collectables, enemy, ship).then(() => {
       const gameScreen = new PixiGameScreenService(this.app);

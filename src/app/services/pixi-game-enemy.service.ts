@@ -15,8 +15,6 @@ export class PixiGameEnemyService {
     private readonly app: Application,
     private readonly collectables: PixiGameCollectableService,
   ) {
-    Assets.add('explosion', 'assets/explosion.json');
-    Assets.add('enemy', 'assets/enemy.json');
   }
 
   get enemies(): GameSprite[] {
