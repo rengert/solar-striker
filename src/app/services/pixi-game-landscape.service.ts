@@ -5,8 +5,6 @@ export class PixiGameLandscapeService {
   private readonly landscapes: BackgroundSprite[] = [];
 
   constructor(private readonly app: Application) {
-    //Assets.add('background', 'assets/desert-background-looped.png');
-    //Assets.add('clouds', 'assets/clouds-transparent.png');
   }
 
   setup(): void {
