@@ -23,17 +23,17 @@ export class PixiGameScreenService {
   constructor(private readonly app: Application) {
     this.points = new Text('0000000', this.style);
     this.points.x = 5;
-    this.points.y = this.app.screen.height - 45;
+    this.points.y = 35;
     this.app.stage.addChild(this.points);
 
     this.lifesLabel = new Text('Leben: 3', this.style);
     this.lifesLabel.x = 5;
-    this.lifesLabel.y = this.app.screen.height - 75;
+    this.lifesLabel.y = 5;
     this.app.stage.addChild(this.lifesLabel);
 
     this.levelLabel = new Text('Level: 1', this.style);
     this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
-    this.levelLabel.y = this.app.screen.height - 75;
+    this.levelLabel.y = 5;
     this.app.stage.addChild(this.levelLabel);
   }
 
