@@ -3,8 +3,7 @@ import { PixiGameService } from '../../services/pixi-game.service';
 
 @Component({
   selector: 'app-pixijs',
-  templateUrl: './pixijs.component.html',
-  styleUrls: ['./pixijs.component.scss'],
+  template: '',
   providers: [PixiGameService],
 })
 export class PixijsComponent implements OnInit {
@@ -16,8 +15,6 @@ export class PixijsComponent implements OnInit {
   }
 
   ngOnInit(): Promise<void> {
-    return this.ngZone.runOutsideAngular(async() => {
-      await this.pixiGame.init(this.elementRef);
-    });
+    return this.ngZone.runOutsideAngular(() => this.pixiGame.init(this.elementRef));
   }
 }

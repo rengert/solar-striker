@@ -93,7 +93,7 @@ export class PixiGameService {
   }
 
   private setupInteractions(ship: PixiGameShipService): void {
-    this.app.stage.interactive = true;
+    this.app.stage.eventMode = 'dynamic';
     this.app.stage.hitArea = this.app.screen;
     this.app.stage.on('pointerdown', () => ship.autoFire = true);
     this.app.stage.on('pointerup', () => ship.autoFire = false);
