@@ -12,10 +12,10 @@ export class PixiGameCollectableService {
   }
 
   async init(): Promise<void> {
-    const powerUp1 = await Assets.load<Spritesheet>('assets/power-up-1.json');
+    const powerUp1 = await Assets.load<Spritesheet>('assets/game/power-up-1.json');
     this.powerUpSpeedTexture = powerUp1.animations['power-up-1'];
 
-    const powerUp2 = await Assets.load<Spritesheet>('assets/power-up-2.json');
+    const powerUp2 = await Assets.load<Spritesheet>('assets/game/power-up-2.json');
     this.powerUpPowerTexture = powerUp2.animations['power-up-2'];
   }
 

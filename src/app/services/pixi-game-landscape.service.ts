@@ -15,7 +15,7 @@ export class PixiGameLandscapeService {
     const background = new BackgroundSprite(
       0.25,
       0,
-      Texture.from('assets/desert-background-looped.png'),
+      Texture.from('assets/game/desert-background-looped.png'),
       this.app.screen.width,
       this.app.screen.height,
     );
@@ -25,7 +25,7 @@ export class PixiGameLandscapeService {
     const cloud = new BackgroundSprite(
       0,
       0.25,
-      Texture.from('assets/clouds-transparent.png'),
+      Texture.from('assets/game/clouds-transparent.png'),
       this.app.screen.width,
       103,
       0.75,
@@ -38,7 +38,7 @@ export class PixiGameLandscapeService {
     const cloud2 = new BackgroundSprite(
       0,
       0.27,
-      Texture.from('assets/clouds-transparent.png'),
+      Texture.from('assets/game/clouds-transparent.png'),
       this.app.screen.width,
       103,
       0.8,

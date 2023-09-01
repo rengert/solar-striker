@@ -22,8 +22,8 @@ export class PixiGameEnemyService {
   }
 
   async init(): Promise<void> {
-    this.explosionSprite = await Assets.load<Spritesheet>('assets/explosion.json');
-    this.enemySprite = await Assets.load<Spritesheet>('assets/enemy.json');
+    this.explosionSprite = await Assets.load<Spritesheet>('assets/game/explosion.json');
+    this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');
   }
 
   update(delta: number, level: number): void {
