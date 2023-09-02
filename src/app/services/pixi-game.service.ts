@@ -2,7 +2,9 @@ import { ElementRef, Injectable } from '@angular/core';
 import { Application } from 'pixi.js';
 import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { GameSprite } from '../models/pixijs/game-sprite';
+import { NavigationPopup } from '../popups/navigation-popup';
 import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { PixiGameEnemyService } from './pixi-game-enemy.service';
 import { PixiGameLandscapeService } from './pixi-game-landscape.service';
@@ -25,6 +27,10 @@ export class PixiGameService {
   private readonly lifes = new BehaviorSubject(3);
   private readonly level = new BehaviorSubject(1);
   private readonly kills = new BehaviorSubject(0);
+
+  private currentPopup?: AppScreen;
+
+  private started = false;
 
   async init(elementRef: ElementRef): Promise<void> {
     this.app = new Application({
@@ -59,6 +65,8 @@ export class PixiGameService {
     ).subscribe();
 
     elementRef.nativeElement.appendChild(this.app.view);
+
+    await this.presentPopup(NavigationPopup);
   }
 
   private setup(
@@ -73,8 +81,11 @@ export class PixiGameService {
     ship.spawn();
     this.setupInteractions(ship);
 
-    app.ticker.stop();
     app.ticker.add(delta => {
+      if (!this.started) {
+        return;
+      }
+
       landscape.update(delta);
       enemy.update(delta, this.level.value);
 
@@ -104,5 +115,69 @@ export class PixiGameService {
         ship.instance,
       ),
     );
+  }
+
+  private async presentPopup(ctor: AppScreenConstructor) {
+    if (this.currentPopup) {
+      await this.hideAndRemoveScreen(this.currentPopup);
+    }
+
+    this.currentPopup = new ctor(this);
+    await this.addAndShowScreen(this.currentPopup);
+  }
+
+  private async hideAndRemoveScreen(screen: AppScreen) {
+    screen.interactiveChildren = false;
+    if (screen.hide) {
+      await screen.hide();
+    }
+
+    if (screen.update) {
+      this.app.ticker.remove(screen.update, screen);
+    }
+
+    if (screen.parent) {
+      screen.parent.removeChild(screen);
+    }
+
+    if (screen.reset) {
+      screen.reset();
+    }
+  }
+
+  private async addAndShowScreen(screen: AppScreen) {
+    // Add navigation container to stage if it does not have a parent yet
+    //if (!this.container.parent) {
+    //this.app.stage.addChild(this.container);
+    //}
+
+    // Add screen to stage
+    this.app.stage.addChild(screen);
+
+    // Setup things and pre-organise screen before showing
+    if (screen.prepare) {
+      screen.prepare();
+    }
+
+    if (screen.resize) {
+      screen.resize(this.app.screen.width, this.app.screen.height);
+    }
+
+    // Add update function if available
+    if (screen.update) {
+      this.app.ticker.add(screen.update, screen);
+    }
+
+    // Show the new screen
+    if (screen.show) {
+      screen.interactiveChildren = false;
+      await screen.show();
+      screen.interactiveChildren = true;
+    }
+  }
+
+  async start(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    this.started = true;
   }
 }
