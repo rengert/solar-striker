@@ -41,46 +41,46 @@ export class PixiGameService {
     const ship = new PixiGameShipService(this.app);
     await ship.init();
 
-    void this.setup(landscape, collectables, enemy, ship).then(() => {
-      const gameScreen = new PixiGameScreenService(this.app);
-      this.kills.pipe(
-        distinctUntilChanged(),
-        filter(value => !!value),
-        tap(value => this.level.next(Math.ceil(value / 10))),
-        tap(value => gameScreen.kills = value),
-      ).subscribe();
-      this.lifes.pipe(
-        distinctUntilChanged(),
-        tap(value => gameScreen.lifes = value),
-      ).subscribe();
-      this.level.pipe(
-        distinctUntilChanged(),
-        tap(value => gameScreen.level = value),
-      ).subscribe();
+    this.setup(landscape, collectables, enemy, ship);
+    const gameScreen = new PixiGameScreenService(this.app);
+    this.kills.pipe(
+      distinctUntilChanged(),
+      filter(value => !!value),
+      tap(value => this.level.next(Math.ceil(value / 10))),
+      tap(value => gameScreen.kills = value),
+    ).subscribe();
+    this.lifes.pipe(
+      distinctUntilChanged(),
+      tap(value => gameScreen.lifes = value),
+    ).subscribe();
+    this.level.pipe(
+      distinctUntilChanged(),
+      tap(value => gameScreen.level = value),
+    ).subscribe();
 
-      elementRef.nativeElement.appendChild(this.app.view);
-    });
+    elementRef.nativeElement.appendChild(this.app.view);
   }
 
-  private async setup(
+  private setup(
     landscape: PixiGameLandscapeService,
     collectables: PixiGameCollectableService,
     enemy: PixiGameEnemyService,
     ship: PixiGameShipService,
-  ): Promise<void> {
+  ): void {
     const app = this.app;
 
     landscape.setup();
-    await ship.spawn();
+    ship.spawn();
     this.setupInteractions(ship);
 
-    app.ticker.add(async delta => {
+    app.ticker.stop();
+    app.ticker.add(delta => {
       landscape.update(delta);
       enemy.update(delta, this.level.value);
 
-      const hits = await enemy.hit(ship.shots);
+      const hits = enemy.hit(ship.shots);
       this.kills.next(this.kills.value + hits);
-      if (await enemy.kill(ship.instance)) {
+      if (enemy.kill(ship.instance)) {
         this.lifes.next(this.lifes.value - 1);
         if (this.lifes.value === 0) {
           alert('you are dead!');
