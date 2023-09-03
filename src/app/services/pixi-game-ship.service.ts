@@ -47,7 +47,7 @@ export class PixiGameShipService {
     this.#ship.animationSpeed = 0.167;
     this.#ship.play();
     this.#ship.x = Math.floor(this.app.screen.width / 2);
-    this.#ship.y = this.app.screen.height - 40;
+    this.#ship.y = this.app.screen.height - 100;
     this.app.stage.addChild(this.#ship);
   }
 
