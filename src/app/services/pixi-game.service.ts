@@ -96,6 +96,7 @@ export class PixiGameService {
         if (this.lifes.value === 0) {
           alert('you are dead!');
           ship.instance.destroy();
+          location.reload();
         }
       }
       collectables.collect(ship.instance);
