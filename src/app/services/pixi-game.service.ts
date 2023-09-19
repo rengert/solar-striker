@@ -12,11 +12,14 @@ import { PixiGameLandscapeService } from './pixi-game-landscape.service';
 import { PixiGameScreenService } from './pixi-game-screen.service';
 import { PixiGameShipService } from './pixi-game-ship.service';
 
-function handleMouseMove(event: { data: { originalEvent: PointerEvent | TouchEvent } }, ship: GameSprite): void {
+function handleMouseMove(event: {
+  data: { originalEvent: PointerEvent | TouchEvent }
+}, ship: GameSprite | undefined): void {
   if (!ship || ship.destroyed) {
     return;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   ship.x = (event.data.originalEvent as PointerEvent).clientX
     ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
 }
@@ -138,9 +141,8 @@ export class PixiGameService {
       this.app.ticker.remove(screen.update, screen);
     }
 
-    if (screen.parent) {
-      screen.parent.removeChild(screen);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    screen.parent?.removeChild(screen);
 
     if (screen.reset) {
       screen.reset();

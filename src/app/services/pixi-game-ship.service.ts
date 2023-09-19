@@ -19,15 +19,9 @@ export class PixiGameShipService {
 
   async init(): Promise<void> {
     const ship = await Assets.load<Spritesheet>('assets/game/ship.json');
-    if (!ship) {
-      throw new Error('Where is my ship?');
-    }
     this.shipAnimation = ship.animations['ship'];
 
     const laser = await Assets.load<Spritesheet>('assets/game/laser.json');
-    if (!laser) {
-      throw new Error('Where is my laser');
-    }
     this.laserAnimation = laser.animations['laser'];
   }
 

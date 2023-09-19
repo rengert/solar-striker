@@ -70,7 +70,7 @@ export class PixiGameEnemyService {
     return result;
   }
 
-  kill(ship: GameSprite): boolean {
+  kill(ship: GameSprite | undefined): boolean {
     if (!ship || ship.destroyed) {
       return false;
     }

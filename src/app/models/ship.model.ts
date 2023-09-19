@@ -34,12 +34,10 @@ export class Ship extends RenderObject {
       this.game.shots.push(new ShotObject(this.x + this.width - 7, this.y));
       return;
     }
-    if (this.weapon === Weapon.Three) {
-      this.game.shots.push(new ShotObject(this.x + 7, this.y));
-      this.game.shots.push(new ShotObject(this.x + this.width / 2, this.y));
-      this.game.shots.push(new ShotObject(this.x + this.width - 7, this.y));
-      return;
-    }
+
+    this.game.shots.push(new ShotObject(this.x + 7, this.y));
+    this.game.shots.push(new ShotObject(this.x + this.width / 2, this.y));
+    this.game.shots.push(new ShotObject(this.x + this.width - 7, this.y));
   }
 
   move(clientX: number): void {

@@ -38,7 +38,7 @@ export class PixiGameCollectableService {
     this.collectables.push(powerUp);
   }
 
-  collect(ship: Ship): void {
+  collect(ship: Ship | undefined): void {
     if (!ship || ship.destroyed) {
       return;
     }
