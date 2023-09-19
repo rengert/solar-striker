@@ -4,6 +4,7 @@ import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { GameSprite } from '../models/pixijs/game-sprite';
+import { CreditsPopup } from '../popups/credits-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { PixiGameEnemyService } from './pixi-game-enemy.service';
@@ -180,5 +181,15 @@ export class PixiGameService {
   async start(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     this.started = true;
+  }
+
+  async credits(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(CreditsPopup);
+  }
+
+  async navigation(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(NavigationPopup);
   }
 }

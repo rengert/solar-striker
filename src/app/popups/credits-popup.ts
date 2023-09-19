@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 import { PixiGameService } from '../services/pixi-game.service';
 
-export class NavigationPopup extends Container {
+export class CreditsPopup extends Container {
   private readonly background: Sprite;
   private readonly panel: Sprite;
   private readonly title: Text;
@@ -28,18 +28,21 @@ export class NavigationPopup extends Container {
     this.panelBase.width = 400;
     this.panel.addChild(this.panelBase);
 
-    this.title = new Text('Solarstriker', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    this.title = new Text('Credits', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
     this.title.x = 0;
     this.title.y = -96;
     this.title.anchor.set(0.5, 0.5);
     this.panel.addChild(this.title);
 
-    this.addStartButton(this.panel);
 
-    this.addCreditsButton(this.panel);
+    this.addText(this.panel, 'Idee & Programmierung', 14, -60);
+    this.addText(this.panel, 'Thomas Renger', 12, -40);
+    this.addText(this.panel, 'Grafiken', 14, -10);
+    this.addText(this.panel, 'Kenney (www.kenney.nl)', 12, 10);
+
+    this.addCloseButton(this.panel);
   }
 
-  /** Present the popup, animated */
   public async show() {
     gsap.killTweensOf(this.background);
     gsap.killTweensOf(this.panel.pivot);
@@ -49,7 +52,6 @@ export class NavigationPopup extends Container {
     await gsap.to(this.panel.pivot, { y: 0, duration: 0.3, ease: 'back.out' });
   }
 
-  /** Dismiss the popup, animated */
   public async hide() {
     gsap.killTweensOf(this.background);
     gsap.killTweensOf(this.panel.pivot);
@@ -64,33 +66,30 @@ export class NavigationPopup extends Container {
     this.panel.y = height * 0.5;
   }
 
-  private addStartButton(panel: Sprite): void {
-    const startButton = new Button(Sprite.from('assets/ui/yellow_button00.png'));
-    startButton.view.width = 190;
-    startButton.view.height = 49;
-    startButton.view.y = -50;
-    startButton.view.x = -95;
-    const text = new Text('Spiel starten!', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
-    text.anchor.set(0.5, 0.5);
-    text.x = 100;
-    text.y = 20;
-    startButton.view.addChild(text);
-    startButton.onPress.connect(() => this.gameService.start(this));
-    panel.addChild(startButton.view);
-  }
-
-  private addCreditsButton(panel: Sprite) {
+  private addCloseButton(panel: Sprite) {
     const creditButton = new Button(Sprite.from('assets/ui/yellow_button00.png'));
     creditButton.view.width = 190;
     creditButton.view.height = 49;
-    creditButton.view.y = 10;
+    creditButton.view.y = 55;
     creditButton.view.x = -95;
-    const text = new Text('Credits', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    const text = new Text('Schließen', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
     text.anchor.set(0.5, 0.5);
     text.x = 100;
     text.y = 20;
     creditButton.view.addChild(text);
-    creditButton.onPress.connect(() => this.gameService.credits(this));
+    creditButton.onPress.connect(() => this.gameService.navigation(this));
     panel.addChild(creditButton.view);
+  }
+
+  addText(panel: Sprite, content: string, size: number, positionY: number): void {
+    const text = new Text(content, {
+      fontFamily: 'DefaultFont',
+      dropShadowColor: '000000',
+      fontSize: size,
+    });
+    text.x = 0;
+    text.y = positionY;
+    text.anchor.set(0.5, 0.5);
+    panel.addChild(text);
   }
 }
