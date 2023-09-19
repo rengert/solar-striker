@@ -32,12 +32,6 @@ export abstract class Popup extends Container {
     this.title.y = -96;
     this.title.anchor.set(0.5, 0.5);
     this.panel.addChild(this.title);
-
-
-    this.addText(this.panel, 'Idee & Programmierung', 14, -60);
-    this.addText(this.panel, 'Thomas Renger', 12, -40);
-    this.addText(this.panel, 'Grafiken', 14, -10);
-    this.addText(this.panel, 'Kenney (www.kenney.nl)', 12, 10);
   }
 
   async show() {
