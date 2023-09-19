@@ -67,30 +67,30 @@ export class GameService {
 
   private hitEnemy(): void {
     this.shots.forEach(shot => {
-      const enemy = this.enemies.find(enemy => enemy.collidate(shot));
-      if (enemy) {
-        enemy.destroyed = true;
+      const collidedEnemy = this.enemies.find(enemy => enemy.collide(shot));
+      if (collidedEnemy) {
+        collidedEnemy.destroyed = true;
         shot.destroyed = true;
         this.kills++;
-        this.spawnCollectable(enemy);
+        this.spawnCollectable(collidedEnemy);
       }
     });
     this.shots = this.shots.filter(shot => !shot.destroyed && (shot.y > 0));
   }
 
   private hitShip(): void {
-    const enemy = this.enemies.find(enemy => !enemy.destroyed && enemy.collidate(this.player));
-    if (enemy) {
-      enemy.destroyed = true;
+    const collidedEnemy = this.enemies.find(enemy => !enemy.destroyed && enemy.collide(this.player));
+    if (collidedEnemy) {
+      collidedEnemy.destroyed = true;
       this.deaths++;
     }
     this.enemies = this.enemies.filter(enemy => !enemy.destroyed && enemy.y < 2000);
   }
 
   private collect(): void {
-    const collectable = this.collectable.find(collectable => !collectable.destroyed && collectable.collidate(this.player));
-    if (collectable) {
-      collectable.destroyed = true;
+    const collidedCollectable = this.collectable.find(collectable => !collectable.destroyed && collectable.collide(this.player));
+    if (collidedCollectable) {
+      collidedCollectable.destroyed = true;
       this.player.weapon = (this.player.weapon + 1) % Weapon.Auto;
     }
     this.collectable = this.collectable.filter(collectable => !collectable.destroyed && collectable.y < 2000);

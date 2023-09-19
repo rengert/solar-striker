@@ -4,5 +4,5 @@ export interface LocatedObject {
   width: number,
   height: number,
   update: () => void,
-  collidate: (item: LocatedObject) => boolean
+  collide: (item: LocatedObject) => boolean
 }

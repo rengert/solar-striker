@@ -17,7 +17,7 @@ export class ShotObject implements LocatedObject {
     this.y -= 2;
   }
 
-  collidate(item: LocatedObject): boolean {
+  collide(item: LocatedObject): boolean {
     return (item.x <= this.x && (item.x - 20) >= this.x)
       && (item.y <= this.y && (item.y - 20) >= this.y);
   }
