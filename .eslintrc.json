@@ -47,6 +47,7 @@
         "no-shadow": "off",
         "@typescript-eslint/no-shadow": "error",
         "@typescript-eslint/no-unnecessary-condition": "error",
+        "require-await": "off",
         "@typescript-eslint/require-await": "error",
         "@angular-eslint/directive-selector": [
           "error",
