@@ -91,7 +91,7 @@ export class GameService {
     const collidedCollectable = this.collectable.find(collectable => !collectable.destroyed && collectable.collide(this.player));
     if (collidedCollectable) {
       collidedCollectable.destroyed = true;
-      this.player.weapon = (this.player.weapon + 1) % Weapon.Auto;
+      this.player.weapon = (this.player.weapon + 1) % Weapon.auto;
     }
     this.collectable = this.collectable.filter(collectable => !collectable.destroyed && collectable.y < 2000);
   }

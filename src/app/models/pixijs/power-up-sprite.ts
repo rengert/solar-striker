@@ -2,12 +2,12 @@ import { FrameObject, Texture } from 'pixi.js';
 import { GameSprite } from './game-sprite';
 
 export enum PowerUp {
-  Speed,
-  Shot,
+  speed,
+  shot,
 }
 
 export class PowerUpSprite extends GameSprite {
-  readonly type: PowerUp = PowerUp.Speed;
+  readonly type: PowerUp = PowerUp.speed;
 
   constructor(speed: number, textures: Texture[] | FrameObject[], type: PowerUp) {
     super(speed, textures);
