@@ -23,6 +23,10 @@
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
+        "eqeqeq": [
+          "error",
+          "always"
+        ],
         "function-name/starts-with-verb": [
           "error",
           {
