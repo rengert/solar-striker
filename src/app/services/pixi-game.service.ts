@@ -4,6 +4,7 @@ import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { GameSprite } from '../models/pixijs/game-sprite';
+import { CreditsPopup } from '../popups/credits-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { PixiGameEnemyService } from './pixi-game-enemy.service';
@@ -11,11 +12,14 @@ import { PixiGameLandscapeService } from './pixi-game-landscape.service';
 import { PixiGameScreenService } from './pixi-game-screen.service';
 import { PixiGameShipService } from './pixi-game-ship.service';
 
-function handleMouseMove(event: { data: { originalEvent: PointerEvent | TouchEvent } }, ship: GameSprite): void {
+function handleMouseMove(event: {
+  data: { originalEvent: PointerEvent | TouchEvent }
+}, ship: GameSprite | undefined): void {
   if (!ship || ship.destroyed) {
     return;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   ship.x = (event.data.originalEvent as PointerEvent).clientX
     ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
 }
@@ -118,7 +122,7 @@ export class PixiGameService {
     );
   }
 
-  private async presentPopup(ctor: AppScreenConstructor) {
+  private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
     if (this.currentPopup) {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
@@ -127,7 +131,7 @@ export class PixiGameService {
     await this.addAndShowScreen(this.currentPopup);
   }
 
-  private async hideAndRemoveScreen(screen: AppScreen) {
+  private async hideAndRemoveScreen(screen: AppScreen): Promise<void> {
     screen.interactiveChildren = false;
     if (screen.hide) {
       await screen.hide();
@@ -137,21 +141,15 @@ export class PixiGameService {
       this.app.ticker.remove(screen.update, screen);
     }
 
-    if (screen.parent) {
-      screen.parent.removeChild(screen);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    screen.parent?.removeChild(screen);
 
     if (screen.reset) {
       screen.reset();
     }
   }
 
-  private async addAndShowScreen(screen: AppScreen) {
-    // Add navigation container to stage if it does not have a parent yet
-    //if (!this.container.parent) {
-    //this.app.stage.addChild(this.container);
-    //}
-
+  private async addAndShowScreen(screen: AppScreen): Promise<void> {
     // Add screen to stage
     this.app.stage.addChild(screen);
 
@@ -180,5 +178,15 @@ export class PixiGameService {
   async start(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     this.started = true;
+  }
+
+  async openCredits(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(CreditsPopup);
+  }
+
+  async openNavigation(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(NavigationPopup);
   }
 }

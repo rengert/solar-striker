@@ -14,13 +14,46 @@
         ],
         "createDefaultProgram": true
       },
+      "plugins": [
+        "function-name"
+      ],
       "extends": [
         "plugin:@typescript-eslint/recommended",
         "plugin:@angular-eslint/recommended",
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
+        "eqeqeq": [
+          "error",
+          "always"
+        ],
+        "function-name/starts-with-verb": [
+          "error",
+          {
+            "whitelist": [
+              "ng",
+              "spawn",
+              "hit",
+              "shot",
+              "collide",
+              "resize"
+            ]
+          }
+        ],
+        "max-params": [
+          "error",
+          4
+        ],
         "@typescript-eslint/await-thenable": "error",
+        "@typescript-eslint/explicit-function-return-type": "error",
+        "@typescript-eslint/naming-convention": "error",
+        "@typescript-eslint/no-explicit-any": 0,
+        "@typescript-eslint/no-floating-promises": "error",
+        "no-nested-ternary": "error",
+        "no-shadow": "off",
+        "@typescript-eslint/no-shadow": "error",
+        "@typescript-eslint/no-unnecessary-condition": "error",
+        "require-await": "off",
         "@typescript-eslint/require-await": "error",
         "@angular-eslint/directive-selector": [
           "error",

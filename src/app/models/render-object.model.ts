@@ -20,7 +20,7 @@ export class RenderObject implements LocatedObject {
     this.y += 0.25;
   }
 
-  collidate(item: LocatedObject): boolean {
+  collide(item: LocatedObject): boolean {
     const small = item.width < this.width ? item : this;
     const large = item.width >= this.width ? item : this;
 

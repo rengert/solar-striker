@@ -21,7 +21,7 @@ export class SoundService {
     const promises = [data1, data2].map(
       (data, index) => new Promise<void>((resolve) => {
         setTimeout(() => {
-          this.playStringsAsSound(data.split(' '), types[index]);
+          void this.playStringsAsSound(data.split(' '), types[index]);
           resolve();
         }, index * delay);
       }),

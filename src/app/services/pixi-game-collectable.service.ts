@@ -24,8 +24,8 @@ export class PixiGameCollectableService {
     if (rand > 0.1) {
       return;
     }
-    const type = Math.random() > 0.5 ? PowerUp.Speed : PowerUp.Shot;
-    const texture = (type === PowerUp.Speed)
+    const type = Math.random() > 0.5 ? PowerUp.speed : PowerUp.shot;
+    const texture = (type === PowerUp.speed)
       ? this.powerUpSpeedTexture
       : this.powerUpPowerTexture;
     const powerUp = new PowerUpSprite(1, texture, type);
@@ -38,17 +38,17 @@ export class PixiGameCollectableService {
     this.collectables.push(powerUp);
   }
 
-  collect(ship: Ship): void {
+  collect(ship: Ship | undefined): void {
     if (!ship || ship.destroyed) {
       return;
     }
 
     const powerUp = this.collectables.find(collectable => !collectable.destroyed && ship.hit(collectable));
     if (powerUp) {
-      if (powerUp.type === PowerUp.Speed) {
+      if (powerUp.type === PowerUp.speed) {
         ship.shotSpeed += 0.1;
       }
-      if (powerUp.type === PowerUp.Shot) {
+      if (powerUp.type === PowerUp.shot) {
         ship.shotPower++;
       }
       powerUp.destroy();

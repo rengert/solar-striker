@@ -47,20 +47,20 @@ export class PixiGameEnemyService {
   hit(shots: GameSprite[]): number {
     let result = 0;
     for (const shot of shots) {
-      const enemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
-      if (enemy) {
+      const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
+      if (hitEnemy) {
         // explode
         const explosion = new AnimatedSprite(this.explosionSprite.animations['explosion']);
         explosion.animationSpeed = 0.167;
         explosion.loop = false;
-        explosion.x = enemy.x;
-        explosion.y = enemy.y;
-        explosion.onComplete = () => {
+        explosion.x = hitEnemy.x;
+        explosion.y = hitEnemy.y;
+        explosion.onComplete = (): void => {
           void this.collectables.spawn(explosion.x, explosion.y);
           explosion.destroy();
         };
         this.app.stage.addChild(explosion);
-        enemy.destroy();
+        hitEnemy.destroy();
         shot.destroy();
         explosion.play();
         result++;
@@ -70,23 +70,23 @@ export class PixiGameEnemyService {
     return result;
   }
 
-  kill(ship: GameSprite): boolean {
+  kill(ship: GameSprite | undefined): boolean {
     if (!ship || ship.destroyed) {
       return false;
     }
 
-    const enemy = this.enemies.find(enemy => !enemy.destroyed && ship.hit(enemy));
-    if (enemy) {
+    const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && ship.hit(enemy));
+    if (hitEnemy) {
       const explosion = new AnimatedSprite(this.explosionSprite.animations['explosion']);
       explosion.animationSpeed = 0.167;
       explosion.loop = false;
-      explosion.x = enemy.x;
-      explosion.y = enemy.y;
-      explosion.onComplete = () => {
+      explosion.x = hitEnemy.x;
+      explosion.y = hitEnemy.y;
+      explosion.onComplete = (): void => {
         explosion.destroy();
       };
       this.app.stage.addChild(explosion);
-      enemy.destroy();
+      hitEnemy.destroy();
       explosion.play();
       return true;
     }
