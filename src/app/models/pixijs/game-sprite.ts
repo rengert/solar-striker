@@ -12,7 +12,7 @@ export class GameSprite extends AnimatedSprite {
     this.speed = speed;
   }
 
-  override update(delta: number) {
+  override update(delta: number): void {
     super.update(delta);
 
     this.y += delta * this.speed;

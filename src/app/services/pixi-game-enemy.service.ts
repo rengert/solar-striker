@@ -55,7 +55,7 @@ export class PixiGameEnemyService {
         explosion.loop = false;
         explosion.x = enemy.x;
         explosion.y = enemy.y;
-        explosion.onComplete = () => {
+        explosion.onComplete = (): void => {
           void this.collectables.spawn(explosion.x, explosion.y);
           explosion.destroy();
         };
@@ -82,7 +82,7 @@ export class PixiGameEnemyService {
       explosion.loop = false;
       explosion.x = enemy.x;
       explosion.y = enemy.y;
-      explosion.onComplete = () => {
+      explosion.onComplete = (): void => {
         explosion.destroy();
       };
       this.app.stage.addChild(explosion);

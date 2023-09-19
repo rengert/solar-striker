@@ -119,7 +119,7 @@ export class PixiGameService {
     );
   }
 
-  private async presentPopup(ctor: AppScreenConstructor) {
+  private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
     if (this.currentPopup) {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
@@ -128,7 +128,7 @@ export class PixiGameService {
     await this.addAndShowScreen(this.currentPopup);
   }
 
-  private async hideAndRemoveScreen(screen: AppScreen) {
+  private async hideAndRemoveScreen(screen: AppScreen): Promise<void> {
     screen.interactiveChildren = false;
     if (screen.hide) {
       await screen.hide();
@@ -147,12 +147,7 @@ export class PixiGameService {
     }
   }
 
-  private async addAndShowScreen(screen: AppScreen) {
-    // Add navigation container to stage if it does not have a parent yet
-    //if (!this.container.parent) {
-    //this.app.stage.addChild(this.container);
-    //}
-
+  private async addAndShowScreen(screen: AppScreen): Promise<void> {
     // Add screen to stage
     this.app.stage.addChild(screen);
 

@@ -15,7 +15,7 @@ export class CreditsPopup extends Popup {
     this.addCloseButton(this.panel);
   }
 
-  private addCloseButton(panel: Sprite) {
+  private addCloseButton(panel: Sprite): void {
     const creditButton = new Button(Sprite.from('assets/ui/yellow_button00.png'));
     creditButton.view.width = 190;
     creditButton.view.height = 49;

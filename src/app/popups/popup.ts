@@ -34,7 +34,7 @@ export abstract class Popup extends Container {
     this.panel.addChild(this.title);
   }
 
-  async show() {
+  async show(): Promise<void> {
     gsap.killTweensOf(this.background);
     gsap.killTweensOf(this.panel.pivot);
     this.background.alpha = 0;
@@ -43,14 +43,14 @@ export abstract class Popup extends Container {
     await gsap.to(this.panel.pivot, { y: 0, duration: 0.3, ease: 'back.out' });
   }
 
-  async hide() {
+  async hide(): Promise<void> {
     gsap.killTweensOf(this.background);
     gsap.killTweensOf(this.panel.pivot);
     gsap.to(this.background, { alpha: 0, duration: 0.2, ease: 'linear' });
     await gsap.to(this.panel.pivot, { y: -500, duration: 0.3, ease: 'back.in' });
   }
 
-  resize(width: number, height: number) {
+  resize(width: number, height: number): void {
     this.background.width = width;
     this.background.height = height;
     this.panel.x = width * 0.5;

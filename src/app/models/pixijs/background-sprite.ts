@@ -15,7 +15,7 @@ export class BackgroundSprite extends TilingSprite {
     this.speedTilepositionX = speedTilepositionX;
   }
 
-  update(delta: number) {
+  update(delta: number): void {
     this.tilePosition.y += delta * this.speedTilepositionY;
     this.tilePosition.x += delta * this.speedTilepositionX;
 

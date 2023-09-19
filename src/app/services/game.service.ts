@@ -51,11 +51,11 @@ export class GameService {
     this.player.shot();
   }
 
-  private spawnCollectable(enemy: RenderObject) {
+  private spawnCollectable(enemy: RenderObject): void {
     this.collectable.push(new Collectable(enemy.x, enemy.y, 16, 16));
   }
 
-  private spawnEnemy(position: number) {
+  private spawnEnemy(position: number): void {
     this.enemies.push(new RenderObject(position, 0, 32, 16));
   }
 
@@ -87,7 +87,7 @@ export class GameService {
     this.enemies = this.enemies.filter(enemy => !enemy.destroyed && enemy.y < 2000);
   }
 
-  private collect() {
+  private collect(): void {
     const collectable = this.collectable.find(collectable => !collectable.destroyed && collectable.collidate(this.player));
     if (collectable) {
       collectable.destroyed = true;

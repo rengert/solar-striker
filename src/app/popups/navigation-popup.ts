@@ -27,7 +27,7 @@ export class NavigationPopup extends Popup {
     panel.addChild(startButton.view);
   }
 
-  private addCreditsButton(panel: Sprite) {
+  private addCreditsButton(panel: Sprite): void {
     const creditButton = new Button(Sprite.from('assets/ui/yellow_button00.png'));
     creditButton.view.width = 190;
     creditButton.view.height = 49;
