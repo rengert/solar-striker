@@ -7,10 +7,9 @@ export class NavigationPopup extends Container {
   private readonly background: Sprite;
   private readonly panel: Sprite;
   private readonly title: Text;
-  private readonly startButton: Button;
   private readonly panelBase: Container;
 
-  constructor(gameService: PixiGameService) {
+  constructor(private readonly gameService: PixiGameService) {
     super();
 
     this.background = Sprite.from(Texture.WHITE);
@@ -35,18 +34,7 @@ export class NavigationPopup extends Container {
     this.title.anchor.set(0.5, 0.5);
     this.panel.addChild(this.title);
 
-    this.startButton = new Button(Sprite.from('assets/ui/yellow_button00.png'));
-    this.startButton.view.width = 190;
-    this.startButton.view.height = 49;
-    this.startButton.view.y = -50;
-    this.startButton.view.x = -95;
-    const text = new Text('Spiel starten!', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
-    text.anchor.set(0.5, 0.5);
-    text.x = 100;
-    text.y = 20;
-    this.startButton.view.addChild(text);
-    this.startButton.onPress.connect(() => gameService.start(this));
-    this.panel.addChild(this.startButton.view);
+    this.addStartButton(this.panel);
   }
 
   /** Present the popup, animated */
@@ -72,5 +60,20 @@ export class NavigationPopup extends Container {
     this.background.height = height;
     this.panel.x = width * 0.5;
     this.panel.y = height * 0.5;
+  }
+
+  private addStartButton(panel: Sprite): void {
+    const startButton = new Button(Sprite.from('assets/ui/yellow_button00.png'));
+    startButton.view.width = 190;
+    startButton.view.height = 49;
+    startButton.view.y = -50;
+    startButton.view.x = -95;
+    const text = new Text('Spiel starten!', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    text.anchor.set(0.5, 0.5);
+    text.x = 100;
+    text.y = 20;
+    startButton.view.addChild(text);
+    startButton.onPress.connect(() => this.gameService.start(this));
+    panel.addChild(startButton.view);
   }
 }
