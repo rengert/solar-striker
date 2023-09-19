@@ -38,7 +38,7 @@ export class NavigationPopup extends Popup {
     text.x = 100;
     text.y = 20;
     creditButton.view.addChild(text);
-    creditButton.onPress.connect(() => this.gameService.credits(this));
+    creditButton.onPress.connect(() => this.gameService.openCredits(this));
     panel.addChild(creditButton.view);
   }
 }

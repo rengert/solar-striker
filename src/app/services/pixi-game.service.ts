@@ -180,12 +180,12 @@ export class PixiGameService {
     this.started = true;
   }
 
-  async credits(requester: AppScreen): Promise<void> {
+  async openCredits(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(CreditsPopup);
   }
 
-  async navigation(requester: AppScreen): Promise<void> {
+  async openNavigation(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(NavigationPopup);
   }
