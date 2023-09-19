@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'net.bolzplatzarena.solarstriker',
   appName: 'Solar Striker',
   webDir: 'dist/solar-striker',
-  bundledWebRuntime: false,
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,

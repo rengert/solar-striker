@@ -18,13 +18,13 @@ export class PixiGameShipService {
   }
 
   async init(): Promise<void> {
-    const ship = await Assets.load<Spritesheet>('assets/ship.json');
+    const ship = await Assets.load<Spritesheet>('assets/game/ship.json');
     if (!ship) {
       throw new Error('Where is my ship?');
     }
     this.shipAnimation = ship.animations['ship'];
 
-    const laser = await Assets.load<Spritesheet>('assets/laser.json');
+    const laser = await Assets.load<Spritesheet>('assets/game/laser.json');
     if (!laser) {
       throw new Error('Where is my laser');
     }
@@ -47,7 +47,7 @@ export class PixiGameShipService {
     this.#ship.animationSpeed = 0.167;
     this.#ship.play();
     this.#ship.x = Math.floor(this.app.screen.width / 2);
-    this.#ship.y = this.app.screen.height - 40;
+    this.#ship.y = this.app.screen.height - 100;
     this.app.stage.addChild(this.#ship);
   }
 

@@ -20,6 +20,8 @@
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
+        "@typescript-eslint/await-thenable": "error",
+        "@typescript-eslint/require-await": "error",
         "@angular-eslint/directive-selector": [
           "error",
           {
