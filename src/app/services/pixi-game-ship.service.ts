@@ -56,9 +56,9 @@ export class PixiGameShipService {
       shot.animationSpeed = 0.167;
       shot.play();
       shot.anchor.set(0.5);
-      if ((power === 1) || (power === 3 && i == 2)) {
+      if ((power === 1) || (power === 3 && i === 2)) {
         shot.x = this.#ship.x;
-      } else if (power > 1 && i == 1) {
+      } else if (power > 1 && i === 1) {
         shot.x = this.#ship.x - 5;
       } else {
         shot.x = this.#ship.x + 5;
