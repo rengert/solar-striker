@@ -16,7 +16,7 @@ interface GameConfig extends Config {
 
 export const GAME_CONFIG: GameConfig = {
   enemy: {
-    autoSpawnSpeed: 0.35, // per second
+    autoSpawnSpeed: 1.35, // per second
   },
   ship: {
     shotSpeed: 3, // speed in pixel

@@ -6,6 +6,7 @@ import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { CreditsPopup } from '../popups/credits-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
+import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { PixiGameCollectableService } from './pixi-game-collectable.service';
 import { PixiGameEnemyService } from './pixi-game-enemy.service';
 import { PixiGameLandscapeService } from './pixi-game-landscape.service';
@@ -98,9 +99,9 @@ export class PixiGameService {
       if (enemy.kill(ship.instance)) {
         this.lifes.next(this.lifes.value - 1);
         if (this.lifes.value === 0) {
-          alert('you are dead!');
+          void this.presentPopup(YouAreDeadPopup);
           ship.instance.destroy();
-          location.reload();
+          this.started = false;
         }
       }
       collectables.collect(ship.instance);
@@ -188,5 +189,10 @@ export class PixiGameService {
   async openNavigation(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(NavigationPopup);
+  }
+
+  async endGame(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    window.location.reload();
   }
 }
