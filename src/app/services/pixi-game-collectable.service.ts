@@ -1,22 +1,24 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
-import { PowerUp, PowerUpSprite } from '../models/pixijs/power-up-sprite';
+import { constants } from '../constants';
+import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
+
+interface Dictionary<T> {
+  [key: string]: T;
+}
 
 export class PixiGameCollectableService {
   private collectables: PowerUpSprite[] = [];
-
-  private powerUpSpeedTexture!: Texture[];
-  private powerUpPowerTexture!: Texture[];
+  private readonly animations: Dictionary<Texture[]> = {};
 
   constructor(private readonly app: Application) {
   }
 
   async init(): Promise<void> {
-    const powerUp1 = await Assets.load<Spritesheet>('assets/game/power-up-1.json');
-    this.powerUpSpeedTexture = powerUp1.animations['power-up-1'];
-
-    const powerUp2 = await Assets.load<Spritesheet>('assets/game/power-up-2.json');
-    this.powerUpPowerTexture = powerUp2.animations['power-up-2'];
+    for (const config of constants.powerUpConfig) {
+      const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
+      this.animations[config.type] = powerUp.animations[config.animationName];
+    }
   }
 
   spawn(x: number, y: number): void {
@@ -24,10 +26,9 @@ export class PixiGameCollectableService {
     if (rand > 0.1) {
       return;
     }
-    const type = Math.random() > 0.5 ? PowerUp.speed : PowerUp.shot;
-    const texture = (type === PowerUp.speed)
-      ? this.powerUpSpeedTexture
-      : this.powerUpPowerTexture;
+    const value = Math.floor(Math.random() * constants.powerUpConfig.length);
+    const type = constants.powerUpConfig[value];
+    const texture = this.animations[type.type];
     const powerUp = new PowerUpSprite(1, texture, type);
     powerUp.animationSpeed = 0.167;
     powerUp.play();
@@ -45,12 +46,8 @@ export class PixiGameCollectableService {
 
     const powerUp = this.collectables.find(collectable => !collectable.destroyed && ship.hit(collectable));
     if (powerUp) {
-      if (powerUp.type === PowerUp.speed) {
-        ship.shotSpeed += 0.1;
-      }
-      if (powerUp.type === PowerUp.shot) {
-        ship.shotPower++;
-      }
+      ship.shotSpeed += powerUp.config.powerUp.speed;
+      ship.shotPower += powerUp.config.powerUp.shot;
       powerUp.destroy();
       this.collectables = this.collectables.filter(collectable => !collectable.destroyed);
     }

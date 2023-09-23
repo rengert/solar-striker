@@ -1,4 +1,5 @@
 import { FrameObject, Texture } from 'pixi.js';
+import { PowerUpConfig } from '../power-up-config.model';
 import { GameSprite } from './game-sprite';
 
 export enum PowerUp {
@@ -7,11 +8,11 @@ export enum PowerUp {
 }
 
 export class PowerUpSprite extends GameSprite {
-  readonly type: PowerUp = PowerUp.speed;
+  readonly config: PowerUpConfig;
 
-  constructor(speed: number, textures: Texture[] | FrameObject[], type: PowerUp) {
+  constructor(speed: number, textures: Texture[] | FrameObject[], config: PowerUpConfig) {
     super(speed, textures);
 
-    this.type = type;
+    this.config = config;
   }
 }
