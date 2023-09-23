@@ -75,7 +75,7 @@ export abstract class Popup extends Container {
     button.view.width = 190;
     button.view.height = 49;
     button.view.x = -95;
-    button.view.y = -50 + index * 60;
+    button.view.y = -65 + index * 60;
 
     const text = new Text(textContent, { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
     text.anchor.set(0.5, 0.5);
