@@ -1,6 +1,6 @@
 import { GameSprite } from './game-sprite';
 
 export class Ship extends GameSprite {
-  shotPower = 1;
-  shotSpeed = 2;
+  shotPower = 3;
+  shotSpeed = 1;
 }

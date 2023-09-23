@@ -1,7 +1,7 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
-import { constants } from '../constants';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
+import { GAME_CONFIG } from './pixi-game-constants';
 
 interface Dictionary<T> {
   [key: string]: T;
@@ -15,7 +15,7 @@ export class PixiGameCollectableService {
   }
 
   async init(): Promise<void> {
-    for (const config of constants.powerUpConfig) {
+    for (const config of GAME_CONFIG.powerUpConfig) {
       const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
       this.animations[config.type] = powerUp.animations[config.animationName];
     }
@@ -26,8 +26,8 @@ export class PixiGameCollectableService {
     if (rand > 0.1) {
       return;
     }
-    const value = Math.floor(Math.random() * constants.powerUpConfig.length);
-    const type = constants.powerUpConfig[value];
+    const value = Math.floor(Math.random() * GAME_CONFIG.powerUpConfig.length);
+    const type = GAME_CONFIG.powerUpConfig[value];
     const texture = this.animations[type.type];
     const powerUp = new PowerUpSprite(1, texture, type);
     powerUp.animationSpeed = 0.167;

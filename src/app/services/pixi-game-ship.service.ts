@@ -1,6 +1,7 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { Ship } from '../models/pixijs/ship';
+import { GAME_CONFIG } from './pixi-game-constants';
 
 export class PixiGameShipService {
   autoFire = false;
@@ -52,7 +53,7 @@ export class PixiGameShipService {
 
     const power = Math.min(this.instance.shotPower, 3);
     for (let i = 1; i <= power; i++) {
-      const shot = new GameSprite(-this.#ship.shotSpeed, this.laserAnimation);
+      const shot = new GameSprite(-GAME_CONFIG.ship.shotSpeed, this.laserAnimation);
       shot.animationSpeed = 0.167;
       shot.play();
       shot.anchor.set(0.5);
@@ -60,11 +61,11 @@ export class PixiGameShipService {
         shot.x = this.#ship.x;
         shot.y = this.#ship.y - 45;
       } else if (power > 1 && i === 1) {
-        shot.x = this.#ship.x - 5;
-        shot.y = this.#ship.y - 25;
+        shot.x = this.#ship.x - 45;
+        shot.y = this.#ship.y - 12;
       } else {
-        shot.x = this.#ship.x + 5;
-        shot.y = this.#ship.y - 25;
+        shot.x = this.#ship.x + 45;
+        shot.y = this.#ship.y - 12;
       }
 
       this.#shots.push(shot);
