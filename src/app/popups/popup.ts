@@ -1,3 +1,4 @@
+import { Button } from '@pixi/ui';
 import gsap from 'gsap';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
@@ -67,5 +68,22 @@ export abstract class Popup extends Container {
     text.y = positionY;
     text.anchor.set(0.5, 0.5);
     panel.addChild(text);
+  }
+
+  protected addButton(textContent: string, callback: () => void, index: number, panel: Sprite): void {
+    const button = new Button(Sprite.from('assets/ui/yellow_button00.png'));
+    button.view.width = 190;
+    button.view.height = 49;
+    button.view.x = -95;
+    button.view.y = -50 + index * 60;
+
+    const text = new Text(textContent, { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    text.anchor.set(0.5, 0.5);
+    text.x = 100;
+    text.y = 20;
+    button.view.addChild(text);
+
+    button.onPress.connect(callback);
+    panel.addChild(button.view);
   }
 }
