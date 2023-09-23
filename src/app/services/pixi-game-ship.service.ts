@@ -18,7 +18,7 @@ export class PixiGameShipService {
   }
 
   async init(): Promise<void> {
-    const ship = await Assets.load<Spritesheet>('assets/game/ship.json');
+    const ship = await Assets.load<Spritesheet>('assets/game/ship/ship_blue.json');
     this.shipAnimation = ship.animations['ship'];
 
     const laser = await Assets.load<Spritesheet>('assets/game/laser.json');
@@ -58,13 +58,15 @@ export class PixiGameShipService {
       shot.anchor.set(0.5);
       if ((power === 1) || (power === 3 && i === 2)) {
         shot.x = this.#ship.x;
+        shot.y = this.#ship.y - 45;
       } else if (power > 1 && i === 1) {
         shot.x = this.#ship.x - 5;
+        shot.y = this.#ship.y - 25;
       } else {
         shot.x = this.#ship.x + 5;
+        shot.y = this.#ship.y - 25;
       }
 
-      shot.y = this.#ship.y;
       this.#shots.push(shot);
       this.app.stage.addChild(shot);
     }
