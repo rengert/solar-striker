@@ -1,5 +1,5 @@
-import { PowerUp } from '../models/pixijs/power-up-sprite';
-import { PowerUpConfig } from '../models/power-up-config.model';
+import { PowerUp } from './models/pixijs/power-up-sprite';
+import { PowerUpConfig } from './models/power-up-config.model';
 
 interface Config {
   powerUpConfig: PowerUpConfig[];

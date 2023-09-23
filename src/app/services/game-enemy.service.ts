@@ -1,7 +1,7 @@
 import { AnimatedSprite, Application, Assets, Spritesheet } from 'pixi.js';
+import { GAME_CONFIG } from '../game-constants';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { GameCollectableService } from './game-collectable.service';
-import { GAME_CONFIG } from './game-constants';
 
 export class GameEnemyService {
   #enemies: GameSprite[] = [];

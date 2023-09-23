@@ -1,7 +1,7 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { GAME_CONFIG } from '../game-constants';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
-import { GAME_CONFIG } from './game-constants';
 
 interface Dictionary<T> {
   [key: string]: T;
