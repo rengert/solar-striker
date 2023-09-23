@@ -5,6 +5,7 @@ import { tap } from 'rxjs/operators';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { CreditsPopup } from '../popups/credits-popup';
+import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { GameCollectableService } from './game-collectable.service';
@@ -200,5 +201,10 @@ export class GameService {
   async endGame(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     window.location.reload();
+  }
+
+  async openHighscore(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(HighscorePopup);
   }
 }

@@ -102,6 +102,10 @@ export class StorageService {
     database.createObjectStore(Store.games, { keyPath: 'id' });
   }
 
+  getHighscore(): Promise<{ date: string, kills: number; level: number }[]> {
+    return this.getManyFromStore(Store.games, () => true);
+  }
+
   setHighscore(kills: number, level: number): Promise<void> {
     return this.toStore(Store.games, { id: crypto.randomUUID(), date: new Date().toISOString(), kills, level });
   }
