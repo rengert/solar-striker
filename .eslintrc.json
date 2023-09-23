@@ -36,7 +36,8 @@
               "hit",
               "shot",
               "collide",
-              "resize"
+              "resize",
+              "migrate"
             ]
           }
         ],

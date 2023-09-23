@@ -12,6 +12,7 @@ import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
+import { StorageService } from './storage.service';
 
 function handleMouseMove(event: {
   data: { originalEvent: PointerEvent | TouchEvent }
@@ -37,6 +38,9 @@ export class GameService {
   private currentPopup?: AppScreen;
 
   private started = false;
+
+  constructor(private readonly storage: StorageService) {
+  }
 
   async init(elementRef: ElementRef): Promise<void> {
     this.app = new Application({
@@ -100,6 +104,7 @@ export class GameService {
       if (enemy.kill(ship.instance)) {
         this.lifes.next(this.lifes.value - 1);
         if (this.lifes.value === 0) {
+          void this.storage.setHighscore(this.kills.value, this.level.value);
           void this.presentPopup(YouAreDeadPopup);
           ship.instance.destroy();
           this.started = false;
