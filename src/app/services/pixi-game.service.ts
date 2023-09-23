@@ -27,11 +27,12 @@ function handleMouseMove(event: {
 
 @Injectable()
 export class PixiGameService {
+  readonly kills = new BehaviorSubject(0);
+
   private app!: Application;
 
   private readonly lifes = new BehaviorSubject(3);
   private readonly level = new BehaviorSubject(1);
-  private readonly kills = new BehaviorSubject(0);
 
   private currentPopup?: AppScreen;
 
