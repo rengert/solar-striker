@@ -1,9 +1,9 @@
 import { AnimatedSprite, Application, Assets, Spritesheet } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
-import { PixiGameCollectableService } from './pixi-game-collectable.service';
-import { GAME_CONFIG } from './pixi-game-constants';
+import { GameCollectableService } from './game-collectable.service';
+import { GAME_CONFIG } from './game-constants';
 
-export class PixiGameEnemyService {
+export class GameEnemyService {
   #enemies: GameSprite[] = [];
 
   private elapsed = 0;
@@ -13,7 +13,7 @@ export class PixiGameEnemyService {
 
   constructor(
     private readonly app: Application,
-    private readonly collectables: PixiGameCollectableService,
+    private readonly collectables: GameCollectableService,
   ) {
   }
 

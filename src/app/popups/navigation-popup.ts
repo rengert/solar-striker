@@ -1,9 +1,9 @@
-import { PixiGameService } from '../services/pixi-game.service';
+import { GameService } from '../services/game.service';
 import { version } from '../version';
 import { Popup } from './popup';
 
 export class NavigationPopup extends Popup {
-  constructor(gameService: PixiGameService) {
+  constructor(gameService: GameService) {
     super('Solarstriker');
 
     this.addText(this.panel, `v. ${version.code}`, 11, 105);

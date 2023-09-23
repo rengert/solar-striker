@@ -1,6 +1,6 @@
 import { Application, Text, TextStyle } from 'pixi.js';
 
-export class PixiGameScreenService {
+export class GameScreenService {
   private readonly style = new TextStyle({
     fontFamily: 'Arial',
     fontSize: 24,

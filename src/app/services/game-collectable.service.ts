@@ -1,13 +1,13 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
-import { GAME_CONFIG } from './pixi-game-constants';
+import { GAME_CONFIG } from './game-constants';
 
 interface Dictionary<T> {
   [key: string]: T;
 }
 
-export class PixiGameCollectableService {
+export class GameCollectableService {
   private collectables: PowerUpSprite[] = [];
   private readonly animations: Dictionary<Texture[]> = {};
 

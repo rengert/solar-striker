@@ -1,9 +1,9 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { Ship } from '../models/pixijs/ship';
-import { GAME_CONFIG } from './pixi-game-constants';
+import { GAME_CONFIG } from './game-constants';
 
-export class PixiGameShipService {
+export class GameShipService {
   autoFire = false;
 
   #shots: GameSprite[] = [];
