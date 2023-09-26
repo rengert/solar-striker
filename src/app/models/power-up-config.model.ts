@@ -7,5 +7,6 @@ export interface PowerUpConfig {
   powerUp: {
     speed: number;
     shot: number;
+    energy: number;
   };
 }

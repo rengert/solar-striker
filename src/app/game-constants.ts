@@ -29,6 +29,7 @@ export const GAME_CONFIG: GameConfig = {
       powerUp: {
         speed: 0.1,
         shot: 0,
+        energy: 0,
       },
     },
     {
@@ -38,6 +39,7 @@ export const GAME_CONFIG: GameConfig = {
       powerUp: {
         speed: 0,
         shot: 1,
+        energy: 0,
       },
     },
     {
@@ -47,6 +49,7 @@ export const GAME_CONFIG: GameConfig = {
       powerUp: {
         speed: 0.1,
         shot: 0,
+        energy: 0,
       },
     },
     {
@@ -56,6 +59,7 @@ export const GAME_CONFIG: GameConfig = {
       powerUp: {
         speed: 0.1,
         shot: 0,
+        energy: 1,
       },
     },
   ],

@@ -48,6 +48,7 @@ export class GameCollectableService {
     if (powerUp) {
       ship.shotSpeed += powerUp.config.powerUp.speed;
       ship.shotPower += powerUp.config.powerUp.shot;
+      ship.energy += powerUp.config.powerUp.energy;
       powerUp.destroy();
       this.collectables = this.collectables.filter(collectable => !collectable.destroyed);
     }

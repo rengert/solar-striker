@@ -29,7 +29,7 @@ export class GameScreenService {
     const energyBarContainer = new Container();
     this.lifesLabel = new Graphics();
     this.lifesLabel.beginFill(0xff0000);
-    this.lifesLabel.drawRect(0, 0, 150, 10);
+    this.lifesLabel.drawRect(0, 0, 250, 10);
     this.lifesLabel.endFill();
     energyBarContainer.addChild(this.lifesLabel);
     this.app.stage.addChild(energyBarContainer);
@@ -49,7 +49,7 @@ export class GameScreenService {
   }
 
   set lifes(value: number) {
-    this.lifesLabel.width = value * 50;
+    this.lifesLabel.width = value * 25;
   }
 
   set level(value: number) {

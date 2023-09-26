@@ -33,7 +33,6 @@ export class GameService {
 
   private app!: Application;
 
-  private readonly lifes = new BehaviorSubject(3);
   private readonly level = new BehaviorSubject(1);
 
   private currentPopup?: AppScreen;
@@ -58,17 +57,14 @@ export class GameService {
     const ship = new GameShipService(this.app);
     await ship.init();
 
-    this.setup(landscape, collectables, enemy, ship);
+    landscape.setup();
     const gameScreen = new GameScreenService(this.app);
+    this.setup(landscape, collectables, enemy, ship, gameScreen);
     this.kills.pipe(
       distinctUntilChanged(),
       filter(value => !!value),
       tap(value => this.level.next(Math.ceil(value / 10))),
       tap(value => gameScreen.kills = value),
-    ).subscribe();
-    this.lifes.pipe(
-      distinctUntilChanged(),
-      tap(value => gameScreen.lifes = value),
     ).subscribe();
     this.level.pipe(
       distinctUntilChanged(),
@@ -80,15 +76,17 @@ export class GameService {
     await this.presentPopup(NavigationPopup);
   }
 
+  // eslint-disable-next-line max-params
   private setup(
     landscape: GameLandscapeService,
     collectables: GameCollectableService,
     enemy: GameEnemyService,
     ship: GameShipService,
+    gameScreen: GameScreenService,
   ): void {
     const app = this.app;
 
-    landscape.setup();
+
     ship.spawn();
     this.setupInteractions(ship);
 
@@ -103,14 +101,16 @@ export class GameService {
       const hits = enemy.hit(ship.shots);
       this.kills.next(this.kills.value + hits);
       if (enemy.kill(ship.instance)) {
-        this.lifes.next(this.lifes.value - 1);
-        if (this.lifes.value === 0) {
+        ship.instance.energy -= 1;
+        gameScreen.lifes = ship.instance.energy;
+        if (ship.instance.energy === 0) {
           void this.storage.setHighscore(this.kills.value, this.level.value);
           void this.presentPopup(YouAreDeadPopup);
           ship.instance.destroy();
           this.started = false;
         }
       }
+      gameScreen.lifes = ship.instance.energy;
       collectables.collect(ship.instance);
       ship.update(delta);
     });
