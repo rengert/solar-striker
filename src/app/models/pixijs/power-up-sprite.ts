@@ -4,7 +4,8 @@ import { GameSprite } from './game-sprite';
 
 export enum PowerUp {
   speed,
-  shot,
+  shotSpeed,
+  shotPower,
 }
 
 export class PowerUpSprite extends GameSprite {

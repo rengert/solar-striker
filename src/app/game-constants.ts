@@ -32,12 +32,21 @@ export const GAME_CONFIG: GameConfig = {
       },
     },
     {
-      type: PowerUp.shot,
+      type: PowerUp.shotSpeed,
       assetUrl: 'assets/game/power-up-2.json',
       animationName: 'power-up-2',
       powerUp: {
         speed: 0,
         shot: 1,
+      },
+    },
+    {
+      type: PowerUp.shotPower,
+      assetUrl: 'assets/game/powerups/bolt.json',
+      animationName: 'bolt',
+      powerUp: {
+        speed: 0.1,
+        shot: 0,
       },
     },
   ],
