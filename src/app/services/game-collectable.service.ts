@@ -23,7 +23,7 @@ export class GameCollectableService {
 
   spawn(x: number, y: number): void {
     const rand = Math.random();
-    if (rand > 0.1) {
+    if (rand > 0.2) {
       return;
     }
     const value = Math.floor(Math.random() * GAME_CONFIG.powerUpConfig.length);

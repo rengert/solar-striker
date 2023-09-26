@@ -49,5 +49,14 @@ export const GAME_CONFIG: GameConfig = {
         shot: 0,
       },
     },
+    {
+      type: PowerUp.shotPower,
+      assetUrl: 'assets/game/powerups/pill/pill.json',
+      animationName: 'pill',
+      powerUp: {
+        speed: 0.1,
+        shot: 0,
+      },
+    },
   ],
 };
