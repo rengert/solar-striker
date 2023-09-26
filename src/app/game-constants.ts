@@ -42,7 +42,7 @@ export const GAME_CONFIG: GameConfig = {
     },
     {
       type: PowerUp.shotPower,
-      assetUrl: 'assets/game/powerups/bolt.json',
+      assetUrl: 'assets/game/powerups/bolt/bolt.json',
       animationName: 'bolt',
       powerUp: {
         speed: 0.1,
