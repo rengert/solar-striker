@@ -35,12 +35,12 @@ export class GameScreenService {
     this.app.stage.addChild(energyBarContainer);
 
     this.lifesLabel.x = 5;
-    this.lifesLabel.y = 35;
+    this.lifesLabel.y = 55;
     this.app.stage.addChild(this.lifesLabel);
 
     this.levelLabel = new Text('Level: 1', this.style);
     this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
-    this.levelLabel.y = 35;
+    this.levelLabel.y = 45;
     this.app.stage.addChild(this.levelLabel);
   }
 
