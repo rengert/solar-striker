@@ -1,98 +1,210 @@
-import { Injectable } from '@angular/core';
-import { interval } from 'rxjs';
+import { ElementRef, Injectable } from '@angular/core';
+import { Application } from 'pixi.js';
+import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { Collectable } from '../models/collectable.model';
-import { RenderObject } from '../models/render-object.model';
-import { Ship, Weapon } from '../models/ship.model';
-import { ShotObject } from '../models/shot-object.model';
-import { SoundService } from './sound.service';
+import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
+import { GameSprite } from '../models/pixijs/game-sprite';
+import { CreditsPopup } from '../popups/credits-popup';
+import { HighscorePopup } from '../popups/highscore-popup';
+import { NavigationPopup } from '../popups/navigation-popup';
+import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
+import { GameCollectableService } from './game-collectable.service';
+import { GameEnemyService } from './game-enemy.service';
+import { GameLandscapeService } from './game-landscape.service';
+import { GameScreenService } from './game-screen.service';
+import { GameShipService } from './game-ship.service';
+import { StorageService } from './storage.service';
 
-const CONFIG = {
-  player: {
-    width: 64,
-  },
-};
+function handleMouseMove(event: {
+  data: { originalEvent: PointerEvent | TouchEvent }
+}, ship: GameSprite | undefined): void {
+  if (!ship || ship.destroyed) {
+    return;
+  }
 
-@Injectable({ providedIn: 'root' })
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  ship.x = (event.data.originalEvent as PointerEvent).clientX
+    ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
+}
+
+@Injectable()
 export class GameService {
-  player!: Ship;
-  enemies: RenderObject[] = [];
-  collectable: Collectable[] = [];
-  shots: ShotObject[] = [];
-  deaths = 0;
-  kills = 0;
+  readonly kills = new BehaviorSubject(0);
 
-  constructor(private readonly sound: SoundService) {
+  private app!: Application;
+
+  private readonly level = new BehaviorSubject(1);
+
+  private currentPopup?: AppScreen;
+
+  private started = false;
+
+  constructor(private readonly storage: StorageService) {
   }
 
-  init(clientWidth: number, clientHeight: number): void {
-    this.player = new Ship(200, clientHeight - CONFIG.player.width, this, this.sound);
-
-    // TODO: check if the subscription needs to be cleanup
-    interval(5).pipe(
-      tap(value => {
-        this.shots.forEach(shot => shot.update());
-        this.enemies.forEach(enemy => enemy.update());
-        this.collectable.forEach(collectable => collectable.update());
-        this.player.update();
-        this.checkHits();
-        if (value % 600 === 0) {
-          this.spawnEnemy(value % clientWidth + 16);
-        }
-      }),
-    ).subscribe();
-  }
-
-  handleMouseMove(event: MouseEvent): void {
-    this.player.move(event.clientX);
-  }
-
-  click(): void {
-    this.player.shot();
-  }
-
-  private spawnCollectable(enemy: RenderObject): void {
-    this.collectable.push(new Collectable(enemy.x, enemy.y, 16, 16));
-  }
-
-  private spawnEnemy(position: number): void {
-    this.enemies.push(new RenderObject(position, 0, 32, 16));
-  }
-
-  private checkHits(): void {
-    this.hitEnemy();
-    this.hitShip();
-    this.collect();
-  }
-
-  private hitEnemy(): void {
-    this.shots.forEach(shot => {
-      const collidedEnemy = this.enemies.find(enemy => enemy.collide(shot));
-      if (collidedEnemy) {
-        collidedEnemy.destroyed = true;
-        shot.destroyed = true;
-        this.kills++;
-        this.spawnCollectable(collidedEnemy);
-      }
+  async init(elementRef: ElementRef): Promise<void> {
+    this.app = new Application({
+      height: elementRef.nativeElement.clientHeight,
+      width: elementRef.nativeElement.clientWidth,
+      backgroundColor: 0x000000,
     });
-    this.shots = this.shots.filter(shot => !shot.destroyed && (shot.y > 0));
+
+    const collectables = new GameCollectableService(this.app);
+    await collectables.init();
+    const landscape = new GameLandscapeService(this.app);
+    const enemy = new GameEnemyService(this.app, collectables);
+    await enemy.init();
+    const ship = new GameShipService(this.app);
+    await ship.init();
+
+    landscape.setup();
+    const gameScreen = new GameScreenService(this.app);
+    this.setup(landscape, collectables, enemy, ship, gameScreen);
+    this.kills.pipe(
+      distinctUntilChanged(),
+      filter(value => !!value),
+      tap(value => this.level.next(Math.ceil(value / 10))),
+      tap(value => gameScreen.kills = value),
+    ).subscribe();
+    this.level.pipe(
+      distinctUntilChanged(),
+      tap(value => gameScreen.level = value),
+    ).subscribe();
+
+    elementRef.nativeElement.appendChild(this.app.view);
+
+    await this.presentPopup(NavigationPopup);
   }
 
-  private hitShip(): void {
-    const collidedEnemy = this.enemies.find(enemy => !enemy.destroyed && enemy.collide(this.player));
-    if (collidedEnemy) {
-      collidedEnemy.destroyed = true;
-      this.deaths++;
-    }
-    this.enemies = this.enemies.filter(enemy => !enemy.destroyed && enemy.y < 2000);
+  // eslint-disable-next-line max-params
+  private setup(
+    landscape: GameLandscapeService,
+    collectables: GameCollectableService,
+    enemy: GameEnemyService,
+    ship: GameShipService,
+    gameScreen: GameScreenService,
+  ): void {
+    const app = this.app;
+
+
+    ship.spawn();
+    this.setupInteractions(ship);
+
+    app.ticker.add(delta => {
+      if (!this.started) {
+        return;
+      }
+
+      landscape.update(delta);
+      enemy.update(delta, this.level.value);
+
+      const hits = enemy.hit(ship.shots);
+      this.kills.next(this.kills.value + hits);
+      if (enemy.kill(ship.instance)) {
+        ship.instance.energy -= 1;
+        gameScreen.lifes = ship.instance.energy;
+        if (ship.instance.energy === 0) {
+          void this.storage.setHighscore(this.kills.value, this.level.value);
+          void this.presentPopup(YouAreDeadPopup);
+          ship.instance.destroy();
+          this.started = false;
+        }
+      }
+      gameScreen.lifes = ship.instance.energy;
+      collectables.collect(ship.instance);
+      ship.update(delta);
+    });
   }
 
-  private collect(): void {
-    const collidedCollectable = this.collectable.find(collectable => !collectable.destroyed && collectable.collide(this.player));
-    if (collidedCollectable) {
-      collidedCollectable.destroyed = true;
-      this.player.weapon = (this.player.weapon + 1) % Weapon.auto;
+  private setupInteractions(ship: GameShipService): void {
+    this.app.stage.eventMode = 'dynamic';
+    this.app.stage.hitArea = this.app.screen;
+    this.app.stage.on('pointerdown', () => ship.autoFire = true);
+    this.app.stage.on('pointerup', () => ship.autoFire = false);
+    this.app.stage.on(
+      'pointermove',
+      (event: unknown) => handleMouseMove(
+        event as { data: { originalEvent: PointerEvent | TouchEvent } },
+        ship.instance,
+      ),
+    );
+  }
+
+  private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
+    if (this.currentPopup) {
+      await this.hideAndRemoveScreen(this.currentPopup);
     }
-    this.collectable = this.collectable.filter(collectable => !collectable.destroyed && collectable.y < 2000);
+
+    this.currentPopup = new ctor(this);
+    await this.addAndShowScreen(this.currentPopup);
+  }
+
+  private async hideAndRemoveScreen(screen: AppScreen): Promise<void> {
+    screen.interactiveChildren = false;
+    if (screen.hide) {
+      await screen.hide();
+    }
+
+    if (screen.update) {
+      this.app.ticker.remove(screen.update, screen);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    screen.parent?.removeChild(screen);
+
+    if (screen.reset) {
+      screen.reset();
+    }
+  }
+
+  private async addAndShowScreen(screen: AppScreen): Promise<void> {
+    // Add screen to stage
+    this.app.stage.addChild(screen);
+
+    // Setup things and pre-organise screen before showing
+    if (screen.prepare) {
+      screen.prepare();
+    }
+
+    if (screen.resize) {
+      screen.resize(this.app.screen.width, this.app.screen.height);
+    }
+
+    // Add update function if available
+    if (screen.update) {
+      this.app.ticker.add(screen.update, screen);
+    }
+
+    // Show the new screen
+    if (screen.show) {
+      screen.interactiveChildren = false;
+      await screen.show();
+      screen.interactiveChildren = true;
+    }
+  }
+
+  async start(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    this.started = true;
+  }
+
+  async openCredits(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(CreditsPopup);
+  }
+
+  async openNavigation(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(NavigationPopup);
+  }
+
+  async endGame(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    window.location.reload();
+  }
+
+  async openHighscore(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(HighscorePopup);
   }
 }

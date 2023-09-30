@@ -1,32 +1,15 @@
-import { Button } from '@pixi/ui';
-import { Sprite, Text } from 'pixi.js';
-import { PixiGameService } from '../services/pixi-game.service';
+import { GameService } from '../services/game.service';
 import { Popup } from './popup';
 
 export class CreditsPopup extends Popup {
-  constructor(private readonly gameService: PixiGameService) {
+  constructor(gameService: GameService) {
     super('Credits');
 
-    this.addText(this.panel, 'Idee & Programmierung', 14, -60);
-    this.addText(this.panel, 'Thomas Renger', 12, -40);
-    this.addText(this.panel, 'Grafiken', 14, -10);
-    this.addText(this.panel, 'Kenney (www.kenney.nl)', 12, 10);
+    this.addText(this.panel, 'Idee & Programmierung', { size: 14 }, { y: -60 });
+    this.addText(this.panel, 'Thomas Renger', { size: 12 }, { y: -40 });
+    this.addText(this.panel, 'Grafiken', { size: 14 }, { y: -10 });
+    this.addText(this.panel, 'Kenney (www.kenney.nl)', { size: 12 }, { y: 10 });
 
-    this.addCloseButton(this.panel);
-  }
-
-  private addCloseButton(panel: Sprite): void {
-    const creditButton = new Button(Sprite.from('assets/ui/yellow_button00.png'));
-    creditButton.view.width = 190;
-    creditButton.view.height = 49;
-    creditButton.view.y = 55;
-    creditButton.view.x = -95;
-    const text = new Text('Schließen', { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
-    text.anchor.set(0.5, 0.5);
-    text.x = 100;
-    text.y = 20;
-    creditButton.view.addChild(text);
-    creditButton.onPress.connect(() => this.gameService.openNavigation(this));
-    panel.addChild(creditButton.view);
+    this.addButton('Schließen!', () => gameService.openNavigation(this), 2, this.panel);
   }
 }

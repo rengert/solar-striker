@@ -1,3 +1,4 @@
+import { Button } from '@pixi/ui';
 import gsap from 'gsap';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
@@ -8,7 +9,7 @@ export abstract class Popup extends Container {
   private readonly title: Text;
   private readonly panelBase: Container;
 
-  constructor(title: string) {
+  protected constructor(title: string) {
     super();
 
     this.background = Sprite.from(Texture.WHITE);
@@ -57,15 +58,37 @@ export abstract class Popup extends Container {
     this.panel.y = height * 0.5;
   }
 
-  protected addText(panel: Sprite, content: string, size: number, positionY: number): void {
+  protected addText(
+    panel: Sprite,
+    content: string,
+    appearance: { size: number, rotated?: boolean },
+    position: { y: number; x?: number }): void {
     const text = new Text(content, {
       fontFamily: 'DefaultFont',
       dropShadowColor: '000000',
-      fontSize: size,
+      fontSize: appearance.size,
     });
-    text.x = 0;
-    text.y = positionY;
+    text.x = position.x ?? 0;
+    text.y = position.y;
     text.anchor.set(0.5, 0.5);
+    text.rotation = appearance.rotated ? -3.14 / 2 : 0;
     panel.addChild(text);
+  }
+
+  protected addButton(textContent: string, callback: () => void, index: number, panel: Sprite): void {
+    const button = new Button(Sprite.from('assets/ui/yellow_button00.png'));
+    button.view.width = 190;
+    button.view.height = 49;
+    button.view.x = -95;
+    button.view.y = -65 + index * 60;
+
+    const text = new Text(textContent, { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    text.anchor.set(0.5, 0.5);
+    text.x = 100;
+    text.y = 20;
+    button.view.addChild(text);
+
+    button.onPress.connect(callback);
+    panel.addChild(button.view);
   }
 }

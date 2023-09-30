@@ -1,8 +1,9 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { GAME_CONFIG } from '../game-constants';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { Ship } from '../models/pixijs/ship';
 
-export class PixiGameShipService {
+export class GameShipService {
   autoFire = false;
 
   #shots: GameSprite[] = [];
@@ -18,7 +19,7 @@ export class PixiGameShipService {
   }
 
   async init(): Promise<void> {
-    const ship = await Assets.load<Spritesheet>('assets/game/ship.json');
+    const ship = await Assets.load<Spritesheet>('assets/game/ship/ship_blue.json');
     this.shipAnimation = ship.animations['ship'];
 
     const laser = await Assets.load<Spritesheet>('assets/game/laser.json');
@@ -52,19 +53,21 @@ export class PixiGameShipService {
 
     const power = Math.min(this.instance.shotPower, 3);
     for (let i = 1; i <= power; i++) {
-      const shot = new GameSprite(-this.#ship.shotSpeed, this.laserAnimation);
+      const shot = new GameSprite(-GAME_CONFIG.ship.shotSpeed, this.laserAnimation);
       shot.animationSpeed = 0.167;
       shot.play();
       shot.anchor.set(0.5);
       if ((power === 1) || (power === 3 && i === 2)) {
         shot.x = this.#ship.x;
+        shot.y = this.#ship.y - 45;
       } else if (power > 1 && i === 1) {
-        shot.x = this.#ship.x - 5;
+        shot.x = this.#ship.x - 45;
+        shot.y = this.#ship.y - 12;
       } else {
-        shot.x = this.#ship.x + 5;
+        shot.x = this.#ship.x + 45;
+        shot.y = this.#ship.y - 12;
       }
 
-      shot.y = this.#ship.y;
       this.#shots.push(shot);
       this.app.stage.addChild(shot);
     }

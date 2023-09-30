@@ -1,6 +1,6 @@
-import { Application, Text, TextStyle } from 'pixi.js';
+import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
 
-export class PixiGameScreenService {
+export class GameScreenService {
   private readonly style = new TextStyle({
     fontFamily: 'Arial',
     fontSize: 24,
@@ -17,7 +17,7 @@ export class PixiGameScreenService {
     align: 'right',
   });
   private readonly points!: Text;
-  private readonly lifesLabel!: Text;
+  private readonly lifesLabel!: Graphics;
   private readonly levelLabel!: Text;
 
   constructor(private readonly app: Application) {
@@ -26,7 +26,14 @@ export class PixiGameScreenService {
     this.points.y = 65;
     this.app.stage.addChild(this.points);
 
-    this.lifesLabel = new Text('Leben: 3', this.style);
+    const energyBarContainer = new Container();
+    this.lifesLabel = new Graphics();
+    this.lifesLabel.beginFill(0xff0000);
+    this.lifesLabel.drawRect(0, 0, 250, 10);
+    this.lifesLabel.endFill();
+    energyBarContainer.addChild(this.lifesLabel);
+    this.app.stage.addChild(energyBarContainer);
+
     this.lifesLabel.x = 5;
     this.lifesLabel.y = 35;
     this.app.stage.addChild(this.lifesLabel);
@@ -42,7 +49,7 @@ export class PixiGameScreenService {
   }
 
   set lifes(value: number) {
-    this.lifesLabel.text = 'Leben: ' + value.toString();
+    this.lifesLabel.width = value * 25;
   }
 
   set level(value: number) {

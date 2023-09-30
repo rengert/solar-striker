@@ -1,7 +1,7 @@
 import { Application, Texture } from 'pixi.js';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
 
-export class PixiGameLandscapeService {
+export class GameLandscapeService {
   private readonly landscapes: BackgroundSprite[] = [];
 
   constructor(private readonly app: Application) {

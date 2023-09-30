@@ -1,0 +1,94 @@
+{
+  "frames": {
+    "gold": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 19,
+        "h": 30
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 19,
+        "h": 90
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 24
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "bronze": {
+      "frame": {
+        "x": 0,
+        "y": 30,
+        "w": 19,
+        "h": 30
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 19,
+        "h": 90
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 24
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "silver": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 19,
+        "h": 30
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 60,
+        "w": 19,
+        "h": 90
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 24
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  },
+  "animations": {
+    "bolt": [
+      "gold",
+      "bronze",
+      "silver"
+    ]
+  },
+  "meta": {
+    "app": "https://www.codeandweb.com/texturepacker",
+    "version": "1.0",
+    "image": "bolt.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 19,
+      "h": 90
+    },
+    "scale": "1"
+  }
+}

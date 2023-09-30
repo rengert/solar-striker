@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { PixiGameService } from '../../services/pixi-game.service';
+import { GameService } from '../../services/game.service';
 
 export interface AppScreen extends Container {
   show?(): Promise<void>;
@@ -24,8 +24,7 @@ export interface AppScreen extends Container {
 }
 
 export interface AppScreenConstructor {
-  new(service: PixiGameService): AppScreen;
+  new(service: GameService): AppScreen;
 
-  /** List of assets bundles required by the screen */
   assetBundles?: string[];
 }
