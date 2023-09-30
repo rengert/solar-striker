@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksolar_striker=self.webpackChunksolar_striker||[]).push([[485],{485:(t,r,e)=>{e.r(r),e.d(r,{SplashScreenWeb:()=>o});var n=e(861),s=e(726);class o extends s.Uw{show(_){return(0,n.Z)(function*(){})()}hide(_){return(0,n.Z)(function*(){})()}}}}]);
