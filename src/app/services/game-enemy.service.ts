@@ -1,4 +1,4 @@
-import { AnimatedSprite, Application, Assets, Spritesheet } from 'pixi.js';
+import { AnimatedSprite, Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { GameSprite } from '../models/pixijs/game-sprite';
 import { GameCollectableService } from './game-collectable.service';
@@ -50,7 +50,8 @@ export class GameEnemyService {
       const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (hitEnemy) {
         // explode
-        const explosion = new AnimatedSprite(this.explosionSprite.animations['explosion']);
+        const animations: Record<string, Texture[]> = this.explosionSprite.animations;
+        const explosion = new AnimatedSprite(animations['explosion']);
         explosion.animationSpeed = 0.167;
         explosion.loop = false;
         explosion.x = hitEnemy.x;
@@ -77,7 +78,8 @@ export class GameEnemyService {
 
     const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && ship.hit(enemy));
     if (hitEnemy) {
-      const explosion = new AnimatedSprite(this.explosionSprite.animations['explosion']);
+      const animations: Record<string, Texture[]> = this.explosionSprite.animations;
+      const explosion = new AnimatedSprite(animations['explosion']);
       explosion.animationSpeed = 0.167;
       explosion.loop = false;
       explosion.x = hitEnemy.x;
@@ -95,7 +97,8 @@ export class GameEnemyService {
 
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.app.screen.width - 20) + 10;
-    const enemy = new GameSprite(1 + (0.25 * (level)), this.enemySprite.animations['frame']);
+    const animations: Record<string, Texture[]> = this.enemySprite.animations;
+    const enemy = new GameSprite(1 + (0.25 * (level)), animations['frame']);
     enemy.animationSpeed = 0.167;
     enemy.play();
     enemy.anchor.set(0.5);

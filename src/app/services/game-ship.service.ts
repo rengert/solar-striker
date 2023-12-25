@@ -20,10 +20,12 @@ export class GameShipService {
 
   async init(): Promise<void> {
     const ship = await Assets.load<Spritesheet>('assets/game/ship/ship_blue.json');
-    this.shipAnimation = ship.animations['ship'];
+    const animations: Record<string, Texture[]> = ship.animations;
+    this.shipAnimation = animations['ship'];
 
     const laser = await Assets.load<Spritesheet>('assets/game/laser.json');
-    this.laserAnimation = laser.animations['laser'];
+    const laserAnimations: Record<string, Texture[]> = laser.animations;
+    this.laserAnimation = laserAnimations['laser'];
   }
 
   get instance(): Ship {
