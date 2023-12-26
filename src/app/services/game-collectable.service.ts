@@ -17,7 +17,8 @@ export class GameCollectableService {
   async init(): Promise<void> {
     for (const config of GAME_CONFIG.powerUpConfig) {
       const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
-      this.animations[config.type] = powerUp.animations[config.animationName];
+      const animations: Record<string, Texture[]> = powerUp.animations;
+      this.animations[config.type] = animations[config.animationName];
     }
   }
 
