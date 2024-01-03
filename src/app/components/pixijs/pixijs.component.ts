@@ -2,9 +2,10 @@ import { Component, ElementRef, NgZone, OnInit } from '@angular/core';
 import { GameService } from '../../services/game.service';
 
 @Component({
-  selector: 'app-pixijs',
-  template: '',
-  providers: [GameService],
+    selector: 'app-pixijs',
+    template: '',
+    providers: [GameService],
+    standalone: true,
 })
 export class PixijsComponent implements OnInit {
   constructor(
