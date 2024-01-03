@@ -2,10 +2,10 @@ import { Component, ElementRef, NgZone, OnInit } from '@angular/core';
 import { GameService } from '../../services/game.service';
 
 @Component({
-    selector: 'app-pixijs',
-    template: '',
-    providers: [GameService],
-    standalone: true,
+  selector: 'app-pixijs',
+  standalone: true,
+  template: '',
+  providers: [GameService],
 })
 export class PixijsComponent implements OnInit {
   constructor(
@@ -15,7 +15,7 @@ export class PixijsComponent implements OnInit {
   ) {
   }
 
-  ngOnInit(): Promise<void> {
-    return this.ngZone.runOutsideAngular(() => this.pixiGame.init(this.elementRef));
+  async ngOnInit(): Promise<void> {
+    await this.ngZone.runOutsideAngular(() => this.pixiGame.init(this.elementRef));
   }
 }
