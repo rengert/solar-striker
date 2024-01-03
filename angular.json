@@ -114,7 +114,7 @@
         "deploy": {
           "builder": "angular-cli-ghpages:deploy",
           "options": {
-            "baseHref": "/solar-striker/"
+            "baseHref": "/solar-striker/browser/"
           }
         },
         "lint": {
