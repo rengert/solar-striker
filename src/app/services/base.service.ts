@@ -19,10 +19,11 @@ export abstract class BaseService {
     // explode
     const animations: Record<string, Texture[]> = this.explosionSprite.animations;
     const explosion = new AnimatedSprite(animations['explosion']);
-    explosion.animationSpeed = 0.167;
+    explosion.animationSpeed = Math.min(.3, Math.max(0.1, Math.random()));
     explosion.loop = false;
     explosion.x = x;
     explosion.y = y;
+    explosion.rotation = Math.random() * 360;
     explosion.onComplete = (): void => {
       oncomplete(explosion);
       explosion.destroy();
