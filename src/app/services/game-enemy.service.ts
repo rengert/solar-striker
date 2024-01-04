@@ -1,29 +1,32 @@
-import { AnimatedSprite, Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
+import { BaseService } from './base.service';
 import { GameCollectableService } from './game-collectable.service';
 
-export class GameEnemyService {
+export class GameEnemyService extends BaseService {
   #enemies: AnimatedGameSprite[] = [];
 
   private elapsed = 0;
   private lastEnemySpawn = -1;
-  private explosionSprite!: Spritesheet;
+
   private enemySprite!: Spritesheet;
 
   constructor(
-    private readonly app: Application,
+    app: Application,
     private readonly collectables: GameCollectableService,
   ) {
+    super(app);
   }
 
   get enemies(): AnimatedGameSprite[] {
     return [...this.#enemies];
   }
 
-  async init(): Promise<void> {
-    this.explosionSprite = await Assets.load<Spritesheet>('assets/game/explosion.json');
+  override async init(): Promise<void> {
+    await super.init();
+
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');
   }
 
@@ -50,26 +53,15 @@ export class GameEnemyService {
     for (const shot of shots.filter(s => !s.destroyed)) {
       const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (hitEnemy) {
-        // explode
-        const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-        const explosion = new AnimatedSprite(animations['explosion']);
-        explosion.animationSpeed = 0.167;
-        explosion.loop = false;
-        explosion.x = hitEnemy.x;
-        explosion.y = hitEnemy.y;
-        explosion.onComplete = (): void => {
+        this.explode(hitEnemy.x, hitEnemy.y, explosion => {
           if (spawnCollectable) {
             this.collectables.spawn(explosion.x, explosion.y);
           }
-
-          explosion.destroy();
-        };
-        this.app.stage.addChild(explosion);
+        });
         hitEnemy.destroy();
         if (destroyOnHit) {
           shot.destroy();
         }
-        explosion.play();
         result++;
       }
     }
@@ -84,18 +76,9 @@ export class GameEnemyService {
 
     const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && ship.hit(enemy));
     if (hitEnemy) {
-      const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-      const explosion = new AnimatedSprite(animations['explosion']);
-      explosion.animationSpeed = 0.167;
-      explosion.loop = false;
-      explosion.x = hitEnemy.x;
-      explosion.y = hitEnemy.y;
-      explosion.onComplete = (): void => {
-        explosion.destroy();
-      };
-      this.app.stage.addChild(explosion);
+      this.explode(hitEnemy.x, hitEnemy.y);
       hitEnemy.destroy();
-      explosion.play();
+
       return true;
     }
     return false;

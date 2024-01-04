@@ -1,24 +1,25 @@
-import { AnimatedSprite, Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { Application, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
+import { BaseService } from './base.service';
 
-export class GameMeteorService {
+export class GameMeteorService extends BaseService {
   #meteors: GameSprite[] = [];
 
   private elapsed = 0;
   private lastMeteorSpawn = -1;
-  private explosionSprite!: Spritesheet;
 
-  constructor(private readonly app: Application) {
+  constructor(app: Application) {
+    super(app);
   }
 
   get meteors(): GameSprite[] {
     return [...this.#meteors];
   }
 
-  async init(): Promise<void> {
-    this.explosionSprite = await Assets.load<Spritesheet>('assets/game/explosion.json');
+  override async init(): Promise<void> {
+    await super.init();
   }
 
   update(delta: number, level: number): void {
@@ -43,17 +44,8 @@ export class GameMeteorService {
     for (const shot of shots.filter(s => !s.destroyed)) {
       const hit = this.meteors.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (hit) {
-        // explode
-        const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-        const explosion = new AnimatedSprite(animations['explosion']);
-        explosion.animationSpeed = 0.167;
-        explosion.loop = false;
-        explosion.x = hit.x;
-        explosion.y = hit.y;
-        explosion.onComplete = (): void => explosion.destroy();
-        this.app.stage.addChild(explosion);
+        this.explode(hit.x, hit.y);
         shot.destroy();
-        explosion.play();
       }
     }
 
@@ -67,15 +59,7 @@ export class GameMeteorService {
 
     const hit = this.meteors.find(enemy => !enemy.destroyed && ship.hit(enemy));
     if (hit) {
-      const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-      const explosion = new AnimatedSprite(animations['explosion']);
-      explosion.animationSpeed = 0.167;
-      explosion.loop = false;
-      explosion.x = hit.x;
-      explosion.y = hit.y;
-      explosion.onComplete = (): void => explosion.destroy();
-      this.app.stage.addChild(explosion);
-      explosion.play();
+      this.explode(hit.x, hit.y);
       return true;
     }
     return false;
