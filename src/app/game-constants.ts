@@ -9,6 +9,9 @@ interface GameConfig extends Config {
   enemy: {
     autoSpawnSpeed: number;
   },
+  meteor: {
+    autoSpawnSpeed: number;
+  },
   ship: {
     shotSpeed: number;
   }
@@ -18,8 +21,11 @@ export const GAME_CONFIG: GameConfig = {
   enemy: {
     autoSpawnSpeed: 1.35, // per second
   },
+  meteor: {
+    autoSpawnSpeed: 0.35, // per second
+  },
   ship: {
-    shotSpeed: 3, // speed in pixel
+    shotSpeed: 6, // speed in pixel
   },
   powerUpConfig: [
     {

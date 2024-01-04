@@ -1,28 +1,32 @@
-import { AnimatedSprite, Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
-import { GameSprite } from '../models/pixijs/game-sprite';
+import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
+import { GameSprite } from '../models/pixijs/simple-game-sprite';
+import { BaseService } from './base.service';
 import { GameCollectableService } from './game-collectable.service';
 
-export class GameEnemyService {
-  #enemies: GameSprite[] = [];
+export class GameEnemyService extends BaseService {
+  #enemies: AnimatedGameSprite[] = [];
 
   private elapsed = 0;
   private lastEnemySpawn = -1;
-  private explosionSprite!: Spritesheet;
+
   private enemySprite!: Spritesheet;
 
   constructor(
-    private readonly app: Application,
+    app: Application,
     private readonly collectables: GameCollectableService,
   ) {
+    super(app);
   }
 
-  get enemies(): GameSprite[] {
+  get enemies(): AnimatedGameSprite[] {
     return [...this.#enemies];
   }
 
-  async init(): Promise<void> {
-    this.explosionSprite = await Assets.load<Spritesheet>('assets/game/explosion.json');
+  override async init(): Promise<void> {
+    await super.init();
+
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');
   }
 
@@ -44,26 +48,20 @@ export class GameEnemyService {
     }
   }
 
-  hit(shots: GameSprite[]): number {
+  hit(shots: AnimatedGameSprite[] | GameSprite[], destroyOnHit = true, spawnCollectable = true): number {
     let result = 0;
-    for (const shot of shots) {
+    for (const shot of shots.filter(s => !s.destroyed)) {
       const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (hitEnemy) {
-        // explode
-        const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-        const explosion = new AnimatedSprite(animations['explosion']);
-        explosion.animationSpeed = 0.167;
-        explosion.loop = false;
-        explosion.x = hitEnemy.x;
-        explosion.y = hitEnemy.y;
-        explosion.onComplete = (): void => {
-          void this.collectables.spawn(explosion.x, explosion.y);
-          explosion.destroy();
-        };
-        this.app.stage.addChild(explosion);
+        this.explode(hitEnemy.x, hitEnemy.y, explosion => {
+          if (spawnCollectable) {
+            this.collectables.spawn(explosion.x, explosion.y);
+          }
+        });
         hitEnemy.destroy();
-        shot.destroy();
-        explosion.play();
+        if (destroyOnHit) {
+          shot.destroy();
+        }
         result++;
       }
     }
@@ -71,25 +69,16 @@ export class GameEnemyService {
     return result;
   }
 
-  kill(ship: GameSprite | undefined): boolean {
+  kill(ship: AnimatedGameSprite | undefined): boolean {
     if (!ship || ship.destroyed) {
       return false;
     }
 
     const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && ship.hit(enemy));
     if (hitEnemy) {
-      const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-      const explosion = new AnimatedSprite(animations['explosion']);
-      explosion.animationSpeed = 0.167;
-      explosion.loop = false;
-      explosion.x = hitEnemy.x;
-      explosion.y = hitEnemy.y;
-      explosion.onComplete = (): void => {
-        explosion.destroy();
-      };
-      this.app.stage.addChild(explosion);
+      this.explode(hitEnemy.x, hitEnemy.y);
       hitEnemy.destroy();
-      explosion.play();
+
       return true;
     }
     return false;
@@ -98,7 +87,7 @@ export class GameEnemyService {
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.app.screen.width - 20) + 10;
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
-    const enemy = new GameSprite(1 + (0.25 * (level)), animations['frame']);
+    const enemy = new AnimatedGameSprite(1 + (0.25 * (level)), animations['frame']);
     enemy.animationSpeed = 0.167;
     enemy.play();
     enemy.anchor.set(0.5);

@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'net.bolzplatzarena.solarstriker',
   appName: 'Solar Striker',
-  webDir: 'dist/solar-striker',
+  webDir: 'dist/solar-striker/browser',
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,

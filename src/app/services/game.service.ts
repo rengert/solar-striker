@@ -1,9 +1,7 @@
-import { ElementRef, Injectable } from '@angular/core';
+import { computed, effect, ElementRef, Injectable, signal } from '@angular/core';
 import { Application } from 'pixi.js';
-import { BehaviorSubject, distinctUntilChanged, filter } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
-import { GameSprite } from '../models/pixijs/game-sprite';
 import { CreditsPopup } from '../popups/credits-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
@@ -11,13 +9,14 @@ import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
+import { GameMeteorService } from './game-meteor.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { StorageService } from './storage.service';
 
 function handleMouseMove(event: {
   data: { originalEvent: PointerEvent | TouchEvent }
-}, ship: GameSprite | undefined): void {
+}, ship: AnimatedGameSprite | undefined): void {
   if (!ship || ship.destroyed) {
     return;
   }
@@ -29,17 +28,26 @@ function handleMouseMove(event: {
 
 @Injectable()
 export class GameService {
-  readonly kills = new BehaviorSubject(0);
+  readonly kills = signal(0);
 
   private app!: Application;
+  private gameScreen!: GameScreenService;
 
-  private readonly level = new BehaviorSubject(1);
+  private readonly level = computed(() => Math.floor(this.kills() / 10) + 1);
 
   private currentPopup?: AppScreen;
 
-  private started = false;
+  private started = signal(false);
 
   constructor(private readonly storage: StorageService) {
+    effect(() => {
+      if (!this.started()) {
+        return;
+      }
+
+      this.gameScreen.kills = this.kills();
+      this.gameScreen.level = this.level();
+    });
   }
 
   async init(elementRef: ElementRef): Promise<void> {
@@ -56,20 +64,12 @@ export class GameService {
     await enemy.init();
     const ship = new GameShipService(this.app);
     await ship.init();
+    const meteor = new GameMeteorService(this.app);
+    await meteor.init();
 
     landscape.setup();
-    const gameScreen = new GameScreenService(this.app);
-    this.setup(landscape, collectables, enemy, ship, gameScreen);
-    this.kills.pipe(
-      distinctUntilChanged(),
-      filter(value => !!value),
-      tap(value => this.level.next(Math.ceil(value / 10))),
-      tap(value => gameScreen.kills = value),
-    ).subscribe();
-    this.level.pipe(
-      distinctUntilChanged(),
-      tap(value => gameScreen.level = value),
-    ).subscribe();
+    this.gameScreen = new GameScreenService(this.app);
+    this.setup(landscape, collectables, enemy, ship, this.gameScreen, meteor);
 
     elementRef.nativeElement.appendChild(this.app.view);
 
@@ -83,31 +83,35 @@ export class GameService {
     enemy: GameEnemyService,
     ship: GameShipService,
     gameScreen: GameScreenService,
+    meteor: GameMeteorService,
   ): void {
     const app = this.app;
-
 
     ship.spawn();
     this.setupInteractions(ship);
 
     app.ticker.add(delta => {
-      if (!this.started) {
+      if (!this.started()) {
         return;
       }
-
+      // moving landscape
       landscape.update(delta);
-      enemy.update(delta, this.level.value);
-
+      // spawn enemies
+      enemy.update(delta, this.level());
+      // spawn meteors
+      meteor.update(delta, this.level());
+      enemy.hit(meteor.meteors, false, false);
+      meteor.hit(ship.shots);
       const hits = enemy.hit(ship.shots);
-      this.kills.next(this.kills.value + hits);
+      this.kills.update(value => value + hits);
       if (enemy.kill(ship.instance)) {
         ship.instance.energy -= 1;
         gameScreen.lifes = ship.instance.energy;
         if (ship.instance.energy === 0) {
-          void this.storage.setHighscore(this.kills.value, this.level.value);
+          void this.storage.setHighscore(this.kills(), this.level());
           void this.presentPopup(YouAreDeadPopup);
           ship.instance.destroy();
-          this.started = false;
+          this.started.set(false);
         }
       }
       gameScreen.lifes = ship.instance.energy;
@@ -185,7 +189,7 @@ export class GameService {
 
   async start(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
-    this.started = true;
+    this.started.set(true);
   }
 
   async openCredits(requester: AppScreen): Promise<void> {

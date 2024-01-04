@@ -1,6 +1,6 @@
 import { FrameObject, Texture } from 'pixi.js';
 import { PowerUpConfig } from '../power-up-config.model';
-import { GameSprite } from './game-sprite';
+import { AnimatedGameSprite } from './animated-game-sprite';
 
 export enum PowerUp {
   speed,
@@ -8,7 +8,7 @@ export enum PowerUp {
   shotPower,
 }
 
-export class PowerUpSprite extends GameSprite {
+export class PowerUpSprite extends AnimatedGameSprite {
   readonly config: PowerUpConfig;
 
   constructor(speed: number, textures: Texture[] | FrameObject[], config: PowerUpConfig) {
