@@ -99,7 +99,7 @@ export class GameService {
       enemy.update(delta, this.level());
       // spawn meteors
       meteor.update(delta, this.level());
-
+      enemy.hit(meteor.meteors, false);
       const hits = enemy.hit(ship.shots);
       this.kills.update(value => value + hits);
       if (enemy.kill(ship.instance)) {

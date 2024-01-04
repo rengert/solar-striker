@@ -1,6 +1,7 @@
 import { AnimatedSprite, Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
+import { GameSprite } from '../models/pixijs/simple-game-sprite';
 import { GameCollectableService } from './game-collectable.service';
 
 export class GameEnemyService {
@@ -44,7 +45,7 @@ export class GameEnemyService {
     }
   }
 
-  hit(shots: AnimatedGameSprite[]): number {
+  hit(shots: AnimatedGameSprite[] | GameSprite[], destroyOnHit = true): number {
     let result = 0;
     for (const shot of shots) {
       const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
@@ -62,7 +63,9 @@ export class GameEnemyService {
         };
         this.app.stage.addChild(explosion);
         hitEnemy.destroy();
-        shot.destroy();
+        if (destroyOnHit) {
+          shot.destroy();
+        }
         explosion.play();
         result++;
       }
