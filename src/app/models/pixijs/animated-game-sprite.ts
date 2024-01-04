@@ -1,6 +1,7 @@
 import { AnimatedSprite, FrameObject, Sprite, Texture } from 'pixi.js';
+import { hit } from '../../utils/sprite.util';
 
-export class GameSprite extends AnimatedSprite {
+export class AnimatedGameSprite extends AnimatedSprite {
   private readonly speed: number = 1;
 
   constructor(
@@ -19,12 +20,6 @@ export class GameSprite extends AnimatedSprite {
   }
 
   hit(object2: Sprite): boolean {
-    const bounds1 = this.getBounds();
-    const bounds2 = object2.getBounds();
-
-    return bounds1.x < bounds2.x + bounds2.width
-      && bounds1.x + bounds1.width > bounds2.x
-      && bounds1.y < bounds2.y + bounds2.height
-      && bounds1.y + bounds1.height > bounds2.y;
+    return hit(this, object2);
   }
 }

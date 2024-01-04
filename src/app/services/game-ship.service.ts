@@ -1,12 +1,12 @@
 import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
-import { GameSprite } from '../models/pixijs/game-sprite';
+import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { Ship } from '../models/pixijs/ship';
 
 export class GameShipService {
   autoFire = false;
 
-  #shots: GameSprite[] = [];
+  #shots: AnimatedGameSprite[] = [];
   #ship?: Ship;
 
   private elapsed = 0;
@@ -35,7 +35,7 @@ export class GameShipService {
     return this.#ship;
   }
 
-  get shots(): GameSprite[] {
+  get shots(): AnimatedGameSprite[] {
     return [...this.#shots];
   }
 
@@ -57,7 +57,7 @@ export class GameShipService {
 
     const power = Math.min(this.instance.shotPower, 3);
     for (let i = 1; i <= power; i++) {
-      const shot = new GameSprite(-GAME_CONFIG.ship.shotSpeed, this.laserAnimation);
+      const shot = new AnimatedGameSprite(-GAME_CONFIG.ship.shotSpeed, this.laserAnimation);
       shot.animationSpeed = 0.167;
       shot.play();
       shot.anchor.set(0.5);

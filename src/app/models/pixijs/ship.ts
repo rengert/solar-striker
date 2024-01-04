@@ -1,6 +1,6 @@
-import { GameSprite } from './game-sprite';
+import { AnimatedGameSprite } from './animated-game-sprite';
 
-export class Ship extends GameSprite {
+export class Ship extends AnimatedGameSprite {
   shotPower = 1;
   shotSpeed = 1;
 

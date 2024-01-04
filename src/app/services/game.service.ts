@@ -1,7 +1,7 @@
 import { computed, effect, ElementRef, Injectable, signal } from '@angular/core';
 import { Application } from 'pixi.js';
+import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
-import { GameSprite } from '../models/pixijs/game-sprite';
 import { CreditsPopup } from '../popups/credits-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
@@ -9,13 +9,14 @@ import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
+import { GameMeteorService } from './game-meteor.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { StorageService } from './storage.service';
 
 function handleMouseMove(event: {
   data: { originalEvent: PointerEvent | TouchEvent }
-}, ship: GameSprite | undefined): void {
+}, ship: AnimatedGameSprite | undefined): void {
   if (!ship || ship.destroyed) {
     return;
   }
@@ -63,10 +64,11 @@ export class GameService {
     await enemy.init();
     const ship = new GameShipService(this.app);
     await ship.init();
+    const meteor = new GameMeteorService(this.app);
 
     landscape.setup();
     this.gameScreen = new GameScreenService(this.app);
-    this.setup(landscape, collectables, enemy, ship, this.gameScreen);
+    this.setup(landscape, collectables, enemy, ship, this.gameScreen, meteor);
 
     elementRef.nativeElement.appendChild(this.app.view);
 
@@ -80,6 +82,7 @@ export class GameService {
     enemy: GameEnemyService,
     ship: GameShipService,
     gameScreen: GameScreenService,
+    meteor: GameMeteorService,
   ): void {
     const app = this.app;
 
@@ -93,6 +96,7 @@ export class GameService {
 
       landscape.update(delta);
       enemy.update(delta, this.level());
+      meteor.update(delta, this.level());
 
       const hits = enemy.hit(ship.shots);
       this.kills.update(value => value + hits);
