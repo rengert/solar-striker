@@ -40,7 +40,7 @@ export class GameMeteorService {
   }
 
   hit(shots: AnimatedGameSprite[]): number {
-    for (const shot of shots) {
+    for (const shot of shots.filter(s => !s.destroyed)) {
       const hit = this.meteors.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (hit) {
         // explode

@@ -65,6 +65,7 @@ export class GameService {
     const ship = new GameShipService(this.app);
     await ship.init();
     const meteor = new GameMeteorService(this.app);
+    await meteor.init();
 
     landscape.setup();
     this.gameScreen = new GameScreenService(this.app);
@@ -100,6 +101,7 @@ export class GameService {
       // spawn meteors
       meteor.update(delta, this.level());
       enemy.hit(meteor.meteors, false);
+      meteor.hit(ship.shots);
       const hits = enemy.hit(ship.shots);
       this.kills.update(value => value + hits);
       if (enemy.kill(ship.instance)) {

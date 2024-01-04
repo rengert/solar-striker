@@ -47,7 +47,7 @@ export class GameEnemyService {
 
   hit(shots: AnimatedGameSprite[] | GameSprite[], destroyOnHit = true): number {
     let result = 0;
-    for (const shot of shots) {
+    for (const shot of shots.filter(s => !s.destroyed)) {
       const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (hitEnemy) {
         // explode
