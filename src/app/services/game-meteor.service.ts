@@ -24,14 +24,12 @@ export class GameMeteorService {
   update(delta: number, level: number): void {
     this.elapsed += delta;
 
-    this.#meteors.forEach(enemy => enemy.update(delta));
-
-    this.#meteors = this.#meteors.filter(enemy => !enemy.destroyed);
     this.#meteors
-      .filter(enemy => enemy.y > this.app.screen.height + 50)
-      .forEach(enemy => {
-        enemy.y = 0;
-      });
+      .filter(meteor => meteor.y > this.app.screen.height + 50)
+      .forEach(meteor => meteor.destroy());
+    this.#meteors = this.#meteors.filter(enemy => !enemy.destroyed);
+
+    this.#meteors.forEach(enemy => enemy.update(delta));
 
     const check = Math.floor(this.elapsed);
     if (((check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)

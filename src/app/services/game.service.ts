@@ -93,9 +93,11 @@ export class GameService {
       if (!this.started()) {
         return;
       }
-
+      // moving landscape
       landscape.update(delta);
+      // spawn enemies
       enemy.update(delta, this.level());
+      // spawn meteors
       meteor.update(delta, this.level());
 
       const hits = enemy.hit(ship.shots);
