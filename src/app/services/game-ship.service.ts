@@ -42,6 +42,8 @@ export class GameShipService {
   spawn(): void {
     this.#ship = new Ship(0, this.shipAnimation);
     this.#ship.animationSpeed = 0.167;
+    this.#ship._width = 20;
+    this.#ship._height = 20;
     this.#ship.play();
     this.#ship.x = Math.floor(this.app.screen.width / 2);
     this.#ship.y = this.app.screen.height - 100;
@@ -61,13 +63,13 @@ export class GameShipService {
       shot.anchor.set(0.5);
       if ((power === 1) || (power === 3 && i === 2)) {
         shot.x = this.#ship.x;
-        shot.y = this.#ship.y - 45;
+        shot.y = this.#ship.y - 22;
       } else if (power > 1 && i === 1) {
-        shot.x = this.#ship.x - 45;
-        shot.y = this.#ship.y - 12;
+        shot.x = this.#ship.x - 22;
+        shot.y = this.#ship.y - 6;
       } else {
-        shot.x = this.#ship.x + 45;
-        shot.y = this.#ship.y - 12;
+        shot.x = this.#ship.x + 22;
+        shot.y = this.#ship.y - 6;
       }
 
       this.#shots.push(shot);
