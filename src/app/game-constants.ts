@@ -19,7 +19,7 @@ export const GAME_CONFIG: GameConfig = {
     autoSpawnSpeed: 1.35, // per second
   },
   ship: {
-    shotSpeed: 3, // speed in pixel
+    shotSpeed: 6, // speed in pixel
   },
   powerUpConfig: [
     {
