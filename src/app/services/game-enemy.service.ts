@@ -45,7 +45,7 @@ export class GameEnemyService {
     }
   }
 
-  hit(shots: AnimatedGameSprite[] | GameSprite[], destroyOnHit = true): number {
+  hit(shots: AnimatedGameSprite[] | GameSprite[], destroyOnHit = true, spawnCollectable = true): number {
     let result = 0;
     for (const shot of shots.filter(s => !s.destroyed)) {
       const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
@@ -58,7 +58,10 @@ export class GameEnemyService {
         explosion.x = hitEnemy.x;
         explosion.y = hitEnemy.y;
         explosion.onComplete = (): void => {
-          void this.collectables.spawn(explosion.x, explosion.y);
+          if (spawnCollectable) {
+            this.collectables.spawn(explosion.x, explosion.y);
+          }
+
           explosion.destroy();
         };
         this.app.stage.addChild(explosion);
