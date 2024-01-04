@@ -9,9 +9,17 @@ export class GameMeteorService extends BaseService {
 
   private elapsed = 0;
   private lastMeteorSpawn = -1;
+  private readonly textures: Texture[];
 
   constructor(app: Application) {
     super(app);
+
+    this.textures = [
+      Texture.from('assets/game/meteors/meteorBrown_small1.png'),
+      Texture.from('assets/game/meteors/meteorBrown_small2.png'),
+      Texture.from('assets/game/meteors/meteorGrey_small1.png'),
+      Texture.from('assets/game/meteors/meteorGrey_small2.png'),
+    ];
   }
 
   get meteors(): GameSprite[] {
@@ -67,7 +75,10 @@ export class GameMeteorService extends BaseService {
 
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.app.screen.width - 20) + 10;
-    const meteor = new GameSprite(1 + (0.25 * (level)), Texture.from('assets/game/meteors/meteorBrown_small1.png'));
+    const meteor = new GameSprite(
+      1 + (0.25 * (level)),
+      this.textures[Math.floor(Math.random() * this.textures.length)],
+    );
     meteor.anchor.set(0.5);
     meteor.x = position;
     meteor.y = 10;
