@@ -32,7 +32,7 @@ export class GameMeteorService {
     this.#meteors.forEach(enemy => enemy.update(delta));
 
     const check = Math.floor(this.elapsed);
-    if (((check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
+    if (((check % Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
       && (check !== this.lastMeteorSpawn)) {
       this.lastMeteorSpawn = check;
       this.spawn(level);
