@@ -89,16 +89,21 @@ export class GameService {
       this.meteor.hit(this.ship.shots);
       const hits = this.enemy.hit(this.ship.shots);
       this.kills.update(value => value + hits);
-      if (this.enemy.kill(this.ship.instance)) {
+      if (
+        this.enemy.kill(this.ship.instance)
+        || this.meteor.kill(this.ship.instance)
+      ) {
         this.ship.instance.energy -= 1;
         this.gameScreen.lifes = this.ship.instance.energy;
-        if (this.ship.instance.energy === 0) {
-          void this.storage.setHighscore(this.kills(), this.level());
-          void this.presentPopup(YouAreDeadPopup);
-          this.ship.instance.destroy();
-          this.started.set(false);
-        }
       }
+
+      if (this.ship.instance.energy === 0) {
+        void this.storage.setHighscore(this.kills(), this.level());
+        void this.presentPopup(YouAreDeadPopup);
+        this.ship.instance.destroy();
+        this.started.set(false);
+      }
+
       this.gameScreen.lifes = this.ship.instance.energy;
       this.collectables.collect(this.ship.instance);
       this.ship.update(delta);
