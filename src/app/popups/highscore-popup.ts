@@ -21,7 +21,7 @@ export class HighscorePopup extends Popup {
     this.addText('Level', { size: 12 }, { y: -60, x: 100 });
 
     for (let i = 1; i <= Math.min(highscore.length, 7); i++) {
-      const dataSet = highscore[i];
+      const dataSet = highscore[i - 1];
       const date = new Date(dataSet.date);
       const dateString = dayjs(date).format('DD.MM.YYYY HH:mm');
       this.addText(dateString, { size: 12 }, { y: -60 + i * 20, x: -60 });
