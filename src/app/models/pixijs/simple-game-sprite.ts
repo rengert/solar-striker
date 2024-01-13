@@ -5,6 +5,8 @@ export class GameSprite extends Sprite {
   private readonly ySpeed: number;
   private readonly xSpeed: number;
 
+  power: number | undefined;
+
   constructor(speed: number, texture: Texture) {
     super(texture);
 
@@ -19,6 +21,10 @@ export class GameSprite extends Sprite {
   }
 
   hit(object2: Sprite): boolean {
-    return hit(this, object2);
+    const event = hit(this, object2);
+    if (event && this.power !== undefined) {
+      this.power -= 1;
+    }
+    return event;
   }
 }

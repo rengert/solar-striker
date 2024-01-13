@@ -31,12 +31,13 @@ export class GameMeteorService extends BaseService {
   update(delta: number, level: number): void {
     this.elapsed += delta;
 
+    this.#meteors = this.#meteors.filter(meteor => !meteor.destroyed);
     this.#meteors
       .filter(meteor => meteor.y > this.application.screen.height + 50)
       .forEach(meteor => meteor.destroy());
-    this.#meteors = this.#meteors.filter(enemy => !enemy.destroyed);
+    this.#meteors = this.#meteors.filter(meteor => !meteor.destroyed);
 
-    this.#meteors.forEach(enemy => enemy.update(delta));
+    this.#meteors.forEach(meteor => meteor.update(delta));
 
     const check = Math.floor(this.elapsed);
     if (((check % Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
@@ -48,10 +49,14 @@ export class GameMeteorService extends BaseService {
 
   hit(shots: AnimatedGameSprite[]): number {
     for (const shot of shots.filter(s => !s.destroyed)) {
-      const hit = this.meteors.find(enemy => !enemy.destroyed && shot.hit(enemy));
+      const hit = this.meteors.find(meteor => !meteor.destroyed && meteor.hit(shot));
       if (hit) {
         this.explode(hit.x, hit.y);
         shot.destroy();
+
+        if (hit.power === 0) {
+          hit.destroy();
+        }
       }
     }
 
@@ -82,6 +87,7 @@ export class GameMeteorService extends BaseService {
     meteor.y = 10;
     meteor.width += Math.random() * 20;
     meteor.height += Math.random() * 20;
+    meteor.power = 10;
     this.#meteors.push(meteor);
     this.application.stage.addChild(meteor);
   }
