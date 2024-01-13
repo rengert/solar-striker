@@ -22,7 +22,7 @@ function handleMouseMove(event: {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  ship.x = (event.data.originalEvent as PointerEvent).clientX
+  ship.targetX = (event.data.originalEvent as PointerEvent).clientX
     ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
 }
 
