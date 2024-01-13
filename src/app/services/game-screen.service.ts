@@ -1,5 +1,8 @@
-import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Injectable } from '@angular/core';
+import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { ApplicationService } from './application.service';
 
+@Injectable()
 export class GameScreenService {
   private readonly style = new TextStyle({
     fontFamily: 'Arial',
@@ -16,15 +19,18 @@ export class GameScreenService {
     dropShadowDistance: 3,
     align: 'right',
   });
-  private readonly points!: Text;
-  private readonly lifesLabel!: Graphics;
-  private readonly levelLabel!: Text;
+  private points: Text | undefined;
+  private lifesLabel: Graphics | undefined;
+  private levelLabel: Text | undefined;
 
-  constructor(private readonly app: Application) {
+  constructor(private readonly application: ApplicationService) {
+  }
+
+  init(): void {
     this.points = new Text('0000000', this.style);
     this.points.x = 5;
     this.points.y = 65;
-    this.app.stage.addChild(this.points);
+    this.application.stage.addChild(this.points);
 
     const energyBarContainer = new Container();
     this.lifesLabel = new Graphics();
@@ -32,29 +38,29 @@ export class GameScreenService {
     this.lifesLabel.drawRect(0, 0, 250, 10);
     this.lifesLabel.endFill();
     energyBarContainer.addChild(this.lifesLabel);
-    this.app.stage.addChild(energyBarContainer);
+    this.application.stage.addChild(energyBarContainer);
 
     this.lifesLabel.x = 5;
     this.lifesLabel.y = 55;
-    this.app.stage.addChild(this.lifesLabel);
+    this.application.stage.addChild(this.lifesLabel);
 
     this.levelLabel = new Text('Level: 1', this.style);
-    this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
+    this.levelLabel.x = this.application.screen.width - this.levelLabel.width;
     this.levelLabel.y = 45;
-    this.app.stage.addChild(this.levelLabel);
+    this.application.stage.addChild(this.levelLabel);
   }
 
   set kills(value: number) {
-    this.points.text = value.toString().padStart(7, '0');
+    this.points !.text = value.toString().padStart(7, '0');
   }
 
   set lifes(value: number) {
-    this.lifesLabel.width = value * 25;
+    this.lifesLabel !.width = value * 25;
   }
 
   set level(value: number) {
-    this.levelLabel.text = 'Level: ' + value.toString();
-    this.levelLabel.updateText(true);
-    this.levelLabel.x = this.app.screen.width - this.levelLabel.width;
+    this.levelLabel !.text = 'Level: ' + value.toString();
+    this.levelLabel !.updateText(true);
+    this.levelLabel !.x = this.application.screen.width - this.levelLabel !.width;
   }
 }

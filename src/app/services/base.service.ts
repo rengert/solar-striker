@@ -1,14 +1,12 @@
-import { AnimatedSprite, Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { inject } from '@angular/core';
+import { AnimatedSprite } from 'pixi.js';
+import { ApplicationService } from './application.service';
+import { ExplosionService } from './explosion.service';
 
 export abstract class BaseService {
-  private explosionSprite!: Spritesheet;
+  private explosion = inject(ExplosionService);
 
-  protected constructor(protected readonly app: Application) {
-  }
-
-  protected async init(): Promise<void> {
-    this.explosionSprite = await Assets.load<Spritesheet>('assets/game/explosion.json');
-  }
+  protected readonly application = inject(ApplicationService);
 
   protected explode(
     x: number,
@@ -16,19 +14,6 @@ export abstract class BaseService {
     oncomplete: (explosion: AnimatedSprite) => void = (): void => {
     },
   ): void {
-    // explode
-    const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-    const explosion = new AnimatedSprite(animations['explosion']);
-    explosion.animationSpeed = Math.min(.3, Math.max(0.1, Math.random()));
-    explosion.loop = false;
-    explosion.x = x;
-    explosion.y = y;
-    explosion.rotation = Math.random() * 360;
-    explosion.onComplete = (): void => {
-      oncomplete(explosion);
-      explosion.destroy();
-    };
-    this.app.stage.addChild(explosion);
-    explosion.play();
+    void this.explosion.explode(this.application.stage, x, y, oncomplete);
   }
 }

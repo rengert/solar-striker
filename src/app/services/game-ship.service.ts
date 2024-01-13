@@ -1,8 +1,11 @@
-import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { Injectable } from '@angular/core';
+import { Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { Ship } from '../models/pixijs/ship';
+import { ApplicationService } from './application.service';
 
+@Injectable()
 export class GameShipService {
   autoFire = false;
 
@@ -12,20 +15,24 @@ export class GameShipService {
   private elapsed = 0;
   private lastShot = 0;
 
-  private laserAnimation!: Texture[];
-  private shipAnimation!: Texture[];
+  private laserAnimation: Texture[] | undefined;
+  private shipAnimation: Texture[] | undefined;
 
-  constructor(private readonly app: Application) {
+  constructor(private readonly application: ApplicationService) {
   }
 
   async init(): Promise<void> {
-    const ship = await Assets.load<Spritesheet>('assets/game/ship/ship_blue.json');
-    const animations: Record<string, Texture[]> = ship.animations;
-    this.shipAnimation = animations['ship'];
+    if (!this.shipAnimation) {
+      const ship = await Assets.load<Spritesheet>('assets/game/ship/ship_blue.json');
+      const animations: Record<string, Texture[]> = ship.animations;
+      this.shipAnimation = animations['ship'];
+    }
 
-    const laser = await Assets.load<Spritesheet>('assets/game/laser.json');
-    const laserAnimations: Record<string, Texture[]> = laser.animations;
-    this.laserAnimation = laserAnimations['laser'];
+    if (!this.laserAnimation) {
+      const laser = await Assets.load<Spritesheet>('assets/game/laser.json');
+      const laserAnimations: Record<string, Texture[]> = laser.animations;
+      this.laserAnimation = laserAnimations['laser'];
+    }
   }
 
   get instance(): Ship {
@@ -40,14 +47,14 @@ export class GameShipService {
   }
 
   spawn(): void {
-    this.#ship = new Ship(0, this.shipAnimation);
+    this.#ship = new Ship(0, this.shipAnimation !);
     this.#ship.animationSpeed = 0.167;
     this.#ship._width = 20;
     this.#ship._height = 20;
     this.#ship.play();
-    this.#ship.x = Math.floor(this.app.screen.width / 2);
-    this.#ship.y = this.app.screen.height - 100;
-    this.app.stage.addChild(this.#ship);
+    this.#ship.x = Math.floor(this.application.screen.width / 2);
+    this.#ship.y = this.application.screen.height - 100;
+    this.application.stage.addChild(this.#ship);
   }
 
   shot(): void {
@@ -57,7 +64,7 @@ export class GameShipService {
 
     const power = Math.min(this.instance.shotPower, 3);
     for (let i = 1; i <= power; i++) {
-      const shot = new AnimatedGameSprite(-GAME_CONFIG.ship.shotSpeed, this.laserAnimation);
+      const shot = new AnimatedGameSprite(-GAME_CONFIG.ship.shotSpeed, this.laserAnimation !);
       shot.animationSpeed = 0.167;
       shot.play();
       shot.anchor.set(0.5);
@@ -73,7 +80,7 @@ export class GameShipService {
       }
 
       this.#shots.push(shot);
-      this.app.stage.addChild(shot);
+      this.application.stage.addChild(shot);
     }
   }
 

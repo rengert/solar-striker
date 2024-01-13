@@ -1,10 +1,12 @@
-import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { Injectable } from '@angular/core';
+import { Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
 import { BaseService } from './base.service';
 import { GameCollectableService } from './game-collectable.service';
 
+@Injectable()
 export class GameEnemyService extends BaseService {
   #enemies: AnimatedGameSprite[] = [];
 
@@ -13,20 +15,15 @@ export class GameEnemyService extends BaseService {
 
   private enemySprite!: Spritesheet;
 
-  constructor(
-    app: Application,
-    private readonly collectables: GameCollectableService,
-  ) {
-    super(app);
+  constructor(private readonly collectables: GameCollectableService) {
+    super();
   }
 
   get enemies(): AnimatedGameSprite[] {
     return [...this.#enemies];
   }
 
-  override async init(): Promise<void> {
-    await super.init();
-
+  async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');
   }
 
@@ -35,7 +32,7 @@ export class GameEnemyService extends BaseService {
 
     this.#enemies = this.#enemies.filter(enemy => !enemy.destroyed);
     this.#enemies
-      .filter(enemy => enemy.y > this.app.screen.height + 50)
+      .filter(enemy => enemy.y > this.application.screen.height + 50)
       .forEach(enemy => {
         enemy.y = 0;
       });
@@ -85,7 +82,7 @@ export class GameEnemyService extends BaseService {
   }
 
   private spawn(level: number): void {
-    const position = Math.floor(Math.random() * this.app.screen.width - 20) + 10;
+    const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
     const enemy = new AnimatedGameSprite(1 + (0.25 * (level)), animations['frame']);
     enemy.animationSpeed = 0.167;
@@ -94,6 +91,6 @@ export class GameEnemyService extends BaseService {
     enemy.x = position;
     enemy.y = 10;
     this.#enemies.push(enemy);
-    this.app.stage.addChild(enemy);
+    this.application.stage.addChild(enemy);
   }
 }
