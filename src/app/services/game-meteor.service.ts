@@ -80,6 +80,8 @@ export class GameMeteorService extends BaseService {
     meteor.anchor.set(0.5);
     meteor.x = position;
     meteor.y = 10;
+    meteor.width += Math.random() * 20;
+    meteor.height += Math.random() * 20;
     this.#meteors.push(meteor);
     this.application.stage.addChild(meteor);
   }

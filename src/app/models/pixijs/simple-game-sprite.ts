@@ -13,7 +13,7 @@ export class GameSprite extends Sprite {
   }
 
   update(delta: number): void {
-    this.rotation += 0.015 * delta;
+    this.rotation += Math.random() * 0.01 * delta;
     this.y += delta * this.ySpeed;
     this.x += delta * this.xSpeed;
   }
