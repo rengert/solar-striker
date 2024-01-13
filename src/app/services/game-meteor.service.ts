@@ -1,9 +1,11 @@
-import { Application, Texture } from 'pixi.js';
+import { Injectable } from '@angular/core';
+import { Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
 import { BaseService } from './base.service';
 
+@Injectable()
 export class GameMeteorService extends BaseService {
   #meteors: GameSprite[] = [];
 
@@ -11,8 +13,8 @@ export class GameMeteorService extends BaseService {
   private lastMeteorSpawn = -1;
   private readonly textures: Texture[];
 
-  constructor(app: Application) {
-    super(app);
+  constructor() {
+    super();
 
     this.textures = [
       Texture.from('assets/game/meteors/meteorBrown_small1.png'),
@@ -26,19 +28,16 @@ export class GameMeteorService extends BaseService {
     return [...this.#meteors];
   }
 
-  override async init(): Promise<void> {
-    await super.init();
-  }
-
   update(delta: number, level: number): void {
     this.elapsed += delta;
 
+    this.#meteors = this.#meteors.filter(meteor => !meteor.destroyed);
     this.#meteors
-      .filter(meteor => meteor.y > this.app.screen.height + 50)
+      .filter(meteor => meteor.y > this.application.screen.height + 50)
       .forEach(meteor => meteor.destroy());
-    this.#meteors = this.#meteors.filter(enemy => !enemy.destroyed);
+    this.#meteors = this.#meteors.filter(meteor => !meteor.destroyed);
 
-    this.#meteors.forEach(enemy => enemy.update(delta));
+    this.#meteors.forEach(meteor => meteor.update(delta));
 
     const check = Math.floor(this.elapsed);
     if (((check % Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
@@ -50,10 +49,14 @@ export class GameMeteorService extends BaseService {
 
   hit(shots: AnimatedGameSprite[]): number {
     for (const shot of shots.filter(s => !s.destroyed)) {
-      const hit = this.meteors.find(enemy => !enemy.destroyed && shot.hit(enemy));
+      const hit = this.meteors.find(meteor => !meteor.destroyed && meteor.hit(shot));
       if (hit) {
         this.explode(hit.x, hit.y);
         shot.destroy();
+
+        if (hit.power === 0) {
+          hit.destroy();
+        }
       }
     }
 
@@ -74,7 +77,7 @@ export class GameMeteorService extends BaseService {
   }
 
   private spawn(level: number): void {
-    const position = Math.floor(Math.random() * this.app.screen.width - 20) + 10;
+    const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     const meteor = new GameSprite(
       1 + (0.25 * (level)),
       this.textures[Math.floor(Math.random() * this.textures.length)],
@@ -82,7 +85,10 @@ export class GameMeteorService extends BaseService {
     meteor.anchor.set(0.5);
     meteor.x = position;
     meteor.y = 10;
+    meteor.width += Math.random() * 20;
+    meteor.height += Math.random() * 20;
+    meteor.power = 10;
     this.#meteors.push(meteor);
-    this.app.stage.addChild(meteor);
+    this.application.stage.addChild(meteor);
   }
 }

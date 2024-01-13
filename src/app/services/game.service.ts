@@ -1,11 +1,11 @@
-import { computed, effect, ElementRef, Injectable, signal } from '@angular/core';
-import { Application } from 'pixi.js';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { CreditsPopup } from '../popups/credits-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
+import { ApplicationService } from './application.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -22,16 +22,21 @@ function handleMouseMove(event: {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  ship.x = (event.data.originalEvent as PointerEvent).clientX
+  ship.targetX = (event.data.originalEvent as PointerEvent).clientX
     ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
 }
 
 @Injectable()
 export class GameService {
+  private readonly collectables = inject(GameCollectableService);
+  private readonly landscape = inject(GameLandscapeService);
+  private readonly enemy = inject(GameEnemyService);
+  private readonly ship = inject(GameShipService);
+  private readonly meteor = inject(GameMeteorService);
+  private readonly gameScreen = inject(GameScreenService);
+
   readonly kills = signal(0);
 
-  private app!: Application;
-  private gameScreen!: GameScreenService;
 
   private readonly level = computed(() => Math.floor(this.kills() / 10) + 1);
 
@@ -39,7 +44,10 @@ export class GameService {
 
   private started = signal(false);
 
-  constructor(private readonly storage: StorageService) {
+  constructor(
+    private readonly application: ApplicationService,
+    private readonly storage: StorageService,
+  ) {
     effect(() => {
       if (!this.started()) {
         return;
@@ -50,82 +58,64 @@ export class GameService {
     });
   }
 
-  async init(elementRef: ElementRef): Promise<void> {
-    this.app = new Application({
-      height: elementRef.nativeElement.clientHeight,
-      width: elementRef.nativeElement.clientWidth,
-      backgroundColor: 0x000000,
-    });
+  async init(): Promise<void> {
+    await this.collectables.init();
+    await this.enemy.init();
+    await this.ship.init();
+    this.landscape.setup();
+    this.gameScreen.init();
 
-    const collectables = new GameCollectableService(this.app);
-    await collectables.init();
-    const landscape = new GameLandscapeService(this.app);
-    const enemy = new GameEnemyService(this.app, collectables);
-    await enemy.init();
-    const ship = new GameShipService(this.app);
-    await ship.init();
-    const meteor = new GameMeteorService(this.app);
-    await meteor.init();
-
-    landscape.setup();
-    this.gameScreen = new GameScreenService(this.app);
-    this.setup(landscape, collectables, enemy, ship, this.gameScreen, meteor);
-
-    elementRef.nativeElement.appendChild(this.app.view);
+    this.setup();
 
     await this.presentPopup(NavigationPopup);
   }
 
   // eslint-disable-next-line max-params
-  private setup(
-    landscape: GameLandscapeService,
-    collectables: GameCollectableService,
-    enemy: GameEnemyService,
-    ship: GameShipService,
-    gameScreen: GameScreenService,
-    meteor: GameMeteorService,
-  ): void {
-    const app = this.app;
+  private setup(): void {
+    this.ship.spawn();
+    this.setupInteractions(this.ship);
 
-    ship.spawn();
-    this.setupInteractions(ship);
-
-    app.ticker.add(delta => {
+    this.application.ticker.add(delta => {
       if (!this.started()) {
         return;
       }
       // moving landscape
-      landscape.update(delta);
+      this.landscape.update(delta);
       // spawn enemies
-      enemy.update(delta, this.level());
+      this.enemy.update(delta, this.level());
       // spawn meteors
-      meteor.update(delta, this.level());
-      enemy.hit(meteor.meteors, false, false);
-      meteor.hit(ship.shots);
-      const hits = enemy.hit(ship.shots);
+      this.meteor.update(delta, this.level());
+      this.enemy.hit(this.meteor.meteors, false, false);
+      this.meteor.hit(this.ship.shots);
+      const hits = this.enemy.hit(this.ship.shots);
       this.kills.update(value => value + hits);
-      if (enemy.kill(ship.instance)) {
-        ship.instance.energy -= 1;
-        gameScreen.lifes = ship.instance.energy;
-        if (ship.instance.energy === 0) {
-          void this.storage.setHighscore(this.kills(), this.level());
-          void this.presentPopup(YouAreDeadPopup);
-          ship.instance.destroy();
-          this.started.set(false);
-        }
+      if (
+        this.enemy.kill(this.ship.instance)
+        || this.meteor.kill(this.ship.instance)
+      ) {
+        this.ship.instance.energy -= 1;
+        this.gameScreen.lifes = this.ship.instance.energy;
       }
-      gameScreen.lifes = ship.instance.energy;
-      collectables.collect(ship.instance);
-      ship.update(delta);
+
+      if (this.ship.instance.energy === 0) {
+        void this.storage.setHighscore(this.kills(), this.level());
+        void this.presentPopup(YouAreDeadPopup);
+        this.ship.instance.destroy();
+        this.started.set(false);
+      }
+
+      this.gameScreen.lifes = this.ship.instance.energy;
+      this.collectables.collect(this.ship.instance);
+      this.ship.update(delta);
     });
   }
 
   private setupInteractions(ship: GameShipService): void {
-    this.app.stage.eventMode = 'dynamic';
-    this.app.stage.hitArea = this.app.screen;
-    this.app.stage.on('pointerdown', () => ship.autoFire = true);
-    this.app.stage.on('pointerup', () => ship.autoFire = false);
-    this.app.stage.on(
+    this.application.stage.eventMode = 'dynamic';
+    this.application.stage.hitArea = this.application.screen;
+    this.application.stage.on('pointerdown', () => ship.autoFire = true);
+    this.application.stage.on('pointerup', () => ship.autoFire = false);
+    this.application.stage.on(
       'pointermove',
       (event: unknown) => handleMouseMove(
         event as { data: { originalEvent: PointerEvent | TouchEvent } },
@@ -150,7 +140,7 @@ export class GameService {
     }
 
     if (screen.update) {
-      this.app.ticker.remove(screen.update, screen);
+      this.application.ticker.remove(screen.update, screen);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -163,7 +153,7 @@ export class GameService {
 
   private async addAndShowScreen(screen: AppScreen): Promise<void> {
     // Add screen to stage
-    this.app.stage.addChild(screen);
+    this.application.stage.addChild(screen);
 
     // Setup things and pre-organise screen before showing
     if (screen.prepare) {
@@ -171,12 +161,12 @@ export class GameService {
     }
 
     if (screen.resize) {
-      screen.resize(this.app.screen.width, this.app.screen.height);
+      screen.resize(this.application.screen.width, this.application.screen.height);
     }
 
     // Add update function if available
     if (screen.update) {
-      this.app.ticker.add(screen.update, screen);
+      this.application.ticker.add(screen.update, screen);
     }
 
     // Show the new screen

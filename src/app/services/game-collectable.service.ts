@@ -1,24 +1,30 @@
-import { Application, Assets, Spritesheet, Texture } from 'pixi.js';
+import { Injectable } from '@angular/core';
+import { Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
+import { ApplicationService } from './application.service';
 
 interface Dictionary<T> {
   [key: string]: T;
 }
 
+@Injectable()
 export class GameCollectableService {
   private collectables: PowerUpSprite[] = [];
   private readonly animations: Dictionary<Texture[]> = {};
 
-  constructor(private readonly app: Application) {
+  constructor(private readonly application: ApplicationService) {
   }
 
   async init(): Promise<void> {
-    for (const config of GAME_CONFIG.powerUpConfig) {
-      const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
-      const animations: Record<string, Texture[]> = powerUp.animations;
-      this.animations[config.type] = animations[config.animationName];
+    this.collectables.forEach(collectable => collectable.destroy());
+    if (Object.values(this.animations).length === 0) {
+      for (const config of GAME_CONFIG.powerUpConfig) {
+        const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
+        const animations: Record<string, Texture[]> = powerUp.animations;
+        this.animations[config.type] = animations[config.animationName];
+      }
     }
   }
 
@@ -36,7 +42,7 @@ export class GameCollectableService {
     powerUp.anchor.set(0.5);
     powerUp.x = x;
     powerUp.y = y;
-    this.app.stage.addChild(powerUp);
+    this.application.stage.addChild(powerUp);
     this.collectables.push(powerUp);
   }
 

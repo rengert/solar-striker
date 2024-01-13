@@ -1,10 +1,13 @@
-import { Application, Texture } from 'pixi.js';
+import { Injectable } from '@angular/core';
+import { Texture } from 'pixi.js';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
+import { ApplicationService } from './application.service';
 
+@Injectable()
 export class GameLandscapeService {
   private readonly landscapes: BackgroundSprite[] = [];
 
-  constructor(private readonly app: Application) {
+  constructor(private readonly application: ApplicationService) {
   }
 
   setup(): void {
@@ -16,37 +19,37 @@ export class GameLandscapeService {
       0.25,
       0,
       Texture.from('assets/game/desert-background-looped.png'),
-      this.app.screen.width,
-      this.app.screen.height,
+      this.application.screen.width,
+      this.application.screen.height,
     );
     this.landscapes.push(background);
-    this.app.stage.addChild(background);
+    this.application.stage.addChild(background);
 
     const cloud = new BackgroundSprite(
       0,
       0.25,
       Texture.from('assets/game/clouds-transparent.png'),
-      this.app.screen.width,
+      this.application.screen.width,
       103,
       0.75,
-      this.app.screen.height,
+      this.application.screen.height,
     );
-    cloud.y = Math.floor(this.app.screen.height / 2);
+    cloud.y = Math.floor(this.application.screen.height / 2);
     this.landscapes.push(cloud);
-    this.app.stage.addChild(cloud);
+    this.application.stage.addChild(cloud);
 
     const cloud2 = new BackgroundSprite(
       0,
       0.27,
       Texture.from('assets/game/clouds-transparent.png'),
-      this.app.screen.width,
+      this.application.screen.width,
       103,
       0.8,
-      this.app.screen.height,
+      this.application.screen.height,
     );
-    cloud2.y = Math.floor(this.app.screen.height / 4);
+    cloud2.y = Math.floor(this.application.screen.height / 4);
     this.landscapes.push(cloud2);
-    this.app.stage.addChild(cloud2);
+    this.application.stage.addChild(cloud2);
   }
 
   update(delta: number): void {
