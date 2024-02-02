@@ -105,12 +105,10 @@ export class GameService {
       }
 
       this.updatables.forEach(updatable => updatable.update(delta, this.level()));
-
-
+      
       if (this.ship.instance.energy === 0) {
         void this.storage.setHighscore(this.kills(), this.level());
         void this.presentPopup(YouAreDeadPopup);
-        this.ship.instance.destroy();
         this.started.set(false);
       }
     });
