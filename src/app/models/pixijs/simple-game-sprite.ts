@@ -8,6 +8,7 @@ export class GameSprite extends Sprite {
   private readonly ySpeed: number;
   private readonly xSpeed: number;
 
+  power = 1;
   reference: ObjectModelType | undefined;
   energy: number | undefined;
   destroying = false;

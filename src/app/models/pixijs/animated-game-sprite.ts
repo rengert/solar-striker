@@ -6,8 +6,9 @@ import { ObjectType } from './object-type.enum';
 
 export class AnimatedGameSprite extends AnimatedSprite {
   protected readonly speed: number = 1;
-
   protected _energy: number | undefined;
+
+  power = 1;
   reference: ObjectModelType | undefined;
   destroying = false;
   targetX?: number;

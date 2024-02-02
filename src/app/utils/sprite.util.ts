@@ -18,13 +18,13 @@ export function hit(spriteA: ObjectModelType, spriteB: ObjectModelType): boolean
     && bounds1.y + bounds1.height > bounds2.y;
   if (itemHit) {
     if (spriteA.energy !== undefined) {
-      spriteA.energy -= 1;
+      spriteA.energy -= spriteB.power;
       if (spriteA.energy <= 0) {
         spriteA.explode();
       }
     }
     if (spriteB.energy !== undefined) {
-      spriteB.energy -= 1;
+      spriteB.energy -= spriteA.power;
       if (spriteB.energy <= 0) {
         spriteB.explode();
       }

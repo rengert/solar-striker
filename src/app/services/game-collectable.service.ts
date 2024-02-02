@@ -55,6 +55,7 @@ export class GameCollectableService extends UpdatableService {
     powerUp.anchor.set(0.5);
     powerUp.x = x;
     powerUp.y = y;
+    powerUp.power = 0;
     this.application.stage.addChild(powerUp);
     this.collectables.push(powerUp);
   }
