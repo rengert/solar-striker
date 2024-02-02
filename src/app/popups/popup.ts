@@ -99,7 +99,7 @@ export abstract class Popup extends Container {
     const text = new Text(textContent, { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
     text.anchor.set(0.5, 0.5);
     text.x = 100;
-    text.y = 20;
+    text.y = 22;
     button.view.addChild(text);
 
     button.onPress.connect(callback);
