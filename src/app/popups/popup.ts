@@ -38,11 +38,16 @@ export abstract class Popup extends Container {
       this.container.addChild(bottom);
     }
 
-    this.title = new Text(title, { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    this.title = new Text(title, {
+      fontFamily: 'DefaultFont',
+      dropShadowColor: 0x000000,
+      fontSize: 14,
+      fill: 0xffffff,
+    });
     this.title.x = 0;
     this.title.y = -96;
     this.title.anchor.set(0.5, 0.5);
-    this.background.addChild(this.title);
+    this.container.addChild(this.title);
   }
 
   async show(): Promise<void> {
