@@ -12,6 +12,7 @@ import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
+import { GameShotService } from './game-shot.service';
 import { StorageService } from './storage.service';
 
 function handleMouseMove(event: {
@@ -34,6 +35,7 @@ export class GameService {
   private readonly ship = inject(GameShipService);
   private readonly meteor = inject(GameMeteorService);
   private readonly gameScreen = inject(GameScreenService);
+  private readonly shotService = inject(GameShotService);
 
   readonly kills = signal(0);
 
@@ -62,6 +64,7 @@ export class GameService {
     await this.collectables.init();
     await this.enemy.init();
     await this.ship.init();
+    await this.shotService.init();
     this.landscape.setup();
     this.gameScreen.init();
 
@@ -86,8 +89,8 @@ export class GameService {
       // spawn meteors
       this.meteor.update(delta, this.level());
       this.enemy.hit(this.meteor.meteors, false, false);
-      this.meteor.hit(this.ship.shots);
-      const hits = this.enemy.hit(this.ship.shots);
+      this.meteor.hit(this.shotService.shots);
+      const hits = this.enemy.hit(this.shotService.shots);
       this.kills.update(value => value + hits);
       if (
         this.enemy.kill(this.ship.instance)
@@ -106,15 +109,15 @@ export class GameService {
 
       this.gameScreen.lifes = this.ship.instance.energy;
       this.collectables.collect(this.ship.instance);
-      this.ship.update(delta);
+      this.shotService.update();
     });
   }
 
   private setupInteractions(ship: GameShipService): void {
     this.application.stage.eventMode = 'dynamic';
     this.application.stage.hitArea = this.application.screen;
-    this.application.stage.on('pointerdown', () => ship.autoFire = true);
-    this.application.stage.on('pointerup', () => ship.autoFire = false);
+    this.application.stage.on('pointerdown', () => ship.instance.autoFire = true);
+    this.application.stage.on('pointerup', () => ship.instance.autoFire = false);
     this.application.stage.on(
       'pointermove',
       (event: unknown) => handleMouseMove(

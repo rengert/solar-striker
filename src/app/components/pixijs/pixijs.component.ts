@@ -7,6 +7,7 @@ import { GameLandscapeService } from '../../services/game-landscape.service';
 import { GameMeteorService } from '../../services/game-meteor.service';
 import { GameScreenService } from '../../services/game-screen.service';
 import { GameShipService } from '../../services/game-ship.service';
+import { GameShotService } from '../../services/game-shot.service';
 import { GameService } from '../../services/game.service';
 
 @Component({
@@ -20,6 +21,7 @@ import { GameService } from '../../services/game.service';
     GameLandscapeService,
     GameMeteorService,
     GameScreenService,
+    GameShotService,
     GameShipService,
     ExplosionService,
     GameService,

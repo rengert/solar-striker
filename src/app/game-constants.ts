@@ -1,4 +1,5 @@
 import { PowerUp } from './models/pixijs/power-up-sprite';
+import { ShipType } from './models/pixijs/ship-type.enum';
 import { PowerUpConfig } from './models/power-up-config.model';
 
 interface Config {
@@ -12,9 +13,9 @@ interface GameConfig extends Config {
   meteor: {
     autoSpawnSpeed: number;
   },
-  ship: {
+  ships: Record<ShipType, {
     shotSpeed: number;
-  }
+  }>,
 }
 
 export const GAME_CONFIG: GameConfig = {
@@ -24,8 +25,13 @@ export const GAME_CONFIG: GameConfig = {
   meteor: {
     autoSpawnSpeed: 0.35, // per second
   },
-  ship: {
-    shotSpeed: 6, // speed in pixel
+  ships: {
+    [ShipType.ship]: {
+      shotSpeed: 6, // speed in pixel
+    },
+    [ShipType.enemy]: {
+      shotSpeed: 4, // speed in pixel
+    },
   },
   powerUpConfig: [
     {

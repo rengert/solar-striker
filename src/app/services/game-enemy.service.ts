@@ -2,9 +2,13 @@ import { Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
+import { Rocket } from '../models/pixijs/rocket';
+import { Ship } from '../models/pixijs/ship';
+import { ShipType } from '../models/pixijs/ship-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
 import { BaseService } from './base.service';
 import { GameCollectableService } from './game-collectable.service';
+import { GameShotService } from './game-shot.service';
 
 @Injectable()
 export class GameEnemyService extends BaseService {
@@ -15,7 +19,10 @@ export class GameEnemyService extends BaseService {
 
   private enemySprite!: Spritesheet;
 
-  constructor(private readonly collectables: GameCollectableService) {
+  constructor(
+    private readonly collectables: GameCollectableService,
+    private readonly shotService: GameShotService,
+  ) {
     super();
   }
 
@@ -45,9 +52,9 @@ export class GameEnemyService extends BaseService {
     }
   }
 
-  hit(shots: AnimatedGameSprite[] | GameSprite[], destroyOnHit = true, spawnCollectable = true): number {
+  hit(elements: Rocket[] | GameSprite[], destroyOnHit = true, spawnCollectable = true): number {
     let result = 0;
-    for (const shot of shots.filter(s => !s.destroyed)) {
+    for (const shot of elements.filter(s => !s.destroyed)) {
       const hitEnemy = this.enemies.find(enemy => !enemy.destroyed && shot.hit(enemy));
       if (hitEnemy) {
         this.explode(hitEnemy.x, hitEnemy.y, explosion => {
@@ -84,7 +91,8 @@ export class GameEnemyService extends BaseService {
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
-    const enemy = new AnimatedGameSprite(1 + (0.25 * (level)), animations['frame']);
+    const enemy = new Ship(ShipType.enemy, this.shotService, 1 + (0.25 * (level)), animations['frame']);
+    enemy.autoFire = true;
     enemy.animationSpeed = 0.167;
     enemy.play();
     enemy.anchor.set(0.5);
