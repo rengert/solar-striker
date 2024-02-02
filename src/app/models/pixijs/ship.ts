@@ -1,4 +1,5 @@
 import { FrameObject, Texture } from 'pixi.js';
+import { GAME_CONFIG } from '../../game-constants';
 import { GameShotService } from '../../services/game-shot.service';
 import { AnimatedGameSprite } from './animated-game-sprite';
 import { ShipType } from './ship-type.enum';
@@ -21,6 +22,8 @@ export class Ship extends AnimatedGameSprite {
     textures: Texture[] | FrameObject[],
     autoUpdate?: boolean) {
     super(speed, textures, autoUpdate);
+
+    this.shotSpeed = GAME_CONFIG.ships[this.type].shotSpeed;
   }
 
   set energy(value: number) {

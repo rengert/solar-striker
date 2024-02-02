@@ -29,7 +29,7 @@ export class GameShotService {
   shot(power: number, ship: Ship, up: boolean): void {
     const { x, y } = ship;
     for (let i = 1; i <= power; i++) {
-      const shot = new Rocket(up ? -GAME_CONFIG.ships[ship.type].shotSpeed : GAME_CONFIG.ships[ship.type].shotSpeed, this.laserAnimation !);
+      const shot = new Rocket(up ? -GAME_CONFIG.ships[ship.type].rocketSpeed : GAME_CONFIG.ships[ship.type].rocketSpeed, this.laserAnimation !);
       shot.reference = ship;
       shot.animationSpeed = 0.167;
       shot.play();
