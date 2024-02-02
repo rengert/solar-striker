@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { ApplicationService } from './application.service';
+import { GameShipService } from './game-ship.service';
+import { UpdatableService } from './updatable.service';
 
 @Injectable()
-export class GameScreenService {
+export class GameScreenService extends UpdatableService {
   private readonly style = new TextStyle({
     fontFamily: 'Arial',
     fontSize: 24,
@@ -23,7 +25,11 @@ export class GameScreenService {
   private lifesLabel: Graphics | undefined;
   private levelLabel: Text | undefined;
 
-  constructor(private readonly application: ApplicationService) {
+  constructor(
+    private readonly application: ApplicationService,
+    private readonly ship: GameShipService,
+  ) {
+    super();
   }
 
   init(): void {
@@ -54,7 +60,7 @@ export class GameScreenService {
     this.points !.text = value.toString().padStart(7, '0');
   }
 
-  set lifes(value: number) {
+  private set lifes(value: number) {
     this.lifesLabel !.width = value * 25;
   }
 
@@ -62,5 +68,9 @@ export class GameScreenService {
     this.levelLabel !.text = 'Level: ' + value.toString();
     this.levelLabel !.updateText(true);
     this.levelLabel !.x = this.application.screen.width - this.levelLabel !.width;
+  }
+
+  update(): void {
+    this.lifes = this.ship.instance.energy;
   }
 }

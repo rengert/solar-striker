@@ -1,7 +1,9 @@
 import { FrameObject, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../../game-constants';
+import { ExplosionService } from '../../services/explosion.service';
 import { GameShotService } from '../../services/game-shot.service';
 import { AnimatedGameSprite } from './animated-game-sprite';
+import { ObjectType } from './object-type.enum';
 import { ShipType } from './ship-type.enum';
 
 export class Ship extends AnimatedGameSprite {
@@ -10,28 +12,29 @@ export class Ship extends AnimatedGameSprite {
   lastShot = 0;
   autoFire = false;
 
-  #energy = 10;
 
   private elapsed = 0;
 
   // eslint-disable-next-line max-params
   constructor(
-    readonly type: ShipType,
+    readonly shipType: ShipType,
     private readonly shotService: GameShotService,
+    explosion: ExplosionService,
     speed: number,
     textures: Texture[] | FrameObject[],
     autoUpdate?: boolean) {
-    super(speed, textures, autoUpdate);
+    super(shipType as unknown as ObjectType, explosion, speed, textures, autoUpdate);
 
-    this.shotSpeed = GAME_CONFIG.ships[this.type].shotSpeed;
+    this.energy = GAME_CONFIG.ships[this.shipType].energy;
+    this.shotSpeed = GAME_CONFIG.ships[this.shipType].shotSpeed;
   }
 
-  set energy(value: number) {
-    this.#energy = Math.min(value, 10);
+  override set energy(value: number) {
+    super.energy = Math.min(value, GAME_CONFIG.ships[this.shipType].energy);
   };
 
-  get energy(): number {
-    return this.#energy;
+  override get energy(): number {
+    return super.energy ?? 0;
   }
 
   shot(): void {

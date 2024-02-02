@@ -1,6 +1,7 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
+import { ObjectType } from '../models/pixijs/object-type.enum';
 import { CreditsPopup } from '../popups/credits-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
@@ -13,7 +14,9 @@ import { GameMeteorService } from './game-meteor.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
+import { ObjectService } from './object.service';
 import { StorageService } from './storage.service';
+import { UpdatableService } from './updatable.service';
 
 function handleMouseMove(event: {
   data: { originalEvent: PointerEvent | TouchEvent }
@@ -35,7 +38,19 @@ export class GameService {
   private readonly ship = inject(GameShipService);
   private readonly meteor = inject(GameMeteorService);
   private readonly gameScreen = inject(GameScreenService);
+  private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
+
+  private readonly updatables: UpdatableService[] = [
+    this.collectables,
+    this.landscape,
+    this.enemy,
+    this.ship,
+    this.meteor,
+    this.shotService,
+    this.object,
+    this.gameScreen,
+  ];
 
   readonly kills = signal(0);
 
@@ -57,6 +72,12 @@ export class GameService {
 
       this.gameScreen.kills = this.kills();
       this.gameScreen.level = this.level();
+    });
+
+    this.object.onDestroyed(ObjectType.enemy, (_, by) => {
+      if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+        this.kills.update(value => value + 1);
+      }
     });
   }
 
@@ -82,23 +103,9 @@ export class GameService {
       if (!this.started()) {
         return;
       }
-      // moving landscape
-      this.landscape.update(delta);
-      // spawn enemies
-      this.enemy.update(delta, this.level());
-      // spawn meteors
-      this.meteor.update(delta, this.level());
-      this.enemy.hit(this.meteor.meteors, false, false);
-      this.meteor.hit(this.shotService.shots);
-      const hits = this.enemy.hit(this.shotService.shots);
-      this.kills.update(value => value + hits);
-      if (
-        this.enemy.kill(this.ship.instance)
-        || this.meteor.kill(this.ship.instance)
-      ) {
-        this.ship.instance.energy -= 1;
-        this.gameScreen.lifes = this.ship.instance.energy;
-      }
+
+      this.updatables.forEach(updatable => updatable.update(delta, this.level()));
+
 
       if (this.ship.instance.energy === 0) {
         void this.storage.setHighscore(this.kills(), this.level());
@@ -106,10 +113,6 @@ export class GameService {
         this.ship.instance.destroy();
         this.started.set(false);
       }
-
-      this.gameScreen.lifes = this.ship.instance.energy;
-      this.collectables.collect(this.ship.instance);
-      this.shotService.update();
     });
   }
 

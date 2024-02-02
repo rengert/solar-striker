@@ -1,9 +1,12 @@
-import { Injectable } from '@angular/core';
-import { AnimatedSprite, Assets, Container, Spritesheet, Texture } from 'pixi.js';
+import { inject, Injectable } from '@angular/core';
+import { AnimatedSprite, Assets, Spritesheet, Texture } from 'pixi.js';
+import { ApplicationService } from './application.service';
 
 @Injectable({ providedIn: 'root' })
 export class ExplosionService {
   private explosionSprite: Spritesheet | undefined;
+
+  private readonly application = inject(ApplicationService);
 
   private async getAnimationSprite(): Promise<AnimatedSprite> {
     if (!this.explosionSprite) {
@@ -14,7 +17,6 @@ export class ExplosionService {
   }
 
   async explode(
-    stage: Container,
     x: number,
     y: number,
     oncomplete: (explosion: AnimatedSprite) => void = (): void => {
@@ -30,7 +32,7 @@ export class ExplosionService {
       oncomplete(explosion);
       explosion.destroy();
     };
-    stage.addChild(explosion);
+    this.application.stage.addChild(explosion);
     explosion.play();
   }
 }

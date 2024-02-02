@@ -4,18 +4,18 @@ import { GAME_CONFIG } from '../game-constants';
 import { Rocket } from '../models/pixijs/rocket';
 import { Ship } from '../models/pixijs/ship';
 import { ApplicationService } from './application.service';
+import { ExplosionService } from './explosion.service';
+import { ObjectService } from './object.service';
 
 @Injectable()
 export class GameShotService {
-  #shots: Rocket[] = [];
-
   private laserAnimation: Texture[] | undefined;
 
-  constructor(private readonly application: ApplicationService) {
-  }
-
-  get shots(): Rocket[] {
-    return [...this.#shots];
+  constructor(
+    private readonly application: ApplicationService,
+    private readonly explosionService: ExplosionService,
+    private readonly object: ObjectService,
+  ) {
   }
 
   async init(): Promise<void> {
@@ -29,7 +29,7 @@ export class GameShotService {
   shot(power: number, ship: Ship, up: boolean): void {
     const { x, y } = ship;
     for (let i = 1; i <= power; i++) {
-      const shot = new Rocket(up ? -GAME_CONFIG.ships[ship.type].rocketSpeed : GAME_CONFIG.ships[ship.type].rocketSpeed, this.laserAnimation !);
+      const shot = new Rocket(this.explosionService, up ? -GAME_CONFIG.ships[ship.shipType].rocketSpeed : GAME_CONFIG.ships[ship.shipType].rocketSpeed, this.laserAnimation !);
       shot.reference = ship;
       shot.animationSpeed = 0.167;
       shot.play();
@@ -46,13 +46,12 @@ export class GameShotService {
         shot.y = y - 6;
       }
 
-      this.#shots.push(shot);
+      this.object.add(shot);
       this.application.stage.addChild(shot);
     }
   }
 
   update(): void {
-    this.#shots.filter(shot => !shot.destroyed && shot.y < 0).forEach(shot => shot.destroy());
-    this.#shots = this.#shots.filter(shot => !shot.destroyed);
+    //
   }
 }

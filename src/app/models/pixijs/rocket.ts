@@ -1,10 +1,16 @@
+import { FrameObject, Texture } from 'pixi.js';
+import { ExplosionService } from '../../services/explosion.service';
 import { AnimatedGameSprite } from './animated-game-sprite';
-import { Ship } from './ship';
+import { ObjectType } from './object-type.enum';
 
 export class Rocket extends AnimatedGameSprite {
-  reference: Ship | undefined;
+  constructor(
+    explosion: ExplosionService,
+    speed: number,
+    textures: Texture[] | FrameObject[],
+    autoUpdate?: boolean) {
+    super(ObjectType.rocket, explosion, speed, textures, autoUpdate);
 
-  override hit(object2: AnimatedGameSprite): boolean {
-    return this.reference !== object2 && super.hit(object2);
+    this.energy = 1;
   }
 }

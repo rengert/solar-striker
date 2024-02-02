@@ -16,6 +16,7 @@ interface GameConfig extends Config {
   ships: Record<ShipType, {
     shotSpeed: number;
     rocketSpeed: number;
+    energy: number;
   }>,
 }
 
@@ -30,10 +31,12 @@ export const GAME_CONFIG: GameConfig = {
     [ShipType.ship]: {
       rocketSpeed: 6,
       shotSpeed: 1,
+      energy: 10,
     },
     [ShipType.enemy]: {
       rocketSpeed: 4,
       shotSpeed: 0.1,
+      energy: 1,
     },
   },
   powerUpConfig: [
