@@ -1,12 +1,22 @@
-import { AnimatedSprite, FrameObject, Sprite, Texture } from 'pixi.js';
+import { AnimatedSprite, FrameObject, Texture } from 'pixi.js';
+import { ExplosionService } from '../../services/explosion.service';
+import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
+import { ObjectType } from './object-type.enum';
 
 export class AnimatedGameSprite extends AnimatedSprite {
-  private readonly speed: number = 1;
+  protected readonly speed: number = 1;
+  protected _energy: number | undefined;
 
+  power = 1;
+  reference: ObjectModelType | undefined;
+  destroying = false;
   targetX?: number;
 
+  // eslint-disable-next-line max-params
   constructor(
+    readonly type: ObjectType,
+    private readonly explosion: ExplosionService | null,
     speed: number,
     textures: Texture[] | FrameObject[],
     autoUpdate?: boolean) {
@@ -15,7 +25,24 @@ export class AnimatedGameSprite extends AnimatedSprite {
     this.speed = speed;
   }
 
+  get energy(): number | undefined {
+    return this._energy;
+  }
+
+  set energy(value: number) {
+    this._energy = value;
+  }
+
+  explode(): void {
+    void this.explosion?.explode(this.x, this.y);
+    this.destroying = true;
+  }
+
   override update(delta: number): void {
+    if (this.destroying && !this.destroyed) {
+      this.destroy();
+      return;
+    }
     super.update(delta);
 
     this.y += delta * this.speed;
@@ -26,9 +53,10 @@ export class AnimatedGameSprite extends AnimatedSprite {
     }
   }
 
-  hit(object2: Sprite): boolean {
+  hit(object2: ObjectModelType): boolean {
     return hit(this, object2);
   }
+
 
   private getSpeed(targetX: number, x: number): number {
     const distance = Math.abs(targetX - x);

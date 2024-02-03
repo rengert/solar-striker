@@ -1,19 +1,18 @@
 import { Injectable } from '@angular/core';
 import { Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
-import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
+import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
 import { BaseService } from './base.service';
+import { ExplosionService } from './explosion.service';
 
 @Injectable()
 export class GameMeteorService extends BaseService {
-  #meteors: GameSprite[] = [];
-
   private elapsed = 0;
   private lastMeteorSpawn = -1;
   private readonly textures: Texture[];
 
-  constructor() {
+  constructor(private readonly explosionService: ExplosionService) {
     super();
 
     this.textures = [
@@ -24,20 +23,13 @@ export class GameMeteorService extends BaseService {
     ];
   }
 
-  get meteors(): GameSprite[] {
-    return [...this.#meteors];
-  }
-
   update(delta: number, level: number): void {
     this.elapsed += delta;
 
-    this.#meteors = this.#meteors.filter(meteor => !meteor.destroyed);
-    this.#meteors
+    this.object.meteors()
       .filter(meteor => meteor.y > this.application.screen.height + 50)
       .forEach(meteor => meteor.destroy());
-    this.#meteors = this.#meteors.filter(meteor => !meteor.destroyed);
 
-    this.#meteors.forEach(meteor => meteor.update(delta));
 
     const check = Math.floor(this.elapsed);
     if (((check % Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
@@ -47,38 +39,11 @@ export class GameMeteorService extends BaseService {
     }
   }
 
-  hit(shots: AnimatedGameSprite[]): number {
-    for (const shot of shots.filter(s => !s.destroyed)) {
-      const hit = this.meteors.find(meteor => !meteor.destroyed && meteor.hit(shot));
-      if (hit) {
-        this.explode(hit.x, hit.y);
-        shot.destroy();
-
-        if (hit.power === 0) {
-          hit.destroy();
-        }
-      }
-    }
-
-    return 0;
-  }
-
-  kill(ship: AnimatedGameSprite | undefined): boolean {
-    if (!ship || ship.destroyed) {
-      return false;
-    }
-
-    const hit = this.meteors.find(enemy => !enemy.destroyed && ship.hit(enemy));
-    if (hit) {
-      this.explode(hit.x, hit.y);
-      return true;
-    }
-    return false;
-  }
-
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     const meteor = new GameSprite(
+      ObjectType.meteor,
+      this.explosionService,
       1 + (0.25 * (level)),
       this.textures[Math.floor(Math.random() * this.textures.length)],
     );
@@ -87,8 +52,8 @@ export class GameMeteorService extends BaseService {
     meteor.y = 10;
     meteor.width += Math.random() * 20;
     meteor.height += Math.random() * 20;
-    meteor.power = 10;
-    this.#meteors.push(meteor);
+    meteor.energy = 10;
+    this.object.add(meteor);
     this.application.stage.addChild(meteor);
   }
 }

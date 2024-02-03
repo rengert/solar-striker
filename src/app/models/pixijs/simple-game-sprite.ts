@@ -1,13 +1,24 @@
 import { Sprite, Texture } from 'pixi.js';
+import { ExplosionService } from '../../services/explosion.service';
+import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
+import { ObjectType } from './object-type.enum';
 
 export class GameSprite extends Sprite {
   private readonly ySpeed: number;
   private readonly xSpeed: number;
 
-  power: number | undefined;
+  power = 1;
+  reference: ObjectModelType | undefined;
+  energy: number | undefined;
+  destroying = false;
 
-  constructor(speed: number, texture: Texture) {
+  constructor(
+    readonly type: ObjectType,
+    private readonly explosion: ExplosionService,
+    speed: number,
+    texture: Texture,
+  ) {
     super(texture);
 
     this.ySpeed = Math.random() * speed;
@@ -20,11 +31,12 @@ export class GameSprite extends Sprite {
     this.x += delta * this.xSpeed;
   }
 
-  hit(object2: Sprite): boolean {
-    const event = hit(this, object2);
-    if (event && this.power !== undefined) {
-      this.power -= 1;
-    }
-    return event;
+  hit(object2: ObjectModelType): boolean {
+    return hit(this, object2);
+  }
+
+  explode(): void {
+    void this.explosion.explode(this.x, this.y);
+    this.destroying = true;
   }
 }
