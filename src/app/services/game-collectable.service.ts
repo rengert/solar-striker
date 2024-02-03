@@ -3,8 +3,8 @@ import { Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
+import { Ship } from '../models/pixijs/ship';
 import { ApplicationService } from './application.service';
-import { GameShipService } from './game-ship.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
@@ -14,21 +14,20 @@ interface Dictionary<T> {
 
 @Injectable()
 export class GameCollectableService extends UpdatableService {
-  private collectables: PowerUpSprite[] = [];
   private readonly animations: Dictionary<Texture[]> = {};
 
   constructor(
     private readonly application: ApplicationService,
-    private readonly shipService: GameShipService,
+    private readonly object: ObjectService,
     objectService: ObjectService,
   ) {
     super();
 
     objectService.onDestroyed(ObjectType.enemy, (enemy, by) => this.spawn(enemy, by));
+    objectService.onDestroyed(ObjectType.collectable, (powerUp, by) => this.collect(powerUp, by));
   }
 
   async init(): Promise<void> {
-    this.collectables.forEach(collectable => collectable.destroy());
     if (Object.values(this.animations).length === 0) {
       for (const config of GAME_CONFIG.powerUpConfig) {
         const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
@@ -57,22 +56,21 @@ export class GameCollectableService extends UpdatableService {
     powerUp.y = y;
     powerUp.power = 0;
     this.application.stage.addChild(powerUp);
-    this.collectables.push(powerUp);
+    this.object.add(powerUp);
+  }
+
+  collect(object: ObjectModelType, by: ObjectModelType): void {
+    if (by.type !== ObjectType.ship) {
+      return;
+    }
+    const ship = by as unknown as Ship;
+    const powerUp = object as unknown as PowerUpSprite;
+    ship.shotSpeed += powerUp.config.powerUp.speed;
+    ship.shotPower += powerUp.config.powerUp.shot;
+    ship.energy += powerUp.config.powerUp.energy;
   }
 
   update(): void {
-    const ship = this.shipService.instance;
-    if (ship.destroyed) {
-      return;
-    }
-
-    const powerUp = this.collectables.find(collectable => !collectable.destroyed && ship.hit(collectable));
-    if (powerUp) {
-      ship.shotSpeed += powerUp.config.powerUp.speed;
-      ship.shotPower += powerUp.config.powerUp.shot;
-      ship.energy += powerUp.config.powerUp.energy;
-      powerUp.destroy();
-      this.collectables = this.collectables.filter(collectable => !collectable.destroyed);
-    }
+    //
   }
 }
