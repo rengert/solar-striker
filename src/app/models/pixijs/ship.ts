@@ -21,9 +21,8 @@ export class Ship extends AnimatedGameSprite {
     private readonly shotService: GameShotService,
     explosion: ExplosionService,
     speed: number,
-    textures: Texture[] | FrameObject[],
-    autoUpdate?: boolean) {
-    super(shipType as unknown as ObjectType, explosion, speed, textures, autoUpdate);
+    textures: Texture[] | FrameObject[]) {
+    super(shipType as unknown as ObjectType, explosion, speed, textures);
 
     this.energy = GAME_CONFIG.ships[this.shipType].energy;
     this.shotSpeed = GAME_CONFIG.ships[this.shipType].shotSpeed;

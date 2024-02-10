@@ -3,25 +3,26 @@ import { Texture, TilingSprite } from 'pixi.js';
 export class BackgroundSprite extends TilingSprite {
   // eslint-disable-next-line max-params
   constructor(
-    private readonly speedTilepositionY: number,
-    private readonly speedTilepositionX: number,
     texture: Texture,
-    width: number,
-    height: number,
-    private readonly speedY = 0,
-    private readonly maxY = 1000) {
-    super(texture, width, height);
-
-    this.speedTilepositionY = speedTilepositionY;
-    this.speedTilepositionX = speedTilepositionX;
+    private readonly config: {
+      speedTilePositionY: number,
+      speedTilePositionX: number,
+      width: number,
+      height: number,
+      speedY?: number,
+      maxY?: number
+    }) {
+    super(texture, config.width, config.height);
   }
 
   update(delta: number): void {
-    this.tilePosition.y += delta * this.speedTilepositionY;
-    this.tilePosition.x += delta * this.speedTilepositionX;
+    this.tilePosition.y += delta * this.config.speedTilePositionY;
+    this.tilePosition.x += delta * this.config.speedTilePositionX;
 
-    this.y += delta * this.speedY;
-    if (this.y > this.maxY) {
+    if (this.config.speedY) {
+      this.y += delta * this.config.speedY;
+    }
+    if (this.y > (this.config.maxY ?? 1000)) {
       this.y = -this.height;
     }
   }
