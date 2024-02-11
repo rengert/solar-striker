@@ -5,7 +5,6 @@ import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { BaseService } from './base.service';
 import { ExplosionService } from './explosion.service';
-import { GameCollectableService } from './game-collectable.service';
 import { GameShotService } from './game-shot.service';
 
 @Injectable()
@@ -16,7 +15,6 @@ export class GameEnemyService extends BaseService {
   private enemySprite!: Spritesheet;
 
   constructor(
-    private readonly collectables: GameCollectableService,
     private readonly explosionService: ExplosionService,
     private readonly shotService: GameShotService,
   ) {
@@ -37,7 +35,8 @@ export class GameEnemyService extends BaseService {
       });
 
     const check = Math.floor(this.elapsed);
-    if (((check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
+    if (this.object.enemies().length < GAME_CONFIG.enemy.maxCount
+      && ((check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
       && (check !== this.lastEnemySpawn)) {
       this.lastEnemySpawn = check;
       this.spawn(level);

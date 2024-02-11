@@ -9,6 +9,7 @@ interface Config {
 interface GameConfig extends Config {
   enemy: {
     autoSpawnSpeed: number;
+    maxCount: number;
   },
   meteor: {
     autoSpawnSpeed: number;
@@ -23,6 +24,7 @@ interface GameConfig extends Config {
 export const GAME_CONFIG: GameConfig = {
   enemy: {
     autoSpawnSpeed: 1.35, // per second
+    maxCount: 20,
   },
   meteor: {
     autoSpawnSpeed: 0.35, // per second

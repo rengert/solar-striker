@@ -7,9 +7,8 @@ export class Rocket extends AnimatedGameSprite {
   constructor(
     explosion: ExplosionService,
     speed: number,
-    textures: Texture[] | FrameObject[],
-    autoUpdate?: boolean) {
-    super(ObjectType.rocket, explosion, speed, textures, autoUpdate);
+    textures: Texture[] | FrameObject[]) {
+    super(ObjectType.rocket, explosion, speed, textures);
 
     this.energy = 1;
   }

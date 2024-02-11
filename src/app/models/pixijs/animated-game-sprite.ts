@@ -13,14 +13,12 @@ export class AnimatedGameSprite extends AnimatedSprite {
   destroying = false;
   targetX?: number;
 
-  // eslint-disable-next-line max-params
   constructor(
     readonly type: ObjectType,
     private readonly explosion: ExplosionService | null,
     speed: number,
-    textures: Texture[] | FrameObject[],
-    autoUpdate?: boolean) {
-    super(textures, autoUpdate);
+    textures: Texture[] | FrameObject[]) {
+    super(textures);
 
     this.speed = speed;
   }
