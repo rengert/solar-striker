@@ -14,6 +14,15 @@ export class GameLandscapeService extends UpdatableService {
       throw new Error('do not call setup twice');
     }
 
+    this.setupBackground();
+    this.setupClouds();
+  }
+
+  update(ticker: Ticker): void {
+    this.landscapes.forEach((item) => item.update(ticker));
+  }
+
+  private setupBackground(): void {
     const background = new BackgroundSprite(Texture.from('background'), {
       speedTilePositionY: 0.125,
       speedTilePositionX: 0,
@@ -22,7 +31,9 @@ export class GameLandscapeService extends UpdatableService {
     });
     this.landscapes.push(background);
     this.application.stage.addChild(background);
+  }
 
+  private setupClouds(): void {
     const cloud = new BackgroundSprite(Texture.from('clouds'), {
       speedTilePositionY: 0,
       speedTilePositionX: 0.025,
@@ -46,9 +57,5 @@ export class GameLandscapeService extends UpdatableService {
     cloud2.y = Math.floor(this.application.screen.height / 4);
     this.landscapes.push(cloud2);
     this.application.stage.addChild(cloud2);
-  }
-
-  update(ticker: Ticker): void {
-    this.landscapes.forEach((item) => item.update(ticker));
   }
 }
