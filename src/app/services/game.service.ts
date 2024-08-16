@@ -1,22 +1,22 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
-import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
-import { ObjectType } from '../models/pixijs/object-type.enum';
-import { CreditsPopup } from '../popups/credits-popup';
-import { HighscorePopup } from '../popups/highscore-popup';
-import { NavigationPopup } from '../popups/navigation-popup';
-import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
-import { ApplicationService } from './application.service';
-import { GameCollectableService } from './game-collectable.service';
-import { GameEnemyService } from './game-enemy.service';
-import { GameLandscapeService } from './game-landscape.service';
-import { GameMeteorService } from './game-meteor.service';
-import { GameScreenService } from './game-screen.service';
-import { GameShipService } from './game-ship.service';
-import { GameShotService } from './game-shot.service';
-import { ObjectService } from './object.service';
-import { StorageService } from './storage.service';
-import { UpdatableService } from './updatable.service';
+import {computed, effect, inject, Injectable, signal} from '@angular/core';
+import {AnimatedGameSprite} from '../models/pixijs/animated-game-sprite';
+import {AppScreen, AppScreenConstructor} from '../models/pixijs/app-screen';
+import {ObjectType} from '../models/pixijs/object-type.enum';
+import {CreditsPopup} from '../popups/credits-popup';
+import {HighscorePopup} from '../popups/highscore-popup';
+import {NavigationPopup} from '../popups/navigation-popup';
+import {YouAreDeadPopup} from '../popups/your-are-dead-popup';
+import {ApplicationService} from './application.service';
+import {GameCollectableService} from './game-collectable.service';
+import {GameEnemyService} from './game-enemy.service';
+import {GameLandscapeService} from './game-landscape.service';
+import {GameMeteorService} from './game-meteor.service';
+import {GameScreenService} from './game-screen.service';
+import {GameShipService} from './game-ship.service';
+import {GameShotService} from './game-shot.service';
+import {ObjectService} from './object.service';
+import {StorageService} from './storage.service';
+import {UpdatableService} from './updatable.service';
 
 function handleMouseMove(event: {
   data: { originalEvent: PointerEvent | TouchEvent }
@@ -86,7 +86,7 @@ export class GameService {
     await this.enemy.init();
     await this.ship.init();
     await this.shotService.init();
-    this.landscape.setup();
+    await this.landscape.setup();
     this.gameScreen.init();
 
     this.setup();
@@ -105,7 +105,7 @@ export class GameService {
       }
 
       this.updatables.forEach(updatable => updatable.update(delta, this.level()));
-      
+
       if (this.ship.instance.energy === 0) {
         void this.storage.setHighscore(this.kills(), this.level());
         void this.presentPopup(YouAreDeadPopup);

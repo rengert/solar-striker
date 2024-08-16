@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Assets, Spritesheet, Texture } from 'pixi.js';
+import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
@@ -25,8 +25,8 @@ export class GameEnemyService extends BaseService {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');
   }
 
-  update(delta: number, level: number): void {
-    this.elapsed += delta;
+  update(ticker: Ticker, level: number): void {
+    this.elapsed += ticker.deltaMS;
 
     this.object.enemies()
       .filter(enemy => enemy.y > this.application.screen.height + 50)

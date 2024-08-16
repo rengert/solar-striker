@@ -1,5 +1,5 @@
 import { ElementRef, Injectable } from '@angular/core';
-import { Application, Container, Rectangle, Ticker } from 'pixi.js';
+import { Application, Assets, Container, Rectangle, Ticker } from 'pixi.js';
 
 @Injectable()
 export class ApplicationService {
@@ -26,12 +26,35 @@ export class ApplicationService {
     return this.app.screen;
   }
 
-  init(elementRef: ElementRef): void {
-    this.app = new Application({
+  async init(elementRef: ElementRef): Promise<void> {
+    this.app = new Application();
+    await this.app.init({
       height: elementRef.nativeElement.clientHeight,
       width: elementRef.nativeElement.clientWidth,
       backgroundColor: 0x000000,
     });
-    elementRef.nativeElement.appendChild(this.app.view);
+
+    Assets.add({ alias: 'popup', src: 'assets/ui/navigation-popup.png' });
+    Assets.add({
+      alias: 'background',
+      src: 'assets/game/desert-background-looped.png',
+    });
+    Assets.add({ alias: 'clouds', src: 'assets/game/clouds-transparent.png' });
+    Assets.add({
+      alias: 'popup-bottom',
+      src: 'assets/ui/navigation-popup-bottom.png',
+    });
+
+    Assets.add({ alias: 'button', src: 'assets/ui/yellow_button00.png' });
+
+    await Assets.load([
+      'background',
+      'popup',
+      'clouds',
+      'popup-bottom',
+      'button',
+    ]);
+
+    elementRef.nativeElement.appendChild(this.app!.canvas);
   }
 }

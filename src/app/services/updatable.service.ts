@@ -1,3 +1,5 @@
+import {Ticker} from "pixi.js";
+
 export abstract class UpdatableService {
-  abstract update(delta: number, level?: number): void;
+  abstract update(ticker: Ticker, level?: number): void;
 }

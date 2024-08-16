@@ -1,4 +1,4 @@
-import { AnimatedSprite, FrameObject, Texture } from 'pixi.js';
+import {AnimatedSprite, FrameObject, Texture, Ticker} from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
@@ -36,14 +36,14 @@ export class AnimatedGameSprite extends AnimatedSprite {
     this.destroying = true;
   }
 
-  override update(delta: number): void {
+  override update(ticker: Ticker): void {
     if (this.destroying && !this.destroyed) {
       this.destroy();
       return;
     }
-    super.update(delta);
+    super.update(ticker);
 
-    this.y += delta * this.speed;
+    this.y += ticker.deltaMS * this.speed;
 
     if (this.targetX && this.x !== this.targetX) {
       const direction = this.targetX > this.x ? 1 : -1;

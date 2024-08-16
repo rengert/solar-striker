@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Texture } from 'pixi.js';
+import {Texture, Ticker} from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
@@ -23,8 +23,8 @@ export class GameMeteorService extends BaseService {
     ];
   }
 
-  update(delta: number, level: number): void {
-    this.elapsed += delta;
+  update(ticker: Ticker, level: number): void {
+    this.elapsed += ticker.deltaMS;
 
     this.object.meteors()
       .filter(meteor => meteor.y > this.application.screen.height + 50)

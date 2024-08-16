@@ -1,12 +1,14 @@
-import { inject, Injectable } from '@angular/core';
-import { Texture } from 'pixi.js';
-import { BackgroundSprite } from '../models/pixijs/background-sprite';
-import { ApplicationService } from './application.service';
+import {inject, Injectable} from '@angular/core';
+import {Texture, Ticker} from 'pixi.js';
+import {BackgroundSprite} from '../models/pixijs/background-sprite';
+import {ApplicationService} from './application.service';
+import {UpdatableService} from "./updatable.service";
 
 @Injectable()
-export class GameLandscapeService {
+export class GameLandscapeService extends UpdatableService {
   private readonly application = inject(ApplicationService);
   private readonly landscapes: BackgroundSprite[] = [];
+
 
   setup(): void {
     if (this.landscapes.length) {
@@ -14,7 +16,7 @@ export class GameLandscapeService {
     }
 
     const background = new BackgroundSprite(
-      Texture.from('assets/game/desert-background-looped.png'),
+      Texture.from('background'),
       {
         speedTilePositionY: 0.25,
         speedTilePositionX: 0,
@@ -26,7 +28,7 @@ export class GameLandscapeService {
     this.application.stage.addChild(background);
 
     const cloud = new BackgroundSprite(
-      Texture.from('assets/game/clouds-transparent.png'),
+      Texture.from('clouds'),
       {
         speedTilePositionY: 0,
         speedTilePositionX: 0.25,
@@ -56,7 +58,7 @@ export class GameLandscapeService {
     this.application.stage.addChild(cloud2);
   }
 
-  update(delta: number): void {
-    this.landscapes.forEach(item => item.update(delta));
+  update(ticker: Ticker): void {
+    this.landscapes.forEach(item => item.update(ticker));
   }
 }

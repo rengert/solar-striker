@@ -41,8 +41,8 @@ export class GameShipService extends UpdatableService {
   spawn(): void {
     this.#ship = new Ship(ShipType.ship, this.gameShot, this.explosionService, 0, this.shipAnimation !);
     this.#ship.animationSpeed = 0.167;
-    this.#ship._width = 20;
-    this.#ship._height = 20;
+    this.#ship.width = 20;
+    this.#ship.height = 20;
     this.#ship.play();
     this.#ship.x = Math.floor(this.application.screen.width / 2);
     this.#ship.y = this.application.screen.height - 100;

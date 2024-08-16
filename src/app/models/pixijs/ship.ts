@@ -1,4 +1,4 @@
-import { FrameObject, Texture } from 'pixi.js';
+import {FrameObject, Texture, Ticker} from 'pixi.js';
 import { GAME_CONFIG } from '../../game-constants';
 import { ExplosionService } from '../../services/explosion.service';
 import { GameShotService } from '../../services/game-shot.service';
@@ -40,10 +40,10 @@ export class Ship extends AnimatedGameSprite {
     this.shotService.shot(this.shotPower, this, this.speed <= 0);
   }
 
-  override update(delta: number): void {
-    super.update(delta);
+  override update(ticker: Ticker): void {
+    super.update(ticker);
 
-    this.elapsed += delta;
+    this.elapsed += ticker.deltaMS;
 
     const check = Math.floor(this.elapsed);
     // todo: check if we want two power ups for speed

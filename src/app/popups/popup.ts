@@ -22,14 +22,14 @@ export abstract class Popup extends Container {
     this.container.height = 430;
 
     this.addChild(this.container);
-    const panel = Sprite.from('assets/ui/navigation-popup.png');
+    const panel = new Sprite(Texture.from('popup'));
     panel.anchor.set(0.5);
     panel.width = 265;
     panel.height = 230;
     this.container.addChild(panel);
 
     if (height > 230) {
-      const bottom = Sprite.from('assets/ui/navigation-popup-bottom.png');
+      const bottom = new Sprite(Texture.from('popup-bottom'));
       bottom.anchor.set(0.5, 0.5);
       bottom.width = 265;
       bottom.height = 230;
@@ -38,11 +38,14 @@ export abstract class Popup extends Container {
       this.container.addChild(bottom);
     }
 
-    this.title = new Text(title, {
-      fontFamily: 'DefaultFont',
-      dropShadowColor: 0x000000,
-      fontSize: 14,
-      fill: 0xffffff,
+    this.title = new Text({
+      text: title,
+      style: {
+        fontFamily: 'DefaultFont',
+        //dropShadowColor: 0x000000,
+        fontSize: 14,
+        fill: 0xffffff,
+      },
     });
     this.title.x = 0;
     this.title.y = -96;
@@ -75,12 +78,16 @@ export abstract class Popup extends Container {
 
   protected addText(
     content: string,
-    appearance: { size: number, rotated?: boolean },
-    position: { y: number; x?: number }): void {
-    const text = new Text(content, {
-      fontFamily: 'DefaultFont',
-      dropShadowColor: '000000',
-      fontSize: appearance.size,
+    appearance: { size: number; rotated?: boolean },
+    position: { y: number; x?: number },
+  ): void {
+    const text = new Text({
+      text: content,
+      style: {
+        fontFamily: 'DefaultFont',
+        //dropShadowColor: '000000',
+        fontSize: appearance.size,
+      },
     });
     text.x = position.x ?? 0;
     text.y = position.y;
@@ -90,13 +97,20 @@ export abstract class Popup extends Container {
   }
 
   protected addButton(textContent: string, callback: () => void, index: number): void {
-    const button = new Button(Sprite.from('assets/ui/yellow_button00.png'));
+    const button = new Button(Sprite.from(Texture.from('button')));
     button.view.width = 190;
     button.view.height = 49;
     button.view.x = -95;
     button.view.y = -65 + index * 60;
 
-    const text = new Text(textContent, { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    const text = new Text({
+      text: textContent,
+      style: {
+        fontFamily: 'DefaultFont',
+        // dropShadowColor: '000000',
+        fontSize: 14,
+      },
+    });
     text.anchor.set(0.5, 0.5);
     text.x = 100;
     text.y = 22;

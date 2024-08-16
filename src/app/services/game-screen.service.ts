@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
-import { ApplicationService } from './application.service';
-import { GameShipService } from './game-ship.service';
-import { UpdatableService } from './updatable.service';
+import {Injectable} from '@angular/core';
+import {Container, Graphics, Text, TextStyle} from 'pixi.js';
+import {ApplicationService} from './application.service';
+import {GameShipService} from './game-ship.service';
+import {UpdatableService} from './updatable.service';
 
 @Injectable()
 export class GameScreenService extends UpdatableService {
@@ -11,14 +11,14 @@ export class GameScreenService extends UpdatableService {
     fontSize: 24,
     fontStyle: 'normal',
     fontWeight: 'bold',
-    fill: ['#ffffff', '#00ff99'], // gradient
+    //fill: ['#ffffff', '#00ff99'], // gradient
     stroke: '#4a1850',
-    strokeThickness: 5,
+    //strokeThickness: 5,
     dropShadow: true,
-    dropShadowColor: '#000000',
-    dropShadowBlur: 4,
-    dropShadowAngle: Math.PI / 6,
-    dropShadowDistance: 3,
+    //dropShadowColor: '#000000',
+    //dropShadowBlur: 4,
+    //dropShadowAngle: Math.PI / 6,
+    //dropShadowDistance: 3,
     align: 'right',
   });
   private points: Text | undefined;
@@ -40,9 +40,9 @@ export class GameScreenService extends UpdatableService {
 
     const energyBarContainer = new Container();
     this.lifesLabel = new Graphics();
-    this.lifesLabel.beginFill(0xff0000);
-    this.lifesLabel.drawRect(0, 0, 250, 10);
-    this.lifesLabel.endFill();
+    this.lifesLabel.fill(0xff0000);
+    this.lifesLabel.rect(0, 0, 250, 10);
+    this.lifesLabel.fill();
     energyBarContainer.addChild(this.lifesLabel);
     this.application.stage.addChild(energyBarContainer);
 
@@ -66,7 +66,6 @@ export class GameScreenService extends UpdatableService {
 
   set level(value: number) {
     this.levelLabel !.text = 'Level: ' + value.toString();
-    this.levelLabel !.updateText(true);
     this.levelLabel !.x = this.application.screen.width - this.levelLabel !.width;
   }
 
