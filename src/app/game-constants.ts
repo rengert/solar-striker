@@ -10,34 +10,37 @@ interface GameConfig extends Config {
   enemy: {
     autoSpawnSpeed: number;
     maxCount: number;
-  },
+  };
   meteor: {
     autoSpawnSpeed: number;
-  },
-  ships: Record<ShipType, {
-    shotSpeed: number;
-    rocketSpeed: number;
-    energy: number;
-  }>,
+  };
+  ships: Record<
+    ShipType,
+    {
+      shotSpeed: number;
+      rocketSpeed: number;
+      energy: number;
+    }
+  >;
 }
 
 export const GAME_CONFIG: GameConfig = {
   enemy: {
-    autoSpawnSpeed: 1.35, // per second
+    autoSpawnSpeed: 0.35, // per second
     maxCount: 20,
   },
   meteor: {
-    autoSpawnSpeed: 0.35, // per second
+    autoSpawnSpeed: 0.135, // per second
   },
   ships: {
     [ShipType.ship]: {
-      rocketSpeed: 6,
-      shotSpeed: 1,
+      rocketSpeed: 0.6,
+      shotSpeed: 0.1,
       energy: 10,
     },
     [ShipType.enemy]: {
-      rocketSpeed: 4,
-      shotSpeed: 0.1,
+      rocketSpeed: 0.4,
+      shotSpeed: 0.01,
       energy: 1,
     },
   },
