@@ -1,4 +1,4 @@
-import { Button } from '@pixi/ui';
+import { ButtonContainer } from '@pixi/ui';
 import gsap from 'gsap';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
@@ -97,11 +97,11 @@ export abstract class Popup extends Container {
   }
 
   protected addButton(textContent: string, callback: () => void, index: number): void {
-    const button = new Button(Sprite.from(Texture.from('button')));
-    button.view.width = 190;
-    button.view.height = 49;
-    button.view.x = -95;
-    button.view.y = -65 + index * 60;
+    const button = new ButtonContainer(Sprite.from(Texture.from('button')));
+    button.width = 190;
+    button.height = 49;
+    button.x = -95;
+    button.y = -65 + index * 60;
 
     const text = new Text({
       text: textContent,
@@ -114,9 +114,9 @@ export abstract class Popup extends Container {
     text.anchor.set(0.5, 0.5);
     text.x = 100;
     text.y = 22;
-    button.view.addChild(text);
+    button.addChild(text);
 
     button.onPress.connect(callback);
-    this.container.addChild(button.view);
+    this.container.addChild(button);
   }
 }
