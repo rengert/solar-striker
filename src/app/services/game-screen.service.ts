@@ -66,7 +66,7 @@ export class GameScreenService extends UpdatableService {
     this.lifesLabel.y = 55;
     this.application.stage.addChild(this.lifesLabel);
 
-    this.levelLabel = new Text('Level: 1', this.style);
+    this.levelLabel = new Text({ text: 'Level: 1', style: this.style });
     this.levelLabel.x = this.application.screen.width - this.levelLabel.width;
     this.levelLabel.y = 45;
     this.application.stage.addChild(this.levelLabel);
