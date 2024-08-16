@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {Texture, Ticker} from 'pixi.js';
+import { Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
@@ -10,30 +10,24 @@ import { ExplosionService } from './explosion.service';
 export class GameMeteorService extends BaseService {
   private elapsed = 0;
   private lastMeteorSpawn = -1;
-  private readonly textures: Texture[];
 
   constructor(private readonly explosionService: ExplosionService) {
     super();
-
-    this.textures = [
-      Texture.from('assets/game/meteors/meteorBrown_small1.png'),
-      Texture.from('assets/game/meteors/meteorBrown_small2.png'),
-      Texture.from('assets/game/meteors/meteorGrey_small1.png'),
-      Texture.from('assets/game/meteors/meteorGrey_small2.png'),
-    ];
   }
 
   update(ticker: Ticker, level: number): void {
     this.elapsed += ticker.deltaMS;
 
-    this.object.meteors()
-      .filter(meteor => meteor.y > this.application.screen.height + 50)
-      .forEach(meteor => meteor.destroy());
-
+    this.object
+      .meteors()
+      .filter((meteor) => meteor.y > this.application.screen.height + 50)
+      .forEach((meteor) => meteor.destroy());
 
     const check = Math.floor(this.elapsed);
-    if (((check % Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
-      && (check !== this.lastMeteorSpawn)) {
+    if (
+      check % Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + 0.1 * (level - 1))) === 0 &&
+      check !== this.lastMeteorSpawn
+    ) {
       this.lastMeteorSpawn = check;
       this.spawn(level);
     }
@@ -41,11 +35,12 @@ export class GameMeteorService extends BaseService {
 
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
+    const index = Math.floor(Math.random() * 4) + 1;
     const meteor = new GameSprite(
       ObjectType.meteor,
       this.explosionService,
-      1 + (0.25 * (level)),
-      this.textures[Math.floor(Math.random() * this.textures.length)],
+      1 + 0.25 * level,
+      Texture.from('meteor' + index),
     );
     meteor.anchor.set(0.5);
     meteor.x = position;

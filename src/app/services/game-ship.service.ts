@@ -23,14 +23,6 @@ export class GameShipService extends UpdatableService {
     super();
   }
 
-  async init(): Promise<void> {
-    if (!this.shipAnimation) {
-      const ship = await Assets.load<Spritesheet>('assets/game/ship/ship_blue.json');
-      const animations: Record<string, Texture[]> = ship.animations;
-      this.shipAnimation = animations['ship'];
-    }
-  }
-
   get instance(): Ship {
     if (!this.#ship) {
       throw new Error('Where is my ship?');
@@ -38,11 +30,19 @@ export class GameShipService extends UpdatableService {
     return this.#ship;
   }
 
+  async init(): Promise<void> {
+    if (!this.shipAnimation) {
+      const ship = await Assets.load<Spritesheet>('ship');
+      const animations: Record<string, Texture[]> = ship.animations;
+      this.shipAnimation = animations['ship'];
+    }
+  }
+
   spawn(): void {
-    this.#ship = new Ship(ShipType.ship, this.gameShot, this.explosionService, 0, this.shipAnimation !);
-    this.#ship.animationSpeed = 0.167;
-    this.#ship.width = 20;
-    this.#ship.height = 20;
+    this.#ship = new Ship(ShipType.ship, this.gameShot, this.explosionService, 0, this.shipAnimation!);
+    this.#ship.animationSpeed = 0.08;
+    this.#ship.width = 40;
+    this.#ship.height = 40;
     this.#ship.play();
     this.#ship.x = Math.floor(this.application.screen.width / 2);
     this.#ship.y = this.application.screen.height - 100;

@@ -1,6 +1,13 @@
 import { ElementRef, Injectable } from '@angular/core';
 import { Application, Assets, Container, Rectangle, Ticker } from 'pixi.js';
 
+const assets: Record<string, string> = {
+  meteor1: 'assets/game/meteors/meteorBrown_small1.png',
+  meteor2: 'assets/game/meteors/meteorBrown_small2.png',
+  meteor3: 'assets/game/meteors/meteorGrey_small1.png',
+  meteor4: 'assets/game/meteors/meteorGrey_small2.png',
+};
+
 @Injectable()
 export class ApplicationService {
   private app: Application | undefined;
@@ -44,16 +51,16 @@ export class ApplicationService {
       alias: 'popup-bottom',
       src: 'assets/ui/navigation-popup-bottom.png',
     });
+    Assets.add({ alias: 'ship', src: 'assets/game/ship/ship_blue.json' });
 
     Assets.add({ alias: 'button', src: 'assets/ui/yellow_button00.png' });
 
-    await Assets.load([
-      'background',
-      'popup',
-      'clouds',
-      'popup-bottom',
-      'button',
-    ]);
+    for (const alias in assets) {
+      Assets.add({ alias, src: assets[alias] });
+      await Assets.load(alias);
+    }
+
+    await Assets.load(['background', 'popup', 'clouds', 'popup-bottom', 'button']);
 
     elementRef.nativeElement.appendChild(this.app!.canvas);
   }
