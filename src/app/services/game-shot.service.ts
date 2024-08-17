@@ -15,8 +15,7 @@ export class GameShotService {
     private readonly application: ApplicationService,
     private readonly explosionService: ExplosionService,
     private readonly object: ObjectService,
-  ) {
-  }
+  ) {}
 
   async init(): Promise<void> {
     if (!this.laserAnimation) {
@@ -28,14 +27,15 @@ export class GameShotService {
 
   shot(power: number, ship: Ship, up: boolean): void {
     const { x, y } = ship;
+    const speed = up ? -GAME_CONFIG.ships[ship.shipType].rocketSpeed : GAME_CONFIG.ships[ship.shipType].rocketSpeed;
     for (let i = 1; i <= power; i++) {
-      const shot = new Rocket(this.explosionService, up ? -GAME_CONFIG.ships[ship.shipType].rocketSpeed : GAME_CONFIG.ships[ship.shipType].rocketSpeed, this.laserAnimation !);
+      const shot = new Rocket(this.explosionService, speed, this.laserAnimation!);
       shot.reference = ship;
       shot.animationSpeed = 0.167;
       shot.play();
       shot.rotation = up ? 0 : Math.PI;
       shot.anchor.set(0.5);
-      if ((power === 1) || (power === 3 && i === 2)) {
+      if (power === 1 || (power === 3 && i === 2)) {
         shot.x = x;
         shot.y = y - 22;
       } else if (power > 1 && i === 1) {

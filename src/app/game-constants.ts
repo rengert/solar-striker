@@ -35,12 +35,12 @@ export const GAME_CONFIG: GameConfig = {
   ships: {
     [ShipType.ship]: {
       rocketSpeed: 0.6,
-      shotSpeed: 0.1,
+      shotSpeed: 0.5,
       energy: 10,
     },
     [ShipType.enemy]: {
       rocketSpeed: 0.4,
-      shotSpeed: 0.01,
+      shotSpeed: 0.2,
       energy: 1,
     },
   },
