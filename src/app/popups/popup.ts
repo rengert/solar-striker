@@ -1,11 +1,10 @@
-import { Button } from '@pixi/ui';
+import { ButtonContainer } from '@pixi/ui';
 import gsap from 'gsap';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 export abstract class Popup extends Container {
   private readonly container: Container;
   private readonly background: Sprite;
-  private readonly title: Text;
 
   protected constructor(title: string, height = 230) {
     super();
@@ -22,32 +21,16 @@ export abstract class Popup extends Container {
     this.container.height = 430;
 
     this.addChild(this.container);
-    const panel = Sprite.from('assets/ui/navigation-popup.png');
+    const panel = new Sprite(Texture.from('popup'));
     panel.anchor.set(0.5);
     panel.width = 265;
     panel.height = 230;
     this.container.addChild(panel);
 
     if (height > 230) {
-      const bottom = Sprite.from('assets/ui/navigation-popup-bottom.png');
-      bottom.anchor.set(0.5, 0.5);
-      bottom.width = 265;
-      bottom.height = 230;
-      bottom.y = Math.max(80, height - 230);
-      bottom.x = 0;
-      this.container.addChild(bottom);
+      this.setLongPopup(height);
     }
-
-    this.title = new Text(title, {
-      fontFamily: 'DefaultFont',
-      dropShadowColor: 0x000000,
-      fontSize: 14,
-      fill: 0xffffff,
-    });
-    this.title.x = 0;
-    this.title.y = -96;
-    this.title.anchor.set(0.5, 0.5);
-    this.container.addChild(this.title);
+    this.addTitle(title);
   }
 
   async show(): Promise<void> {
@@ -75,12 +58,15 @@ export abstract class Popup extends Container {
 
   protected addText(
     content: string,
-    appearance: { size: number, rotated?: boolean },
-    position: { y: number; x?: number }): void {
-    const text = new Text(content, {
-      fontFamily: 'DefaultFont',
-      dropShadowColor: '000000',
-      fontSize: appearance.size,
+    appearance: { size: number; rotated?: boolean },
+    position: { y: number; x?: number },
+  ): void {
+    const text = new Text({
+      text: content,
+      style: {
+        fontFamily: 'DefaultFont',
+        fontSize: appearance.size,
+      },
     });
     text.x = position.x ?? 0;
     text.y = position.y;
@@ -90,19 +76,50 @@ export abstract class Popup extends Container {
   }
 
   protected addButton(textContent: string, callback: () => void, index: number): void {
-    const button = new Button(Sprite.from('assets/ui/yellow_button00.png'));
-    button.view.width = 190;
-    button.view.height = 49;
-    button.view.x = -95;
-    button.view.y = -65 + index * 60;
+    const button = new ButtonContainer(Sprite.from(Texture.from('button')));
+    button.width = 190;
+    button.height = 49;
+    button.x = -95;
+    button.y = -65 + index * 60;
 
-    const text = new Text(textContent, { fontFamily: 'DefaultFont', dropShadowColor: '000000', fontSize: 14 });
+    const text = new Text({
+      text: textContent,
+      style: {
+        fontFamily: 'DefaultFont',
+        fontSize: 14,
+      },
+    });
     text.anchor.set(0.5, 0.5);
     text.x = 100;
     text.y = 22;
-    button.view.addChild(text);
+    button.addChild(text);
 
     button.onPress.connect(callback);
-    this.container.addChild(button.view);
+    this.container.addChild(button);
+  }
+
+  private addTitle(text: string): void {
+    const title = new Text({
+      text,
+      style: {
+        fontFamily: 'DefaultFont',
+        fontSize: 14,
+        fill: 0xffffff,
+      },
+    });
+    title.x = 0;
+    title.y = -96;
+    title.anchor.set(0.5, 0.5);
+    this.container.addChild(title);
+  }
+
+  private setLongPopup(height: number): void {
+    const bottom = new Sprite(Texture.from('popup-bottom'));
+    bottom.anchor.set(0.5, 0.5);
+    bottom.width = 265;
+    bottom.height = 230;
+    bottom.y = Math.max(80, height - 230);
+    bottom.x = 0;
+    this.container.addChild(bottom);
   }
 }

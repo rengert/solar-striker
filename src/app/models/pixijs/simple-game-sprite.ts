@@ -1,4 +1,4 @@
-import { Sprite, Texture } from 'pixi.js';
+import {Sprite, Texture, Ticker} from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
@@ -25,7 +25,8 @@ export class GameSprite extends Sprite {
     this.xSpeed = Math.random() * speed / 2;
   }
 
-  update(delta: number): void {
+  update(ticker: Ticker): void {
+    const delta = ticker.deltaMS;
     this.rotation += Math.random() * 0.01 * delta;
     this.y += delta * this.ySpeed;
     this.x += delta * this.xSpeed;

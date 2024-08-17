@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import {Container, Ticker} from 'pixi.js';
 import { GameService } from '../../services/game.service';
 
 export interface AppScreen extends Container {
@@ -14,7 +14,7 @@ export interface AppScreen extends Container {
 
   reset?(): void;
 
-  update?(delta: number): void;
+  update?(ticker: Ticker): void;
 
   resize?(width: number, height: number): void;
 

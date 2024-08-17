@@ -2,7 +2,7 @@
 
 SolarStriker ist ein kleiner Shooter, welche mich an ein Spiel auf dem Gameboy erinnert.
 
-[Spielen / Try it](https://rengert.github.io/solar-striker/)
+[Spielen / Try it](https://rengert.github.io/solar-striker/browser)
 
 ## Lokal ausführen
 

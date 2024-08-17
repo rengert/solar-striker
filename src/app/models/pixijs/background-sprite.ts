@@ -1,4 +1,4 @@
-import { Texture, TilingSprite } from 'pixi.js';
+import {Texture, Ticker, TilingSprite} from 'pixi.js';
 
 export class BackgroundSprite extends TilingSprite {
   // eslint-disable-next-line max-params
@@ -12,10 +12,15 @@ export class BackgroundSprite extends TilingSprite {
       speedY?: number,
       maxY?: number
     }) {
-    super(texture, config.width, config.height);
+    super({
+      texture,
+      width: config.width,
+      height: config.height,
+    });
   }
 
-  update(delta: number): void {
+  update(ticker: Ticker): void {
+    const delta = ticker.deltaMS;
     this.tilePosition.y += delta * this.config.speedTilePositionY;
     this.tilePosition.x += delta * this.config.speedTilePositionX;
 

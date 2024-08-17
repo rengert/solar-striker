@@ -37,28 +37,6 @@ export class GameCollectableService extends UpdatableService {
     }
   }
 
-  private spawn({ x, y }: ObjectModelType, { type, reference }: ObjectModelType): void {
-    if (type !== ObjectType.ship && reference?.type !== ObjectType.ship) {
-      return;
-    }
-    const rand = Math.random();
-    if (rand > 0.2) {
-      return;
-    }
-    const value = Math.floor(Math.random() * GAME_CONFIG.powerUpConfig.length);
-    const powerUpType = GAME_CONFIG.powerUpConfig[value];
-    const texture = this.animations[powerUpType.type];
-    const powerUp = new PowerUpSprite(1, texture, powerUpType);
-    powerUp.animationSpeed = 0.167;
-    powerUp.play();
-    powerUp.anchor.set(0.5);
-    powerUp.x = x;
-    powerUp.y = y;
-    powerUp.power = 0;
-    this.application.stage.addChild(powerUp);
-    this.object.add(powerUp);
-  }
-
   collect(object: ObjectModelType, by: ObjectModelType): void {
     if (by.type !== ObjectType.ship) {
       return;
@@ -72,5 +50,29 @@ export class GameCollectableService extends UpdatableService {
 
   update(): void {
     //
+  }
+
+  private spawn({ x, y }: ObjectModelType, { type, reference }: ObjectModelType): void {
+    if (type !== ObjectType.ship && reference?.type !== ObjectType.ship) {
+      return;
+    }
+
+    const rand = Math.random();
+    if (rand > 0.2) {
+      return;
+    }
+
+    const value = Math.floor(Math.random() * GAME_CONFIG.powerUpConfig.length);
+    const powerUpType = GAME_CONFIG.powerUpConfig[value];
+    const texture = this.animations[powerUpType.type];
+    const powerUp = new PowerUpSprite(1, texture, powerUpType);
+    powerUp.animationSpeed = 0.167;
+    powerUp.play();
+    powerUp.anchor.set(0.5);
+    powerUp.x = x;
+    powerUp.y = y;
+    powerUp.power = 0;
+    this.application.stage.addChild(powerUp);
+    this.object.add(powerUp);
   }
 }

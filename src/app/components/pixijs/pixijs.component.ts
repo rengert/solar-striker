@@ -1,4 +1,4 @@
-import { Component, ElementRef, NgZone, OnInit } from '@angular/core';
+import { Component, ElementRef, NgZone } from '@angular/core';
 import { ApplicationService } from '../../services/application.service';
 import { ExplosionService } from '../../services/explosion.service';
 import { GameCollectableService } from '../../services/game-collectable.service';
@@ -29,17 +29,8 @@ import { ObjectService } from '../../services/object.service';
     ObjectService,
   ],
 })
-export class PixijsComponent implements OnInit {
-  constructor(
-    private readonly elementRef: ElementRef,
-    private readonly ngZone: NgZone,
-    private readonly pixiGame: GameService,
-    application: ApplicationService,
-  ) {
-    application.init(this.elementRef);
-  }
-
-  async ngOnInit(): Promise<void> {
-    await this.ngZone.runOutsideAngular(() => this.pixiGame.init());
+export class PixijsComponent {
+  constructor(application: ApplicationService, elementRef: ElementRef, ngZone: NgZone, pixiGame: GameService) {
+    void application.init(elementRef).then(() => ngZone.runOutsideAngular(() => pixiGame.init()));
   }
 }

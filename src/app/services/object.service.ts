@@ -1,8 +1,9 @@
-import { computed, Injectable, signal } from '@angular/core';
-import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
-import { ObjectType } from '../models/pixijs/object-type.enum';
-import { GameSprite } from '../models/pixijs/simple-game-sprite';
-import { UpdatableService } from './updatable.service';
+import {computed, Injectable, signal} from '@angular/core';
+import {AnimatedGameSprite} from '../models/pixijs/animated-game-sprite';
+import {ObjectType} from '../models/pixijs/object-type.enum';
+import {GameSprite} from '../models/pixijs/simple-game-sprite';
+import {UpdatableService} from './updatable.service';
+import {Ticker} from "pixi.js";
 
 export type ObjectModelType = AnimatedGameSprite | GameSprite;
 
@@ -27,12 +28,12 @@ export class ObjectService extends UpdatableService {
     list!.push(callback);
   }
 
-  update(delta: number): void {
+  update(ticker: Ticker): void {
     this.#objects.update((objects) => {
       return objects.filter(object => !object.destroyed && !object.destroying);
     });
 
-    this.meteors().forEach(object => object.update(delta));
+    this.meteors().forEach(object => object.update(ticker));
 
     this.#objects().forEach(object1 => {
       if (object1.destroyed && object1.destroying) {

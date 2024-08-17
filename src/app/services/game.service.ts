@@ -18,20 +18,29 @@ import { ObjectService } from './object.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
 
-function handleMouseMove(event: {
-  data: { originalEvent: PointerEvent | TouchEvent }
-}, ship: AnimatedGameSprite | undefined): void {
+function handleMouseMove(
+  event: {
+    data: { originalEvent: PointerEvent | TouchEvent };
+  },
+  ship: AnimatedGameSprite | undefined,
+): void {
   if (!ship || ship.destroyed) {
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  ship.targetX = (event.data.originalEvent as PointerEvent).clientX
-    ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
+  const relevantEvent = event.data.originalEvent;
+  ship.targetX = isPointerEvent(relevantEvent)
+    ? relevantEvent.clientX
+    : (event.data.originalEvent as TouchEvent).touches[0].clientX;
+}
+
+function isPointerEvent(event: PointerEvent | TouchEvent): event is PointerEvent {
+  return (event as any).clientX !== undefined;
 }
 
 @Injectable()
 export class GameService {
+  readonly kills = signal(0);
   private readonly collectables = inject(GameCollectableService);
   private readonly landscape = inject(GameLandscapeService);
   private readonly enemy = inject(GameEnemyService);
@@ -40,7 +49,6 @@ export class GameService {
   private readonly gameScreen = inject(GameScreenService);
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
-
   private readonly updatables: UpdatableService[] = [
     this.collectables,
     this.landscape,
@@ -51,10 +59,6 @@ export class GameService {
     this.object,
     this.gameScreen,
   ];
-
-  readonly kills = signal(0);
-
-
   private readonly level = computed(() => Math.floor(this.kills() / 10) + 1);
 
   private currentPopup?: AppScreen;
@@ -76,7 +80,7 @@ export class GameService {
 
     this.object.onDestroyed(ObjectType.enemy, (_, by) => {
       if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
-        this.kills.update(value => value + 1);
+        this.kills.update((value) => value + 1);
       }
     });
   }
@@ -94,18 +98,43 @@ export class GameService {
     await this.presentPopup(NavigationPopup);
   }
 
+  async start(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    this.started.set(true);
+  }
+
+  async openCredits(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(CreditsPopup);
+  }
+
+  async openNavigation(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(NavigationPopup);
+  }
+
+  async endGame(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    window.location.reload();
+  }
+
+  async openHighscore(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(HighscorePopup);
+  }
+
   // eslint-disable-next-line max-params
   private setup(): void {
     this.ship.spawn();
     this.setupInteractions(this.ship);
 
-    this.application.ticker.add(delta => {
+    this.application.ticker.add((delta) => {
       if (!this.started()) {
         return;
       }
 
-      this.updatables.forEach(updatable => updatable.update(delta, this.level()));
-      
+      this.updatables.forEach((updatable) => updatable.update(delta, this.level()));
+
       if (this.ship.instance.energy === 0) {
         void this.storage.setHighscore(this.kills(), this.level());
         void this.presentPopup(YouAreDeadPopup);
@@ -117,12 +146,13 @@ export class GameService {
   private setupInteractions(ship: GameShipService): void {
     this.application.stage.eventMode = 'dynamic';
     this.application.stage.hitArea = this.application.screen;
-    this.application.stage.on('pointerdown', () => ship.instance.autoFire = true);
-    this.application.stage.on('pointerup', () => ship.instance.autoFire = false);
-    this.application.stage.on(
-      'pointermove',
-      (event: unknown) => handleMouseMove(
-        event as { data: { originalEvent: PointerEvent | TouchEvent } },
+    this.application.stage.on('pointerdown', () => (ship.instance.autoFire = true));
+    this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
+    this.application.stage.on('pointermove', (event: unknown) =>
+      handleMouseMove(
+        event as {
+          data: { originalEvent: PointerEvent | TouchEvent };
+        },
         ship.instance,
       ),
     );
@@ -179,30 +209,5 @@ export class GameService {
       await screen.show();
       screen.interactiveChildren = true;
     }
-  }
-
-  async start(requester: AppScreen): Promise<void> {
-    await this.hideAndRemoveScreen(requester);
-    this.started.set(true);
-  }
-
-  async openCredits(requester: AppScreen): Promise<void> {
-    await this.hideAndRemoveScreen(requester);
-    await this.presentPopup(CreditsPopup);
-  }
-
-  async openNavigation(requester: AppScreen): Promise<void> {
-    await this.hideAndRemoveScreen(requester);
-    await this.presentPopup(NavigationPopup);
-  }
-
-  async endGame(requester: AppScreen): Promise<void> {
-    await this.hideAndRemoveScreen(requester);
-    window.location.reload();
-  }
-
-  async openHighscore(requester: AppScreen): Promise<void> {
-    await this.hideAndRemoveScreen(requester);
-    await this.presentPopup(HighscorePopup);
   }
 }

@@ -1,4 +1,4 @@
-import { FrameObject, Texture } from 'pixi.js';
+import { FrameObject, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../../game-constants';
 import { ExplosionService } from '../../services/explosion.service';
 import { GameShotService } from '../../services/game-shot.service';
@@ -12,7 +12,6 @@ export class Ship extends AnimatedGameSprite {
   lastShot = 0;
   autoFire = false;
 
-
   private elapsed = 0;
 
   // eslint-disable-next-line max-params
@@ -21,33 +20,33 @@ export class Ship extends AnimatedGameSprite {
     private readonly shotService: GameShotService,
     explosion: ExplosionService,
     speed: number,
-    textures: Texture[] | FrameObject[]) {
+    textures: Texture[] | FrameObject[],
+  ) {
     super(shipType as unknown as ObjectType, explosion, speed, textures);
 
     this.energy = GAME_CONFIG.ships[this.shipType].energy;
     this.shotSpeed = GAME_CONFIG.ships[this.shipType].shotSpeed;
   }
 
-  override set energy(value: number) {
-    super.energy = Math.min(value, GAME_CONFIG.ships[this.shipType].energy);
-  };
-
   override get energy(): number {
     return super.energy ?? 0;
+  }
+
+  override set energy(value: number) {
+    super.energy = Math.min(value, GAME_CONFIG.ships[this.shipType].energy);
   }
 
   shot(): void {
     this.shotService.shot(this.shotPower, this, this.speed <= 0);
   }
 
-  override update(delta: number): void {
-    super.update(delta);
+  override update(ticker: Ticker): void {
+    super.update(ticker);
 
-    this.elapsed += delta;
-
+    this.elapsed += Math.floor(ticker.deltaMS);
     const check = Math.floor(this.elapsed);
     // todo: check if we want two power ups for speed
-    if (this.autoFire && (check % Math.floor(60 / this.shotSpeed) === 0) && (check !== this.lastShot)) {
+    if (this.autoFire && check - this.lastShot > 1000 / this.shotSpeed && check !== this.lastShot) {
       this.lastShot = check;
       this.shot();
     }

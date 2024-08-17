@@ -15,5 +15,8 @@
 			"layoutName": "LaunchScreen",
 			"useDialog": true
 		}
-	}
+	},
+	"packageClassList": [
+		"SplashScreenPlugin"
+	]
 }

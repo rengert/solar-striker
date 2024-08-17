@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Assets, Spritesheet, Texture } from 'pixi.js';
+import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
@@ -25,19 +25,22 @@ export class GameEnemyService extends BaseService {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');
   }
 
-  update(delta: number, level: number): void {
-    this.elapsed += delta;
+  update(ticker: Ticker, level: number): void {
+    this.elapsed += ticker.deltaMS;
 
-    this.object.enemies()
-      .filter(enemy => enemy.y > this.application.screen.height + 50)
-      .forEach(enemy => {
+    this.object
+      .enemies()
+      .filter((enemy) => enemy.y > this.application.screen.height + 50)
+      .forEach((enemy) => {
         enemy.y = 0;
       });
 
     const check = Math.floor(this.elapsed);
-    if (this.object.enemies().length < GAME_CONFIG.enemy.maxCount
-      && ((check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + (0.1 * (level - 1))))) === 0)
-      && (check !== this.lastEnemySpawn)) {
+    if (
+      this.object.enemies().length < GAME_CONFIG.enemy.maxCount &&
+      check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + 0.1 * (level - 1))) === 0 &&
+      check !== this.lastEnemySpawn
+    ) {
       this.lastEnemySpawn = check;
       this.spawn(level);
     }
@@ -46,7 +49,13 @@ export class GameEnemyService extends BaseService {
   private spawn(level: number): void {
     const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
-    const enemy = new Ship(ShipType.enemy, this.shotService, this.explosionService, 1 + (0.25 * (level)), animations['frame']);
+    const enemy = new Ship(
+      ShipType.enemy,
+      this.shotService,
+      this.explosionService,
+      0.1 + 0.025 * level,
+      animations['frame'],
+    );
     enemy.autoFire = true;
     enemy.animationSpeed = 0.167;
     enemy.play();
