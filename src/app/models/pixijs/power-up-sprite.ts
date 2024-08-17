@@ -16,7 +16,7 @@ export class PowerUpSprite extends AnimatedGameSprite {
     super(ObjectType.collectable, null, speed, textures);
 
     this.config = config;
-    this.energy = 1;
+    this.energy = 10;
   }
 
   override explode(): void {
