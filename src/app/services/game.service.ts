@@ -28,9 +28,14 @@ function handleMouseMove(
     return;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  ship.targetX =
-    (event.data.originalEvent as PointerEvent).clientX ?? (event.data.originalEvent as TouchEvent).touches[0].clientX;
+  const relevantEvent = event.data.originalEvent;
+  ship.targetX = isPointerEvent(relevantEvent)
+    ? relevantEvent.clientX
+    : (event.data.originalEvent as TouchEvent).touches[0].clientX;
+}
+
+function isPointerEvent(event: PointerEvent | TouchEvent): event is PointerEvent {
+  return (event as any).clientX !== undefined;
 }
 
 @Injectable()
@@ -144,7 +149,12 @@ export class GameService {
     this.application.stage.on('pointerdown', () => (ship.instance.autoFire = true));
     this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
     this.application.stage.on('pointermove', (event: unknown) =>
-      handleMouseMove(event as { data: { originalEvent: PointerEvent | TouchEvent } }, ship.instance),
+      handleMouseMove(
+        event as {
+          data: { originalEvent: PointerEvent | TouchEvent };
+        },
+        ship.instance,
+      ),
     );
   }
 
