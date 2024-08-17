@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -8,12 +8,9 @@ import { ExplosionService } from './explosion.service';
 
 @Injectable()
 export class GameMeteorService extends BaseService {
+  private readonly explosionService: ExplosionService = inject(ExplosionService);
   private elapsed = 0;
   private lastMeteorSpawn = -1;
-
-  constructor(private readonly explosionService: ExplosionService) {
-    super();
-  }
 
   update(ticker: Ticker, level: number): void {
     this.elapsed += ticker.deltaMS;
@@ -39,7 +36,7 @@ export class GameMeteorService extends BaseService {
     const meteor = new GameSprite(
       ObjectType.meteor,
       this.explosionService,
-      1 + 0.25 * level,
+      0.1 + 0.125 * level,
       Texture.from('meteor' + index),
     );
     meteor.anchor.set(0.5);
