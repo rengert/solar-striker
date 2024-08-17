@@ -5,7 +5,6 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 export abstract class Popup extends Container {
   private readonly container: Container;
   private readonly background: Sprite;
-  private readonly title: Text;
 
   protected constructor(title: string, height = 230) {
     super();
@@ -29,28 +28,9 @@ export abstract class Popup extends Container {
     this.container.addChild(panel);
 
     if (height > 230) {
-      const bottom = new Sprite(Texture.from('popup-bottom'));
-      bottom.anchor.set(0.5, 0.5);
-      bottom.width = 265;
-      bottom.height = 230;
-      bottom.y = Math.max(80, height - 230);
-      bottom.x = 0;
-      this.container.addChild(bottom);
+      this.setLongPopup(height);
     }
-
-    this.title = new Text({
-      text: title,
-      style: {
-        fontFamily: 'DefaultFont',
-        //dropShadowColor: 0x000000,
-        fontSize: 14,
-        fill: 0xffffff,
-      },
-    });
-    this.title.x = 0;
-    this.title.y = -96;
-    this.title.anchor.set(0.5, 0.5);
-    this.container.addChild(this.title);
+    this.addTitle(title);
   }
 
   async show(): Promise<void> {
@@ -85,7 +65,6 @@ export abstract class Popup extends Container {
       text: content,
       style: {
         fontFamily: 'DefaultFont',
-        //dropShadowColor: '000000',
         fontSize: appearance.size,
       },
     });
@@ -107,7 +86,6 @@ export abstract class Popup extends Container {
       text: textContent,
       style: {
         fontFamily: 'DefaultFont',
-        // dropShadowColor: '000000',
         fontSize: 14,
       },
     });
@@ -118,5 +96,30 @@ export abstract class Popup extends Container {
 
     button.onPress.connect(callback);
     this.container.addChild(button);
+  }
+
+  private addTitle(text: string): void {
+    const title = new Text({
+      text,
+      style: {
+        fontFamily: 'DefaultFont',
+        fontSize: 14,
+        fill: 0xffffff,
+      },
+    });
+    title.x = 0;
+    title.y = -96;
+    title.anchor.set(0.5, 0.5);
+    this.container.addChild(title);
+  }
+
+  private setLongPopup(height: number): void {
+    const bottom = new Sprite(Texture.from('popup-bottom'));
+    bottom.anchor.set(0.5, 0.5);
+    bottom.width = 265;
+    bottom.height = 230;
+    bottom.y = Math.max(80, height - 230);
+    bottom.x = 0;
+    this.container.addChild(bottom);
   }
 }
