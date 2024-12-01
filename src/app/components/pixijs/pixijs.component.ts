@@ -13,7 +13,6 @@ import { ObjectService } from '../../services/object.service';
 
 @Component({
   selector: 'app-pixijs',
-  standalone: true,
   template: '',
   providers: [
     ApplicationService,
@@ -30,7 +29,12 @@ import { ObjectService } from '../../services/object.service';
   ],
 })
 export class PixijsComponent {
-  constructor(application: ApplicationService, elementRef: ElementRef, ngZone: NgZone, pixiGame: GameService) {
+  constructor(
+    application: ApplicationService,
+    elementRef: ElementRef,
+    ngZone: NgZone,
+    pixiGame: GameService,
+  ) {
     void application.init(elementRef).then(() => ngZone.runOutsideAngular(() => pixiGame.init()));
   }
 }

@@ -36,8 +36,7 @@ export class ApplicationService {
   async init(elementRef: ElementRef): Promise<void> {
     this.app = new Application();
     await this.app.init({
-      height: elementRef.nativeElement.clientHeight,
-      width: elementRef.nativeElement.clientWidth,
+      resizeTo: document.body,
       backgroundColor: 0x000000,
     });
 
