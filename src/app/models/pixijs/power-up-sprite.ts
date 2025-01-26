@@ -4,9 +4,9 @@ import { AnimatedGameSprite } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 
 export enum PowerUp {
-  speed,
-  shotSpeed,
-  shotPower,
+  speed = 0,
+  shotSpeed = 1,
+  shotPower = 2,
 }
 
 export class PowerUpSprite extends AnimatedGameSprite {
