@@ -43,7 +43,7 @@
     "@angular/compiler-cli": "^19.0.1",
     "@capacitor/cli": "^7.0.0",
     "@types/jasmine": "~5.1.4",
-    "@types/node": "^20.5.7",
+    "@types/node": "^22.13.0",
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
     "angular-cli-ghpages": "^2.0.1",
@@ -56,6 +56,6 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "prettier": "^3.4.2",
-    "typescript": "~5.5.4"
+    "typescript": "~5.7.3"
   }
 }
