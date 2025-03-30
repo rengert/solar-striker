@@ -11,20 +11,15 @@ jobs:
     timeout-minutes: 25
     strategy:
       matrix:
-        node-version: [ 20.x ]
+        node-version: [ 22.x ]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - uses: actions/cache@v1
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-modules-
+          cache: 'npm'
       - run: npm install
       - run: npm run build
       - run: npm run lint
