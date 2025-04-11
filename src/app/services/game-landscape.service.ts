@@ -42,6 +42,7 @@ export class GameLandscapeService extends UpdatableService {
       speedY: 0.075,
       maxY: this.application.screen.height,
     });
+    // eslint-disable-next-line no-magic-numbers
     cloud.y = Math.floor(this.application.screen.height / 2);
     this.landscapes.push(cloud);
     this.application.stage.addChild(cloud);
@@ -54,6 +55,7 @@ export class GameLandscapeService extends UpdatableService {
       speedY: 0.085,
       maxY: this.application.screen.height,
     });
+    // eslint-disable-next-line no-magic-numbers
     cloud2.y = Math.floor(this.application.screen.height / 4);
     this.landscapes.push(cloud2);
     this.application.stage.addChild(cloud2);

@@ -19,6 +19,7 @@ export class GameScreenService extends UpdatableService {
     dropShadow: {
       color: '#000000',
       blur: 2,
+      // eslint-disable-next-line no-magic-numbers
       angle: Math.PI / 6,
       distance: 3,
     },
@@ -36,15 +37,17 @@ export class GameScreenService extends UpdatableService {
   }
 
   set kills(value: number) {
+    // eslint-disable-next-line no-magic-numbers
     this.points!.text = value.toString().padStart(7, '0');
   }
 
   set level(value: number) {
-    this.levelLabel!.text = 'Level: ' + value.toString();
+    this.levelLabel!.text = `Level: ${value.toString()}`;
     this.levelLabel!.x = this.application.screen.width - this.levelLabel!.width;
   }
 
   private set lifes(value: number) {
+    // eslint-disable-next-line no-magic-numbers
     this.lifesLabel!.width = value * 25;
   }
 
@@ -56,7 +59,9 @@ export class GameScreenService extends UpdatableService {
 
     const energyBarContainer = new Container();
     this.lifesLabel = new Graphics();
+    // eslint-disable-next-line no-magic-numbers
     this.lifesLabel.fill(0xff0000);
+    // eslint-disable-next-line no-magic-numbers
     this.lifesLabel.rect(0, 0, 250, 10);
     this.lifesLabel.fill();
     energyBarContainer.addChild(this.lifesLabel);

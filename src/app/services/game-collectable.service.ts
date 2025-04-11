@@ -58,7 +58,7 @@ export class GameCollectableService extends UpdatableService {
     }
 
     const rand = Math.random();
-    if (rand > 0.2) {
+    if (rand > GAME_CONFIG.collectableFactor) {
       return;
     }
 
@@ -68,6 +68,7 @@ export class GameCollectableService extends UpdatableService {
     const powerUp = new PowerUpSprite(1, texture, powerUpType);
     powerUp.animationSpeed = 0.167;
     powerUp.play();
+    // eslint-disable-next-line no-magic-numbers
     powerUp.anchor.set(0.5);
     powerUp.x = x;
     powerUp.y = y;

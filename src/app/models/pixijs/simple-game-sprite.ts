@@ -1,17 +1,16 @@
-import {Sprite, Texture, Ticker} from 'pixi.js';
+import { Sprite, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
 import { ObjectType } from './object-type.enum';
 
 export class GameSprite extends Sprite {
-  private readonly ySpeed: number;
-  private readonly xSpeed: number;
-
   power = 1;
   reference: ObjectModelType | undefined;
   energy: number | undefined;
   destroying = false;
+  private readonly ySpeed: number;
+  private readonly xSpeed: number;
 
   constructor(
     readonly type: ObjectType,
@@ -22,11 +21,13 @@ export class GameSprite extends Sprite {
     super(texture);
 
     this.ySpeed = Math.random() * speed;
-    this.xSpeed = Math.random() * speed / 2;
+    // eslint-disable-next-line no-magic-numbers
+    this.xSpeed = (Math.random() * speed) / 2;
   }
 
   update(ticker: Ticker): void {
     const delta = ticker.deltaMS;
+    // eslint-disable-next-line no-magic-numbers
     this.rotation += Math.random() * 0.01 * delta;
     this.y += delta * this.ySpeed;
     this.x += delta * this.xSpeed;

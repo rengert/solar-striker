@@ -10,6 +10,7 @@ export class NavigationPopup extends Popup {
 
     this.addButton('Spiel starten!', () => gameService.start(this), 0);
     this.addButton('Highscore', () => gameService.openHighscore(this), 1);
+    // eslint-disable-next-line no-magic-numbers
     this.addButton('Credits', () => gameService.openCredits(this), 2);
   }
 }

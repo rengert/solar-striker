@@ -46,6 +46,7 @@ export class Ship extends AnimatedGameSprite {
     this.elapsed += Math.floor(ticker.deltaMS);
     const check = Math.floor(this.elapsed);
     // todo: check if we want two power ups for speed
+    // eslint-disable-next-line no-magic-numbers
     if (this.autoFire && check - this.lastShot > 1000 / this.shotSpeed && check !== this.lastShot) {
       this.lastShot = check;
       this.shot();

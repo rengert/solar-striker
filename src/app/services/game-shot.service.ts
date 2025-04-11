@@ -1,11 +1,12 @@
-import { Injectable } from '@angular/core';
-import { Assets, Spritesheet, Texture } from 'pixi.js';
-import { GAME_CONFIG } from '../game-constants';
-import { Rocket } from '../models/pixijs/rocket';
-import { Ship } from '../models/pixijs/ship';
-import { ApplicationService } from './application.service';
-import { ExplosionService } from './explosion.service';
-import { ObjectService } from './object.service';
+/* eslint-disable no-magic-numbers */
+import {Injectable} from '@angular/core';
+import {Assets, Spritesheet, Texture} from 'pixi.js';
+import {GAME_CONFIG} from '../game-constants';
+import {Rocket} from '../models/pixijs/rocket';
+import {Ship} from '../models/pixijs/ship';
+import {ApplicationService} from './application.service';
+import {ExplosionService} from './explosion.service';
+import {ObjectService} from './object.service';
 
 @Injectable()
 export class GameShotService {
@@ -27,7 +28,9 @@ export class GameShotService {
 
   shot(power: number, ship: Ship, up: boolean): void {
     const { x, y } = ship;
-    const speed = up ? -GAME_CONFIG.ships[ship.shipType].rocketSpeed : GAME_CONFIG.ships[ship.shipType].rocketSpeed;
+    const speed = up
+      ? -GAME_CONFIG.ships[ship.shipType].rocketSpeed
+      : GAME_CONFIG.ships[ship.shipType].rocketSpeed;
     for (let i = 1; i <= power; i++) {
       const shot = new Rocket(this.explosionService, speed, this.laserAnimation!);
       shot.reference = ship;

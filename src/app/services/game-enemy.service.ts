@@ -10,6 +10,7 @@ import { GameShotService } from './game-shot.service';
 @Injectable()
 export class GameEnemyService extends BaseService {
   private elapsed = 0;
+  // eslint-disable-next-line no-magic-numbers
   private lastEnemySpawn = -1;
 
   private enemySprite!: Spritesheet;
@@ -30,6 +31,7 @@ export class GameEnemyService extends BaseService {
 
     this.object
       .enemies()
+      // eslint-disable-next-line no-magic-numbers
       .filter((enemy) => enemy.y > this.application.screen.height + 50)
       .forEach((enemy) => {
         enemy.y = 0;
@@ -38,6 +40,7 @@ export class GameEnemyService extends BaseService {
     const check = Math.floor(this.elapsed);
     if (
       this.object.enemies().length < GAME_CONFIG.enemy.maxCount &&
+      // eslint-disable-next-line no-magic-numbers
       check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + 0.1 * (level - 1))) === 0 &&
       check !== this.lastEnemySpawn
     ) {
@@ -47,18 +50,21 @@ export class GameEnemyService extends BaseService {
   }
 
   private spawn(level: number): void {
+    // eslint-disable-next-line no-magic-numbers
     const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
     const enemy = new Ship(
       ShipType.enemy,
       this.shotService,
       this.explosionService,
+      // eslint-disable-next-line no-magic-numbers
       0.1 + 0.025 * level,
       animations['frame'],
     );
     enemy.autoFire = true;
     enemy.animationSpeed = 0.167;
     enemy.play();
+    // eslint-disable-next-line no-magic-numbers
     enemy.anchor.set(0.5);
     enemy.x = position;
     enemy.y = 10;

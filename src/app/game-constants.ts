@@ -22,9 +22,13 @@ interface GameConfig extends Config {
       energy: number;
     }
   >;
+  killLevelFactor: number;
+  collectableFactor: number;
 }
 
 export const GAME_CONFIG: GameConfig = {
+  killLevelFactor: 0.1,
+  collectableFactor: 0.2,
   enemy: {
     autoSpawnSpeed: 0.35, // per second
     maxCount: 20,
