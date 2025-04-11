@@ -9,6 +9,7 @@ export class StorageService {
   toStore<T>(storeName: string, dataToStore: T | T[], clear = false): Promise<void> {
     const data: T[] = Array.isArray(dataToStore) ? dataToStore : [dataToStore];
     return new Promise<void>((resolve, reject) => {
+      // eslint-disable-next-line no-magic-numbers
       const dbRequest = indexedDB.open('data', 4);
       dbRequest.onerror = (): void => {
         reject(Error('IndexedDB database error'));
@@ -29,7 +30,7 @@ export class StorageService {
           };
         }
 
-        data.forEach(item => {
+        data.forEach((item) => {
           const objectRequest = objectStore.put(item); // Overwrite if exists
           objectRequest.onerror = (): void => reject();
           objectRequest.onsuccess = (): void => resolve();
@@ -42,39 +43,43 @@ export class StorageService {
 
   getManyFromStore<T>(storeName: Store, resolver?: (item: T) => boolean): Promise<T[]> {
     return new Promise((resolve, reject) => {
-        const dbRequest = indexedDB.open('data');
-        dbRequest.onerror = function (): void {
-          resolve([]);
+      const dbRequest = indexedDB.open('data');
+      dbRequest.onerror = function (): void {
+        resolve([]);
+      };
+
+      dbRequest.onupgradeneeded = function (event: IDBVersionChangeEvent): void {
+        (event.currentTarget as IDBOpenDBRequest).transaction?.abort();
+        resolve([]);
+      };
+
+      dbRequest.onsuccess = function (event: Event): void {
+        const database = (event.currentTarget as IDBOpenDBRequest).result;
+        const store = database.transaction([storeName]).objectStore(storeName);
+        const objectRequest = store.getAll();
+
+        objectRequest.onerror = function (): void {
+          reject(Error('Error text'));
         };
 
-        dbRequest.onupgradeneeded = function (event: IDBVersionChangeEvent): void {
-          (event.currentTarget as IDBOpenDBRequest).transaction?.abort();
-          resolve([]);
+        objectRequest.onsuccess = function (): void {
+          resolve((objectRequest.result as T[]).filter((item) => !resolver || resolver(item)));
         };
-
-        dbRequest.onsuccess = function (event: Event): void {
-          const database = (event.currentTarget as IDBOpenDBRequest).result;
-          const store = database.transaction([storeName]).objectStore(storeName);
-          const objectRequest = store.getAll();
-
-          objectRequest.onerror = function (): void {
-            reject(Error('Error text'));
-          };
-
-          objectRequest.onsuccess = function (): void {
-            resolve((objectRequest.result as T[]).filter(item => !resolver || resolver(item)));
-          };
-        };
-      },
-    );
+      };
+    });
   }
 
-  getHighscore(): Promise<{ date: string, kills: number; level: number }[]> {
+  getHighscore(): Promise<{ date: string; kills: number; level: number }[]> {
     return this.getManyFromStore(Store.games, () => true);
   }
 
   setHighscore(kills: number, level: number): Promise<void> {
-    return this.toStore(Store.games, { id: crypto.randomUUID(), date: new Date().toISOString(), kills, level });
+    return this.toStore(Store.games, {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString(),
+      kills,
+      level,
+    });
   }
 
   private migrateDatabase(database: IDBDatabase): void {

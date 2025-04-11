@@ -39,12 +39,20 @@ export class GameShipService extends UpdatableService {
   }
 
   spawn(): void {
-    this.#ship = new Ship(ShipType.ship, this.gameShot, this.explosionService, 0, this.shipAnimation!);
+    this.#ship = new Ship(
+      ShipType.ship,
+      this.gameShot,
+      this.explosionService,
+      0,
+      this.shipAnimation!,
+    );
     this.#ship.animationSpeed = 0.08;
     this.#ship.width = 40;
     this.#ship.height = 40;
     this.#ship.play();
+    // eslint-disable-next-line no-magic-numbers
     this.#ship.x = Math.floor(this.application.screen.width / 2);
+    // eslint-disable-next-line no-magic-numbers
     this.#ship.y = this.application.screen.height - 100;
     this.object.add(this.#ship);
     this.application.stage.addChild(this.#ship);

@@ -17,6 +17,7 @@ import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
+import { GAME_CONFIG } from '../game-constants';
 
 function handleMouseMove(
   event: {
@@ -59,11 +60,13 @@ export class GameService {
     this.object,
     this.gameScreen,
   ];
-  private readonly level = computed(() => Math.floor(this.kills() / 10) + 1);
+  private readonly level = computed(
+    () => Math.floor(this.kills() / GAME_CONFIG.killLevelFactor) + 1,
+  );
 
   private currentPopup?: AppScreen;
 
-  private started = signal(false);
+  private readonly started = signal(false);
 
   constructor(
     private readonly application: ApplicationService,

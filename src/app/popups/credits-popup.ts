@@ -10,6 +10,7 @@ export class CreditsPopup extends Popup {
     this.addText('Grafiken', { size: 14 }, { y: -10 });
     this.addText('Kenney (www.kenney.nl)', { size: 12 }, { y: 10 });
 
+    // eslint-disable-next-line no-magic-numbers
     this.addButton('Schließen!', () => gameService.openNavigation(this), 2);
   }
 }

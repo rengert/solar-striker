@@ -72,7 +72,73 @@
             "style": "kebab-case"
           }
         ],
-        "no-console": "error"
+        "no-console": "error",
+        "curly": [
+          "error",
+          "all"
+        ],
+        "no-var": "error",
+        "prefer-const": "error",
+        "arrow-body-style": [
+          "error",
+          "as-needed"
+        ],
+        "no-duplicate-imports": "error",
+        "object-shorthand": [
+          "error",
+          "always"
+        ],
+        "prefer-template": "error",
+        "no-useless-rename": "error",
+        "no-implicit-coercion": [
+          "error",
+          {
+            "allow": [
+              "!!"
+            ]
+          }
+        ],
+        "spaced-comment": [
+          "error",
+          "always",
+          {
+            "exceptions": [
+              "-"
+            ]
+          }
+        ],
+        "no-magic-numbers": [
+          "error",
+          {
+            "ignore": [
+              0,
+              1
+            ],
+            "enforceConst": true
+          }
+        ],
+        "consistent-return": "error",
+        "radix": "error",
+        "default-case": "error",
+        "no-alert": "error",
+        "no-underscore-dangle": [
+          "error",
+          {
+            "allowAfterThis": true
+          }
+        ],
+        "no-return-await": "error",
+        "@typescript-eslint/consistent-type-definitions": [
+          "error",
+          "interface"
+        ],
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          {
+            "argsIgnorePattern": "^_"
+          }
+        ],
+        "@typescript-eslint/prefer-readonly": "error"
       }
     },
     {

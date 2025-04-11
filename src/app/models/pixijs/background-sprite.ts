@@ -27,6 +27,7 @@ export class BackgroundSprite extends TilingSprite {
     if (this.config.speedY) {
       this.y += delta * this.config.speedY;
     }
+    // eslint-disable-next-line no-magic-numbers
     if (this.y > (this.config.maxY ?? 1000)) {
       this.y = -this.height;
     }

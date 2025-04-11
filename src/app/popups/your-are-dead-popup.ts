@@ -6,10 +6,15 @@ export class YouAreDeadPopup extends Popup {
     super('Credits');
 
     this.addText('Du bist gestorben', { size: 14 }, { y: -60 });
-    this.addText('Du bist leider unterlegen\n\t und der Kampf ist vorbei', { size: 12 }, { y: -40 });
+    this.addText(
+      'Du bist leider unterlegen\n\t und der Kampf ist vorbei',
+      { size: 12 },
+      { y: -40 },
+    );
     this.addText('Punkte', { size: 14 }, { y: -10 });
     this.addText(gameService.kills().toString(), { size: 12 }, { y: 10 });
 
+    // eslint-disable-next-line no-magic-numbers
     this.addButton('Schließen!', () => gameService.endGame(this), 2);
   }
 }

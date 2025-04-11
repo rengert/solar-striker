@@ -6,9 +6,11 @@ export abstract class Popup extends Container {
   private readonly container: Container;
   private readonly background: Sprite;
 
+  // eslint-disable-next-line no-magic-numbers
   protected constructor(title: string, height = 230) {
     super();
 
+    // eslint-disable-next-line no-magic-numbers
     height = Math.max(height, 230);
 
     this.background = Sprite.from(Texture.EMPTY);
@@ -22,11 +24,13 @@ export abstract class Popup extends Container {
 
     this.addChild(this.container);
     const panel = new Sprite(Texture.from('popup'));
+    // eslint-disable-next-line no-magic-numbers
     panel.anchor.set(0.5);
     panel.width = 265;
     panel.height = 230;
     this.container.addChild(panel);
 
+    // eslint-disable-next-line no-magic-numbers
     if (height > 230) {
       this.setLongPopup(height);
     }
@@ -52,7 +56,9 @@ export abstract class Popup extends Container {
   resize(width: number, height: number): void {
     this.background.width = width;
     this.background.height = height;
+    // eslint-disable-next-line no-magic-numbers
     this.container.x = width * 0.5;
+    // eslint-disable-next-line no-magic-numbers
     this.container.y = height * 0.5;
   }
 
@@ -70,7 +76,9 @@ export abstract class Popup extends Container {
     });
     text.x = position.x ?? 0;
     text.y = position.y;
+    // eslint-disable-next-line no-magic-numbers
     text.anchor.set(0.5, 0.5);
+    // eslint-disable-next-line no-magic-numbers
     text.rotation = appearance.rotated ? -3.14 / 2 : 0;
     this.container.addChild(text);
   }
@@ -80,6 +88,7 @@ export abstract class Popup extends Container {
     button.width = 190;
     button.height = 49;
     button.x = -95;
+    // eslint-disable-next-line no-magic-numbers
     button.y = -65 + index * 60;
 
     const text = new Text({
@@ -89,6 +98,7 @@ export abstract class Popup extends Container {
         fontSize: 14,
       },
     });
+    // eslint-disable-next-line no-magic-numbers
     text.anchor.set(0.5, 0.5);
     text.x = 100;
     text.y = 22;
@@ -109,15 +119,18 @@ export abstract class Popup extends Container {
     });
     title.x = 0;
     title.y = -96;
+    // eslint-disable-next-line no-magic-numbers
     title.anchor.set(0.5, 0.5);
     this.container.addChild(title);
   }
 
   private setLongPopup(height: number): void {
     const bottom = new Sprite(Texture.from('popup-bottom'));
+    // eslint-disable-next-line no-magic-numbers
     bottom.anchor.set(0.5, 0.5);
     bottom.width = 265;
     bottom.height = 230;
+    // eslint-disable-next-line no-magic-numbers
     bottom.y = Math.max(80, height - 230);
     bottom.x = 0;
     this.container.addChild(bottom);

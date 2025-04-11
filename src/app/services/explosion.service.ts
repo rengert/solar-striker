@@ -8,25 +8,19 @@ export class ExplosionService {
 
   private readonly application = inject(ApplicationService);
 
-  private async getAnimationSprite(): Promise<AnimatedSprite> {
-    if (!this.explosionSprite) {
-      this.explosionSprite = await Assets.load<Spritesheet>('assets/game/explosion.json');
-    }
-    const animations: Record<string, Texture[]> = this.explosionSprite.animations;
-    return new AnimatedSprite(animations['explosion']);
-  }
-
   async explode(
     x: number,
     y: number,
-    oncomplete: (explosion: AnimatedSprite) => void = (): void => {
-    }): Promise<void> {
+    oncomplete: (explosion: AnimatedSprite) => void = (): void => {},
+  ): Promise<void> {
     // explode
     const explosion = await this.getAnimationSprite();
-    explosion.animationSpeed = Math.min(.3, Math.max(0.1, Math.random()));
+    // eslint-disable-next-line no-magic-numbers
+    explosion.animationSpeed = Math.min(0.3, Math.max(0.1, Math.random()));
     explosion.loop = false;
     explosion.x = x;
     explosion.y = y;
+    // eslint-disable-next-line no-magic-numbers
     explosion.rotation = Math.random() * 360;
     explosion.onComplete = (): void => {
       oncomplete(explosion);
@@ -34,5 +28,13 @@ export class ExplosionService {
     };
     this.application.stage.addChild(explosion);
     explosion.play();
+  }
+
+  private async getAnimationSprite(): Promise<AnimatedSprite> {
+    if (!this.explosionSprite) {
+      this.explosionSprite = await Assets.load<Spritesheet>('assets/game/explosion.json');
+    }
+    const animations: Record<string, Texture[]> = this.explosionSprite.animations;
+    return new AnimatedSprite(animations['explosion']);
   }
 }
