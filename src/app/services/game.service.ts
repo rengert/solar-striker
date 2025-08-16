@@ -61,7 +61,7 @@ export class GameService {
     this.gameScreen,
   ];
   private readonly level = computed(
-    () => Math.floor(this.kills() / GAME_CONFIG.killLevelFactor) + 1,
+    () => Math.floor(this.kills() * GAME_CONFIG.killLevelFactor) + 1,
   );
 
   private currentPopup?: AppScreen;
