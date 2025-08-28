@@ -1,4 +1,5 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -17,7 +18,6 @@ import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
-import { GAME_CONFIG } from '../game-constants';
 
 function handleMouseMove(
   event: {
@@ -68,10 +68,10 @@ export class GameService {
 
   private readonly started = signal(false);
 
-  constructor(
-    private readonly application: ApplicationService,
-    private readonly storage: StorageService,
-  ) {
+  private readonly application = inject(ApplicationService);
+  private readonly storage = inject(StorageService);
+
+  constructor() {
     effect(() => {
       if (!this.started()) {
         return;

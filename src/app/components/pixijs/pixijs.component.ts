@@ -1,4 +1,4 @@
-import { Component, ElementRef, NgZone } from '@angular/core';
+import { Component, ElementRef, inject, NgZone } from '@angular/core';
 import { ApplicationService } from '../../services/application.service';
 import { ExplosionService } from '../../services/explosion.service';
 import { GameCollectableService } from '../../services/game-collectable.service';
@@ -29,12 +29,11 @@ import { ObjectService } from '../../services/object.service';
   ],
 })
 export class PixijsComponent {
-  constructor(
-    application: ApplicationService,
-    elementRef: ElementRef,
-    ngZone: NgZone,
-    pixiGame: GameService,
-  ) {
+  constructor() {
+    const application = inject(ApplicationService);
+    const elementRef = inject(ElementRef);
+    const ngZone = inject(NgZone);
+    const pixiGame = inject(GameService);
     void application.init(elementRef).then(() => ngZone.runOutsideAngular(() => pixiGame.init()));
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -16,13 +16,13 @@ interface Dictionary<T> {
 export class GameCollectableService extends UpdatableService {
   private readonly animations: Dictionary<Texture[]> = {};
 
-  constructor(
-    private readonly application: ApplicationService,
-    private readonly object: ObjectService,
-    objectService: ObjectService,
-  ) {
+  private readonly application = inject(ApplicationService);
+  private readonly object = inject(ObjectService);
+
+  constructor() {
     super();
 
+    const objectService = inject(ObjectService);
     objectService.onDestroyed(ObjectType.enemy, (enemy, by) => this.spawn(enemy, by));
     objectService.onDestroyed(ObjectType.collectable, (powerUp, by) => this.collect(powerUp, by));
   }
