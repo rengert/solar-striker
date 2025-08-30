@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
@@ -9,18 +9,14 @@ import { GameShotService } from './game-shot.service';
 
 @Injectable()
 export class GameEnemyService extends BaseService {
+  private readonly explosionService = inject(ExplosionService);
+  private readonly shotService = inject(GameShotService);
+
   private elapsed = 0;
   // eslint-disable-next-line no-magic-numbers
   private lastEnemySpawn = -1;
 
   private enemySprite!: Spritesheet;
-
-  constructor(
-    private readonly explosionService: ExplosionService,
-    private readonly shotService: GameShotService,
-  ) {
-    super();
-  }
 
   async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');

@@ -8,7 +8,7 @@ import { ShipType } from './ship-type.enum';
 
 export class Ship extends AnimatedGameSprite {
   shotPower = 1;
-  shotSpeed = 1;
+  shotSpeed: number;
   lastShot = 0;
   autoFire = false;
 

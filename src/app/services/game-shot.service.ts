@@ -1,22 +1,20 @@
 /* eslint-disable no-magic-numbers */
-import {Injectable} from '@angular/core';
-import {Assets, Spritesheet, Texture} from 'pixi.js';
-import {GAME_CONFIG} from '../game-constants';
-import {Rocket} from '../models/pixijs/rocket';
-import {Ship} from '../models/pixijs/ship';
-import {ApplicationService} from './application.service';
-import {ExplosionService} from './explosion.service';
-import {ObjectService} from './object.service';
+import { inject, Injectable } from '@angular/core';
+import { Assets, Spritesheet, Texture } from 'pixi.js';
+import { GAME_CONFIG } from '../game-constants';
+import { Rocket } from '../models/pixijs/rocket';
+import { Ship } from '../models/pixijs/ship';
+import { ApplicationService } from './application.service';
+import { ExplosionService } from './explosion.service';
+import { ObjectService } from './object.service';
 
 @Injectable()
 export class GameShotService {
   private laserAnimation: Texture[] | undefined;
 
-  constructor(
-    private readonly application: ApplicationService,
-    private readonly explosionService: ExplosionService,
-    private readonly object: ObjectService,
-  ) {}
+  private readonly application = inject(ApplicationService);
+  private readonly explosionService = inject(ExplosionService);
+  private readonly object = inject(ObjectService);
 
   async init(): Promise<void> {
     if (!this.laserAnimation) {

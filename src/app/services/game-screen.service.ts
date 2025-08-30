@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { ApplicationService } from './application.service';
 import { GameShipService } from './game-ship.service';
@@ -6,6 +6,9 @@ import { UpdatableService } from './updatable.service';
 
 @Injectable()
 export class GameScreenService extends UpdatableService {
+  private readonly application = inject(ApplicationService);
+  private readonly ship = inject(GameShipService);
+
   private readonly style = new TextStyle({
     fontFamily: 'Arial',
     fontSize: 24,
@@ -25,16 +28,10 @@ export class GameScreenService extends UpdatableService {
     },
     align: 'right',
   });
+
   private points: Text | undefined;
   private lifesLabel: Graphics | undefined;
   private levelLabel: Text | undefined;
-
-  constructor(
-    private readonly application: ApplicationService,
-    private readonly ship: GameShipService,
-  ) {
-    super();
-  }
 
   set kills(value: number) {
     // eslint-disable-next-line no-magic-numbers

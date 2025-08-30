@@ -17,10 +17,10 @@
     "moduleResolution": "bundler",
     "importHelpers": true,
     "skipLibCheck": true,
-    "target": "ES2022",
-    "module": "es2020",
+    "target": "ES2024",
+    "module": "ESNext",
     "lib": [
-      "es2020",
+      "ESNext",
       "dom"
     ],
     "useDefineForClassFields": false
