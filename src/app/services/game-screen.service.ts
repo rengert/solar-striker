@@ -11,20 +11,13 @@ export class GameScreenService extends UpdatableService {
 
   private readonly style = new TextStyle({
     fontFamily: 'Arial',
-    fontSize: 24,
+    fontSize: 12,
     fontStyle: 'normal',
     fontWeight: 'bold',
     fill: '#ffffff',
     stroke: {
       color: '#4a1850',
-      width: 5,
-    },
-    dropShadow: {
-      color: '#000000',
-      blur: 2,
-      // eslint-disable-next-line no-magic-numbers
-      angle: Math.PI / 6,
-      distance: 3,
+      width: 2,
     },
     align: 'right',
   });
@@ -39,8 +32,8 @@ export class GameScreenService extends UpdatableService {
   }
 
   set level(value: number) {
-    this.levelLabel!.text = `Level: ${value.toString()}`;
-    this.levelLabel!.x = this.application.screen.width - this.levelLabel!.width;
+    //this.levelLabel!.text = `Level: ${value.toString()}`;
+    //this.levelLabel!.x = this.application.screen.width - this.levelLabel!.width;
   }
 
   private set lifes(value: number) {
@@ -59,7 +52,7 @@ export class GameScreenService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     this.lifesLabel.fill(0xff0000);
     // eslint-disable-next-line no-magic-numbers
-    this.lifesLabel.rect(0, 0, 250, 10);
+    this.lifesLabel.rect(0, 0, 250, 5);
     this.lifesLabel.fill();
     energyBarContainer.addChild(this.lifesLabel);
     this.application.stage.addChild(energyBarContainer);
@@ -68,8 +61,16 @@ export class GameScreenService extends UpdatableService {
     this.lifesLabel.y = 55;
     this.application.stage.addChild(this.lifesLabel);
 
-    this.levelLabel = new Text({ text: 'Level: 1', style: this.style });
-    this.levelLabel.x = this.application.screen.width - this.levelLabel.width;
+    this.levelLabel = new Text({
+      text: '\uf007 32',
+      style: {
+        fontFamily: 'Font Awesome 6 Free', // solid/regular
+        fontWeight: '900', // 900 for solid, 400 for regular/brands
+        fontSize: 12, // any size you like
+        fill: 0xffffff,
+      },
+    });
+    this.levelLabel.x = this.application.screen.width - (this.levelLabel.width + 15);
     this.levelLabel.y = 45;
     this.application.stage.addChild(this.levelLabel);
   }
