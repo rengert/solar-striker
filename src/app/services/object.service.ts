@@ -1,28 +1,23 @@
 import { computed, Injectable, signal } from '@angular/core';
+import { Ticker } from 'pixi.js';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
+import { filterBy } from '../utils/utils';
 import { UpdatableService } from './updatable.service';
-import { Ticker } from 'pixi.js';
 
 export type ObjectModelType = AnimatedGameSprite | GameSprite;
 
 @Injectable()
 export class ObjectService extends UpdatableService {
-  readonly enemies = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.enemy),
-  );
-  readonly rockets = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.rocket),
-  );
-  readonly collectables = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.collectable),
-  );
-  readonly meteors = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.meteor),
-  );
   readonly #objects = signal<ObjectModelType[]>([]);
+
   readonly objects = computed(() => this.#objects().filter((object) => !object.destroyed));
+  readonly enemies = computed(() => this.objects().filter(filterBy(ObjectType.enemy)));
+  readonly rockets = computed(() => this.objects().filter(filterBy(ObjectType.rocket)));
+  readonly collectables = computed(() => this.objects().filter(filterBy(ObjectType.collectable)));
+  readonly meteors = computed(() => this.objects().filter(filterBy(ObjectType.meteor)));
+
   private readonly destroyedCallbacks = new Map<
     ObjectType,
     ((item: ObjectModelType, by: ObjectModelType) => void)[]
