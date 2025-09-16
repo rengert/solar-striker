@@ -3,13 +3,15 @@ import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
-import { BaseService } from './base.service';
 import { ExplosionService } from './explosion.service';
 import { GameShotService } from './game-shot.service';
+import { ObjectService } from './object.service';
+import { UpdatableService } from './updatable.service';
 
 @Injectable()
-export class GameEnemyService extends BaseService {
+export class GameEnemyService extends UpdatableService {
   private readonly explosionService = inject(ExplosionService);
+  private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
 
   private elapsed = 0;

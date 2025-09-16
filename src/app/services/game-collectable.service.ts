@@ -4,7 +4,6 @@ import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
-import { ApplicationService } from './application.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
@@ -14,17 +13,15 @@ interface Dictionary<T> {
 
 @Injectable()
 export class GameCollectableService extends UpdatableService {
-  private readonly animations: Dictionary<Texture[]> = {};
-
-  private readonly application = inject(ApplicationService);
   private readonly object = inject(ObjectService);
+
+  private readonly animations: Dictionary<Texture[]> = {};
 
   constructor() {
     super();
 
-    const objectService = inject(ObjectService);
-    objectService.onDestroyed(ObjectType.enemy, (enemy, by) => this.spawn(enemy, by));
-    objectService.onDestroyed(ObjectType.collectable, (powerUp, by) => this.collect(powerUp, by));
+    this.object.onDestroyed(ObjectType.enemy, (enemy, by) => this.spawn(enemy, by));
+    this.object.onDestroyed(ObjectType.collectable, (powerUp, by) => this.collect(powerUp, by));
   }
 
   async init(): Promise<void> {
