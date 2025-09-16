@@ -12,3 +12,10 @@ export const textStyle = new TextStyle({
   },
   align: 'right',
 });
+
+export const fontAwesomeStyle = new TextStyle({
+  fontFamily: 'Font Awesome 6 Free', // solid/regular
+  fontWeight: '900', // 900 for solid, 400 for regular/brands
+  fontSize: 10, // any size you like
+  fill: 0xffffff,
+});

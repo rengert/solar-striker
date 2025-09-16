@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Container, Graphics, Text } from 'pixi.js';
-import { textStyle } from '../style-constants';
+import { fontAwesomeStyle, textStyle } from '../style-constants';
 import { GameShipService } from './game-ship.service';
 import { UpdatableService } from './updatable.service';
 
@@ -8,7 +8,9 @@ import { UpdatableService } from './updatable.service';
 export class GameScreenService extends UpdatableService {
   readonly #ship = inject(GameShipService);
 
-  private points: Text | undefined;
+  private readonly points = new Text({ text: '0000000', style: textStyle });
+  private readonly coins = new Text({ text: '0 \uf51e  ', style: fontAwesomeStyle });
+
   private lifesLabel: Graphics | undefined;
   private levelLabel: Text | undefined;
 
@@ -28,10 +30,8 @@ export class GameScreenService extends UpdatableService {
   }
 
   init(): void {
-    this.points = new Text({ text: '0000000', style: textStyle });
     this.points.x = 5;
     this.points.y = 65;
-
     this.addToStage(this.points);
 
     const energyBarContainer = new Container();
@@ -51,17 +51,16 @@ export class GameScreenService extends UpdatableService {
 
     this.levelLabel = new Text({
       text: '32 \uf007  ',
-      style: {
-        fontFamily: 'Font Awesome 6 Free', // solid/regular
-        fontWeight: '900', // 900 for solid, 400 for regular/brands
-        fontSize: 10, // any size you like
-        fill: 0xffffff,
-      },
+      style: fontAwesomeStyle,
     });
     this.levelLabel.x = this.application.screen.width - this.levelLabel.width;
     this.levelLabel.y = 45;
 
     this.addToStage(this.levelLabel);
+
+    this.coins.x = this.application.screen.width - this.coins.width;
+    this.coins.y = 30;
+    this.addToStage(this.coins);
   }
 
   update(): void {
