@@ -10,7 +10,7 @@ export class GameScreenService extends UpdatableService {
 
   private readonly points = new Text({ text: `0 ${icons.points}  `, style: fontAwesomeStyle });
   private readonly coins = new Text({ text: `0 ${icons.coin}  `, style: fontAwesomeStyle });
-  private readonly levelLabel = new Text({ text: `0 ${icons.level}  `, style: fontAwesomeStyle });
+  private readonly levelLabel = new Text({ text: `1 ${icons.level}  `, style: fontAwesomeStyle });
 
   private lifesLabel: Graphics | undefined;
 
@@ -20,7 +20,7 @@ export class GameScreenService extends UpdatableService {
   }
 
   set level(value: number) {
-    this.levelLabel!.text = `Level: ${value.toString()}`;
+    this.levelLabel!.text = `${value} ${icons.level}  `;
     this.levelLabel!.x = this.application.screen.width - this.levelLabel!.width;
   }
 

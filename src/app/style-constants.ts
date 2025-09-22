@@ -4,7 +4,7 @@ export const icons = {
   coin: '\uf51e',
   points: '\uf54c',
   life: '\uf004',
-  level: '\uf007',
+  level: '\uf188',
 };
 
 export const textStyle = new TextStyle({
