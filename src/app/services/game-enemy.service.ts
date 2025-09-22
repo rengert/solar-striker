@@ -18,8 +18,7 @@ export class GameEnemyService extends UpdatableService {
   private readonly shotService = inject(GameShotService);
 
   private elapsed = 0;
-  // eslint-disable-next-line no-magic-numbers
-  private lastEnemySpawn = -1;
+  private lastEnemySpawn: number | null = null;
 
   private enemySprite!: Spritesheet;
 
