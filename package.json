@@ -34,8 +34,7 @@
     "gsap": "^3.12.2",
     "pixi.js": "^8.3.3",
     "rxjs": "^7.5.4",
-    "tslib": "^2.3.0",
-    "zone.js": "~0.15.0"
+    "tslib": "^2.3.0"
   },
   "devDependencies": {
     "@angular-eslint/builder": "^20.1.1",
