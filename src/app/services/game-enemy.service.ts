@@ -1,12 +1,15 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
-import { GAME_CONFIG } from '../game-constants';
+import { GAME_CONFIG, THE_MIDDLE } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
+
+const halfWidth = 10;
+const width = halfWidth + halfWidth;
 
 @Injectable()
 export class GameEnemyService extends UpdatableService {
@@ -48,8 +51,6 @@ export class GameEnemyService extends UpdatableService {
   }
 
   private spawn(level: number): void {
-    // eslint-disable-next-line no-magic-numbers
-    const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
     const enemy = new Ship(
       ShipType.enemy,
@@ -62,10 +63,9 @@ export class GameEnemyService extends UpdatableService {
     enemy.autoFire = true;
     enemy.animationSpeed = 0.167;
     enemy.play();
-    // eslint-disable-next-line no-magic-numbers
-    enemy.anchor.set(0.5);
-    enemy.x = position;
-    enemy.y = 10;
+    enemy.anchor.set(THE_MIDDLE);
+    enemy.x = Math.floor(Math.random() * this.application.screen.width - width) + halfWidth;
+    enemy.y = 0;
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
   }
