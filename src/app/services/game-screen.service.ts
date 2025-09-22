@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Container, Graphics, Text } from 'pixi.js';
-import { fontAwesomeStyle, textStyle } from '../style-constants';
+import { fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
 import { UpdatableService } from './updatable.service';
 
@@ -8,11 +8,11 @@ import { UpdatableService } from './updatable.service';
 export class GameScreenService extends UpdatableService {
   readonly #ship = inject(GameShipService);
 
-  private readonly points = new Text({ text: '0000000', style: textStyle });
-  private readonly coins = new Text({ text: '0 \uf51e  ', style: fontAwesomeStyle });
+  private readonly points = new Text({ text: `0 ${icons.points}  `, style: fontAwesomeStyle });
+  private readonly coins = new Text({ text: `0 ${icons.coin}  `, style: fontAwesomeStyle });
+  private readonly levelLabel = new Text({ text: `0 ${icons.level}  `, style: fontAwesomeStyle });
 
   private lifesLabel: Graphics | undefined;
-  private levelLabel: Text | undefined;
 
   set kills(value: number) {
     // eslint-disable-next-line no-magic-numbers
@@ -49,13 +49,8 @@ export class GameScreenService extends UpdatableService {
     this.lifesLabel.y = 55;
     this.addToStage(this.lifesLabel);
 
-    this.levelLabel = new Text({
-      text: '32 \uf007  ',
-      style: fontAwesomeStyle,
-    });
     this.levelLabel.x = this.application.screen.width - this.levelLabel.width;
     this.levelLabel.y = 45;
-
     this.addToStage(this.levelLabel);
 
     this.coins.x = this.application.screen.width - this.coins.width;

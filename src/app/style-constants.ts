@@ -1,5 +1,12 @@
 import { TextStyle } from 'pixi.js';
 
+export const icons = {
+  coin: '\uf51e',
+  points: '\uf54c',
+  life: '\uf004',
+  level: '\uf007',
+};
+
 export const textStyle = new TextStyle({
   fontFamily: 'Arial',
   fontSize: 12,
