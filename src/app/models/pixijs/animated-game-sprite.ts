@@ -9,6 +9,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   reference: ObjectModelType | undefined;
   destroying = false;
   targetX?: number;
+
   protected readonly speed: number = 1;
 
   constructor(
