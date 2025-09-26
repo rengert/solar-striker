@@ -1,6 +1,6 @@
-import { PowerUp } from './models/pixijs/power-up-sprite';
-import { ShipType } from './models/pixijs/ship-type.enum';
-import { PowerUpConfig } from './models/power-up-config.model';
+import {PowerUp} from './models/pixijs/power-up-sprite';
+import {ShipType} from './models/pixijs/ship-type.enum';
+import {PowerUpConfig} from './models/power-up-config.model';
 
 export const THE_MIDDLE = 0.5;
 
@@ -53,7 +53,7 @@ export const GAME_CONFIG: GameConfig = {
   powerUpConfig: [
     {
       type: PowerUp.speed,
-      assetUrl: 'assets/game/power-up-1.json',
+      assetUrl: 'assets/game/powerups/power-up-1.json',
       animationName: 'power-up-1',
       powerUp: {
         speed: 0.1,
@@ -63,7 +63,7 @@ export const GAME_CONFIG: GameConfig = {
     },
     {
       type: PowerUp.shotSpeed,
-      assetUrl: 'assets/game/power-up-2.json',
+      assetUrl: 'assets/game/powerups/power-up-2.json',
       animationName: 'power-up-2',
       powerUp: {
         speed: 0,
