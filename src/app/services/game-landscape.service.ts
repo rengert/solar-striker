@@ -22,7 +22,7 @@ export class GameLandscapeService extends UpdatableService {
 
   private setupBackground(): void {
     const background = new BackgroundSprite(Texture.from('background'), {
-      speedTilePositionY: 0.125,
+      speedTilePositionY: 0.025,
       speedTilePositionX: 0,
       width: this.application.screen.width,
       height: this.application.screen.height,

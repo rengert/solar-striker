@@ -56,7 +56,7 @@ export class GameEnemyService extends UpdatableService {
       this.shotService,
       this.explosionService,
       // eslint-disable-next-line no-magic-numbers
-      0.1 + 0.025 * level,
+      0.4 + 0.025 * level,
       animations['frame'],
     );
     enemy.autoFire = true;
