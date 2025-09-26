@@ -23,7 +23,7 @@ export class GameEnemyService extends UpdatableService {
   private enemySprite!: Spritesheet;
 
   async init(): Promise<void> {
-    this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemy.json');
+    this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
   }
 
   update(ticker: Ticker, level: number): void {
