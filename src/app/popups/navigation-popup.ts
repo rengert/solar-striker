@@ -15,7 +15,7 @@ export class NavigationPopup extends Popup {
       credits: 3,
     } as const;
 
-    this.addText(`Version. ${version.code}`, { size: 11, rotated: true }, { y: 60, x: 120 });
+    this.addText(`Version. ${version.code}`, { size: 11, rotated: true }, { y: 135, x: 120 });
 
     this.addButton('Spiel starten!', () => gameService.start(this), buttonIndex.start);
     this.addButton('Hangar', () => gameService.openHangar(this), buttonIndex.hangar);
