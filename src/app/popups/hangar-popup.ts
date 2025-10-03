@@ -4,9 +4,8 @@ import { ShipUpgradeDefinition, ShipUpgradeType } from '../models/ship-upgrade.m
 import { GameService } from '../services/game.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 360;
+const POPUP_HEIGHT = 420;
 const HALF = 0.5;
-const COINS_LABEL_Y = -85;
 const INFO_TEXT_Y = -50;
 const ROW_START_Y = -20;
 const ROW_VERTICAL_SPACING = 85;
@@ -28,23 +27,10 @@ interface UpgradeRow {
 }
 
 export class HangarPopup extends Popup {
-  private readonly coinsLabel: Text;
   private readonly upgradeRows = new Map<ShipUpgradeType, UpgradeRow>();
 
   constructor(private readonly gameService: GameService) {
     super('Hangar', POPUP_HEIGHT);
-
-    this.coinsLabel = new Text({
-      text: '',
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 14,
-        fill: 0xffffff,
-      },
-    });
-    this.coinsLabel.anchor.set(HALF, 0);
-    this.coinsLabel.y = COINS_LABEL_Y;
-    this.addToContent(this.coinsLabel);
 
     this.addText('Tausche Münzen für permanente Verbesserungen.', { size: 10 }, { y: INFO_TEXT_Y });
 
@@ -153,8 +139,6 @@ export class HangarPopup extends Popup {
   }
 
   private updateView(): void {
-    this.coinsLabel.text = `Münzen: ${this.gameService.coins()}`;
-
     for (const [type, row] of this.upgradeRows) {
       const level = this.gameService.shipUpgrades.getLevel(type);
       row.levelText.text = `Stufe ${level} / ${row.definition.maxLevel}`;
