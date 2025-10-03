@@ -41,13 +41,12 @@ export class GameMeteorService extends UpdatableService {
     const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     // eslint-disable-next-line no-magic-numbers
     const index = Math.floor(Math.random() * 4) + 1;
-    const meteor = new GameSprite(
-      ObjectType.meteor,
-      this.explosionService,
+    const meteor = new GameSprite(ObjectType.meteor, this.explosionService, {
       // eslint-disable-next-line no-magic-numbers
-      0.1 + 0.125 * level,
-      Texture.from(`meteor${index}`),
-    );
+      speed: 0.1 + 0.125 * level,
+      texture: Texture.from(`meteor${index}`),
+      hasEnergy: true,
+    });
     // eslint-disable-next-line no-magic-numbers
     meteor.anchor.set(0.5);
     meteor.x = position;
