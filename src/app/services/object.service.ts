@@ -1,37 +1,26 @@
 import { computed, Injectable, signal } from '@angular/core';
+import { Ticker } from 'pixi.js';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
+import { filterBy } from '../utils/utils';
 import { UpdatableService } from './updatable.service';
-import { Ticker } from 'pixi.js';
 
 export type ObjectModelType = AnimatedGameSprite | GameSprite;
 
+type DestroyedCallback = (item: ObjectModelType, by: ObjectModelType) => void;
+
 @Injectable()
 export class ObjectService extends UpdatableService {
-  readonly enemies = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.enemy),
-  );
-  readonly rockets = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.rocket),
-  );
-  readonly collectables = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.collectable),
-  );
-  readonly meteors = computed(() =>
-    this.objects().filter((object) => object.type === ObjectType.meteor),
-  );
   readonly #objects = signal<ObjectModelType[]>([]);
-  readonly objects = computed(() => this.#objects().filter((object) => !object.destroyed));
-  private readonly destroyedCallbacks = new Map<
-    ObjectType,
-    ((item: ObjectModelType, by: ObjectModelType) => void)[]
-  >();
 
-  onDestroyed(
-    type: ObjectType,
-    callback: (item: ObjectModelType, by: ObjectModelType) => void,
-  ): void {
+  readonly objects = computed(() => this.#objects().filter((object) => !object.destroyed));
+  readonly enemies = computed(() => this.objects().filter(filterBy(ObjectType.enemy)));
+  readonly meteors = computed(() => this.objects().filter(filterBy(ObjectType.meteor)));
+
+  private readonly destroyedCallbacks = new Map<ObjectType, DestroyedCallback[]>();
+
+  onDestroyed(type: ObjectType, callback: DestroyedCallback): void {
     if (!this.destroyedCallbacks.has(type)) {
       this.destroyedCallbacks.set(type, []);
     }
@@ -46,35 +35,28 @@ export class ObjectService extends UpdatableService {
 
     this.meteors().forEach((object) => object.update(ticker));
 
-    this.#objects().forEach((object1) => {
+    const objectsList = this.#objects();
+    for (let i = 0; i < objectsList.length; i++) {
+      const object1 = objectsList[i];
       if (object1.destroyed && object1.destroying) {
         return;
       }
-      this.#objects().forEach((object2) => {
+      for (let j = 0; j < objectsList.length; j++) {
+        const object2 = objectsList[j];
         if (
           object1 === object2 ||
           object2.destroyed ||
           object2.destroying ||
           object1.destroyed ||
-          object1.destroying
+          object1.destroying ||
+          !object1.hit(object2)
         ) {
-          return;
+          continue;
         }
-        object1.hit(object2);
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (object1.destroying) {
-          this.destroyedCallbacks
-            .get(object1.type)
-            ?.forEach((callback) => callback(object1, object2));
-        }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (object2.destroying) {
-          this.destroyedCallbacks
-            .get(object2.type)
-            ?.forEach((callback) => callback(object2, object1));
-        }
-      });
-    });
+        this.triggerCallbacks(object1, object2);
+        this.triggerCallbacks(object2, object1);
+      }
+    }
 
     this.#objects()
       .filter((item) => item.destroying)
@@ -87,5 +69,11 @@ export class ObjectService extends UpdatableService {
       objects.push(object);
       return objects;
     });
+  }
+
+  triggerCallbacks(object1: ObjectModelType, object2: ObjectModelType): void {
+    if (object1.destroying) {
+      this.destroyedCallbacks.get(object1.type)?.forEach((callback) => callback(object1, object2));
+    }
   }
 }

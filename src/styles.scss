@@ -1,5 +1,24 @@
 /* You can add global styles to this file, and also import other style files */
 
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+@font-face {
+  font-family: "Font Awesome 6 Free";
+  src: url("@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Font Awesome 6 Free";
+  src: url("@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
 @font-face {
   font-family: DefaultFont;
   src: url('assets/kenvector_future.ttf');

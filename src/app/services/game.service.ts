@@ -1,12 +1,13 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
-import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { CreditsPopup } from '../popups/credits-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
+import { handleMouseMove } from '../utils/mouse.util';
 import { ApplicationService } from './application.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
@@ -19,29 +20,10 @@ import { ObjectService } from './object.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
 
-function handleMouseMove(
-  event: {
-    data: { originalEvent: PointerEvent | TouchEvent };
-  },
-  ship: AnimatedGameSprite | undefined,
-): void {
-  if (!ship || ship.destroyed) {
-    return;
-  }
-
-  const relevantEvent = event.data.originalEvent;
-  ship.targetX = isPointerEvent(relevantEvent)
-    ? relevantEvent.clientX
-    : (event.data.originalEvent as TouchEvent).touches[0].clientX;
-}
-
-function isPointerEvent(event: PointerEvent | TouchEvent): event is PointerEvent {
-  return (event as any).clientX !== undefined;
-}
-
 @Injectable()
 export class GameService {
   readonly kills = signal(0);
+
   private readonly collectables = inject(GameCollectableService);
   private readonly landscape = inject(GameLandscapeService);
   private readonly enemy = inject(GameEnemyService);
@@ -56,7 +38,6 @@ export class GameService {
     this.enemy,
     this.ship,
     this.meteor,
-    this.shotService,
     this.object,
     this.gameScreen,
   ];
@@ -151,13 +132,8 @@ export class GameService {
     this.application.stage.hitArea = this.application.screen;
     this.application.stage.on('pointerdown', () => (ship.instance.autoFire = true));
     this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
-    this.application.stage.on('pointermove', (event: unknown) =>
-      handleMouseMove(
-        event as {
-          data: { originalEvent: PointerEvent | TouchEvent };
-        },
-        ship.instance,
-      ),
+    this.application.stage.on('pointermove', (event: FederatedPointerEvent) =>
+      handleMouseMove(event, ship.instance),
     );
   }
 

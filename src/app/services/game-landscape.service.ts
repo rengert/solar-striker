@@ -1,12 +1,10 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Texture, Ticker } from 'pixi.js';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
-import { ApplicationService } from './application.service';
 import { UpdatableService } from './updatable.service';
 
 @Injectable()
 export class GameLandscapeService extends UpdatableService {
-  private readonly application = inject(ApplicationService);
   private readonly landscapes: BackgroundSprite[] = [];
 
   setup(): void {
@@ -24,7 +22,7 @@ export class GameLandscapeService extends UpdatableService {
 
   private setupBackground(): void {
     const background = new BackgroundSprite(Texture.from('background'), {
-      speedTilePositionY: 0.125,
+      speedTilePositionY: 0.025,
       speedTilePositionX: 0,
       width: this.application.screen.width,
       height: this.application.screen.height,

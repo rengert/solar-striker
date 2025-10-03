@@ -2,7 +2,6 @@ import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture } from 'pixi.js';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
-import { ApplicationService } from './application.service';
 import { ExplosionService } from './explosion.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
@@ -12,11 +11,11 @@ import { UpdatableService } from './updatable.service';
 export class GameShipService extends UpdatableService {
   #ship?: Ship;
 
+  private readonly object = inject(ObjectService);
+
   private shipAnimation: Texture[] | undefined;
-  private readonly application = inject(ApplicationService);
   private readonly explosionService = inject(ExplosionService);
   private readonly gameShot = inject(GameShotService);
-  private readonly object = inject(ObjectService);
 
   get instance(): Ship {
     if (!this.#ship) {

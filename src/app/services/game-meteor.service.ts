@@ -3,12 +3,15 @@ import { Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
-import { BaseService } from './base.service';
 import { ExplosionService } from './explosion.service';
+import { ObjectService } from './object.service';
+import { UpdatableService } from './updatable.service';
 
 @Injectable()
-export class GameMeteorService extends BaseService {
-  private readonly explosionService: ExplosionService = inject(ExplosionService);
+export class GameMeteorService extends UpdatableService {
+  private readonly explosionService = inject(ExplosionService);
+  private readonly object = inject(ObjectService);
+
   private elapsed = 0;
   // eslint-disable-next-line no-magic-numbers
   private lastMeteorSpawn = -1;

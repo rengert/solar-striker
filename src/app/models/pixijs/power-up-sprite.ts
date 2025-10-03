@@ -4,10 +4,9 @@ import { AnimatedGameSprite } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 
 export enum PowerUp {
-  speed = 0,
-  shotSpeed = 1,
-  // eslint-disable-next-line no-magic-numbers
-  shotPower = 2,
+  speed = 'speed',
+  shotSpeed = 'shotSpeed',
+  shotPower = 'shotPower',
 }
 
 export class PowerUpSprite extends AnimatedGameSprite {
@@ -17,7 +16,7 @@ export class PowerUpSprite extends AnimatedGameSprite {
     super(ObjectType.collectable, null, speed, textures);
 
     this.config = config;
-    this.energy = 10;
+    this.energy = 20;
   }
 
   override explode(): void {
