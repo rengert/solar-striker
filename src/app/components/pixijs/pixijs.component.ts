@@ -10,6 +10,7 @@ import { GameShipService } from '../../services/game-ship.service';
 import { GameShotService } from '../../services/game-shot.service';
 import { GameService } from '../../services/game.service';
 import { ObjectService } from '../../services/object.service';
+import { ShipUpgradeService } from '../../services/ship-upgrade.service';
 
 @Component({
   selector: 'app-pixijs',
@@ -23,6 +24,7 @@ import { ObjectService } from '../../services/object.service';
     GameScreenService,
     GameShotService,
     GameShipService,
+    ShipUpgradeService,
     ExplosionService,
     GameService,
     ObjectService,

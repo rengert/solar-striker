@@ -11,6 +11,7 @@ export class Ship extends AnimatedGameSprite {
   shotSpeed: number;
   lastShot = 0;
   autoFire = false;
+  maxEnergy: number;
 
   private elapsed = 0;
 
@@ -24,7 +25,8 @@ export class Ship extends AnimatedGameSprite {
   ) {
     super(shipType as unknown as ObjectType, explosion, speed, textures);
 
-    this.energy = GAME_CONFIG.ships[this.shipType].energy;
+    this.maxEnergy = GAME_CONFIG.ships[this.shipType].energy;
+    this.energy = this.maxEnergy;
     this.shotSpeed = GAME_CONFIG.ships[this.shipType].shotSpeed;
   }
 
@@ -33,7 +35,7 @@ export class Ship extends AnimatedGameSprite {
   }
 
   override set energy(value: number) {
-    super.energy = Math.min(value, GAME_CONFIG.ships[this.shipType].energy);
+    super.energy = Math.min(value, this.maxEnergy);
   }
 
   shot(): void {
