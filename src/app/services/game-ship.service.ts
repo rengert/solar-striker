@@ -5,6 +5,7 @@ import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
+import { ShipUpgradeService } from './ship-upgrade.service';
 import { UpdatableService } from './updatable.service';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class GameShipService extends UpdatableService {
   private shipAnimation: Texture[] | undefined;
   private readonly explosionService = inject(ExplosionService);
   private readonly gameShot = inject(GameShotService);
+  private readonly shipUpgrades = inject(ShipUpgradeService);
 
   get instance(): Ship {
     if (!this.#ship) {
@@ -50,9 +52,19 @@ export class GameShipService extends UpdatableService {
     this.#ship.y = this.application.screen.height - 100;
     this.object.add(this.#ship);
     this.application.stage.addChild(this.#ship);
+
+    this.applyUpgrades();
   }
 
   update(): void {
     // nothing to do here
+  }
+
+  applyUpgrades(): void {
+    if (!this.#ship) {
+      return;
+    }
+
+    this.shipUpgrades.applyToShip(this.#ship);
   }
 }

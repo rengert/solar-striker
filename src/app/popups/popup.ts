@@ -108,6 +108,10 @@ export abstract class Popup extends Container {
     this.container.addChild(button);
   }
 
+  protected addToContent(displayObject: Container): void {
+    this.container.addChild(displayObject);
+  }
+
   private addTitle(text: string): void {
     const title = new Text({
       text,

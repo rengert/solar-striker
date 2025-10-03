@@ -9,6 +9,8 @@ import { NavigationPopup } from '../popups/navigation-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { handleMouseMove } from '../utils/mouse.util';
 import { ApplicationService } from './application.service';
+import { ShipUpgradeType } from '../models/ship-upgrade.model';
+import { HangarPopup } from '../popups/hangar-popup';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -17,6 +19,7 @@ import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
+import { ShipUpgradeService } from './ship-upgrade.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
 
@@ -37,6 +40,7 @@ export class GameService {
   private readonly gameScreen = inject(GameScreenService);
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
+  readonly shipUpgrades = inject(ShipUpgradeService);
   private readonly updatables: UpdatableService[] = [
     this.collectables,
     this.landscape,
@@ -87,6 +91,7 @@ export class GameService {
     this.landscape.setup();
     this.gameScreen.init();
 
+    await this.shipUpgrades.init();
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
 
@@ -99,6 +104,7 @@ export class GameService {
     await this.hideAndRemoveScreen(requester);
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
+    this.ship.applyUpgrades();
     this.kills.set(0);
     this.started.set(true);
   }
@@ -111,6 +117,11 @@ export class GameService {
   async openNavigation(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(NavigationPopup);
+  }
+
+  async openHangar(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(HangarPopup);
   }
 
   async endGame(requester: AppScreen): Promise<void> {
@@ -204,5 +215,33 @@ export class GameService {
       await screen.show();
       screen.interactiveChildren = true;
     }
+  }
+
+  async handleUpgradePurchase(type: ShipUpgradeType): Promise<boolean> {
+    const cost = this.shipUpgrades.getUpgradeCost(type);
+
+    if (cost === null) {
+      return false;
+    }
+
+    if (this.coins() < cost) {
+      return false;
+    }
+
+    this.storedCoins.update((value) => Math.max(0, value - cost));
+    const upgraded = await this.shipUpgrades.levelUp(type);
+
+    if (!upgraded) {
+      this.storedCoins.update((value) => value + cost);
+      return false;
+    }
+
+    this.ship.applyUpgrades();
+
+    if (this.started()) {
+      this.gameScreen.coins = this.coins();
+    }
+
+    return true;
   }
 }
