@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 
 export enum Store {
   games = 'games',
+  coins = 'coins',
 }
 
 @Injectable({ providedIn: 'root' })
@@ -10,7 +11,7 @@ export class StorageService {
     const data: T[] = Array.isArray(dataToStore) ? dataToStore : [dataToStore];
     return new Promise<void>((resolve, reject) => {
       // eslint-disable-next-line no-magic-numbers
-      const dbRequest = indexedDB.open('data', 4);
+      const dbRequest = indexedDB.open('data', 5);
       dbRequest.onerror = (): void => {
         reject(Error('IndexedDB database error'));
       };
@@ -55,6 +56,11 @@ export class StorageService {
 
       dbRequest.onsuccess = function (event: Event): void {
         const database = (event.currentTarget as IDBOpenDBRequest).result;
+        if (!database.objectStoreNames.contains(storeName)) {
+          resolve([]);
+          return;
+        }
+
         const store = database.transaction([storeName]).objectStore(storeName);
         const objectRequest = store.getAll();
 
@@ -82,7 +88,34 @@ export class StorageService {
     });
   }
 
+  async getCoins(): Promise<number> {
+    const entries = await this.getManyFromStore<{ id: string; amount: number }>(
+      Store.coins,
+      (item) => item.id === 'coins',
+    );
+    const entry = entries.at(0);
+
+    if (entry) {
+      return entry.amount;
+    }
+
+    return 0;
+  }
+
+  setCoins(amount: number): Promise<void> {
+    return this.toStore(Store.coins, {
+      id: 'coins',
+      amount,
+    });
+  }
+
   private migrateDatabase(database: IDBDatabase): void {
-    database.createObjectStore(Store.games, { keyPath: 'id' });
+    if (!database.objectStoreNames.contains(Store.games)) {
+      database.createObjectStore(Store.games, { keyPath: 'id' });
+    }
+
+    if (!database.objectStoreNames.contains(Store.coins)) {
+      database.createObjectStore(Store.coins, { keyPath: 'id' });
+    }
   }
 }
