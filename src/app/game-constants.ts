@@ -1,6 +1,6 @@
-import {PowerUp} from './models/pixijs/power-up-sprite';
-import {ShipType} from './models/pixijs/ship-type.enum';
-import {PowerUpConfig} from './models/power-up-config.model';
+import { PowerUp } from './models/pixijs/power-up-sprite';
+import { ShipType } from './models/pixijs/ship-type.enum';
+import { PowerUpConfig } from './models/power-up-config.model';
 
 export const THE_MIDDLE = 0.5;
 
