@@ -23,9 +23,11 @@ import { UpdatableService } from './updatable.service';
 @Injectable()
 export class GameService {
   readonly kills = signal(0);
-  readonly coins = computed(() =>
+  readonly storedCoins = signal(0);
+  readonly sessionCoins = computed(() =>
     Math.floor(this.kills() / Math.max(GAME_CONFIG.killsPerCoin, 1)),
   );
+  readonly coins = computed(() => this.storedCoins() + this.sessionCoins());
 
   private readonly collectables = inject(GameCollectableService);
   private readonly landscape = inject(GameLandscapeService);
@@ -66,6 +68,10 @@ export class GameService {
       this.gameScreen.coins = this.coins();
     });
 
+    effect(() => {
+      void this.storage.setCoins(this.coins());
+    });
+
     this.object.onDestroyed(ObjectType.enemy, (_, by) => {
       if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
         this.kills.update((value) => value + 1);
@@ -81,6 +87,9 @@ export class GameService {
     this.landscape.setup();
     this.gameScreen.init();
 
+    const storedCoins = await this.storage.getCoins();
+    this.storedCoins.set(storedCoins);
+
     this.setup();
 
     await this.presentPopup(NavigationPopup);
@@ -88,6 +97,9 @@ export class GameService {
 
   async start(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
+    const storedCoins = await this.storage.getCoins();
+    this.storedCoins.set(storedCoins);
+    this.kills.set(0);
     this.started.set(true);
   }
 
