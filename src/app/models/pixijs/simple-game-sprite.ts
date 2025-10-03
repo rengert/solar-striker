@@ -1,4 +1,4 @@
-import { Sprite, Texture, Ticker } from 'pixi.js';
+import { Sprite, Text, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
@@ -7,10 +7,11 @@ import { ObjectType } from './object-type.enum';
 export class GameSprite extends Sprite {
   power = 1;
   reference: ObjectModelType | undefined;
-  energy: number | undefined;
   destroying = false;
   private readonly ySpeed: number;
   private readonly xSpeed: number;
+  private _energy: number | undefined;
+  private energyLabel: Text | undefined;
 
   constructor(
     readonly type: ObjectType,
@@ -23,6 +24,32 @@ export class GameSprite extends Sprite {
     this.ySpeed = Math.random() * speed;
     // eslint-disable-next-line no-magic-numbers
     this.xSpeed = (Math.random() * speed) / 2;
+  }
+
+  get energy(): number | undefined {
+    return this._energy;
+  }
+
+  set energy(value: number | undefined) {
+    this._energy = value;
+    this.updateEnergyLabel();
+  }
+
+  setEnergyLabel(label: Text): void {
+    this.energyLabel = label;
+    // eslint-disable-next-line no-magic-numbers
+    this.energyLabel.anchor.set(0.5);
+    this.energyLabel.position.set(0, 0);
+    this.addChild(this.energyLabel);
+    this.updateEnergyLabel();
+  }
+
+  private updateEnergyLabel(): void {
+    if (!this.energyLabel) {
+      return;
+    }
+    this.energyLabel.text = this._energy?.toString() ?? '';
+    this.energyLabel.visible = this._energy !== undefined;
   }
 
   update(ticker: Ticker): void {

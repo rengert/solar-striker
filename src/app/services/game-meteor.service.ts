@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Texture, Ticker } from 'pixi.js';
+import { Text, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
@@ -57,6 +57,21 @@ export class GameMeteorService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     meteor.height += Math.random() * 20;
     meteor.energy = 10;
+    const energyLabel = new Text({
+      text: '',
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: 0xffffff,
+        stroke: {
+          color: 0x000000,
+          width: 3,
+        },
+        align: 'center',
+      },
+    });
+    meteor.setEnergyLabel(energyLabel);
     this.object.add(meteor);
     this.application.stage.addChild(meteor);
   }
