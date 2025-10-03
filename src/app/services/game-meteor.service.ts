@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Text, Texture, Ticker } from 'pixi.js';
+import { Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
@@ -41,13 +41,12 @@ export class GameMeteorService extends UpdatableService {
     const position = Math.floor(Math.random() * this.application.screen.width - 20) + 10;
     // eslint-disable-next-line no-magic-numbers
     const index = Math.floor(Math.random() * 4) + 1;
-    const meteor = new GameSprite(
-      ObjectType.meteor,
-      this.explosionService,
+    const meteor = new GameSprite(ObjectType.meteor, this.explosionService, {
       // eslint-disable-next-line no-magic-numbers
-      0.1 + 0.125 * level,
-      Texture.from(`meteor${index}`),
-    );
+      speed: 0.1 + 0.125 * level,
+      texture: Texture.from(`meteor${index}`),
+      hasEnergy: true,
+    });
     // eslint-disable-next-line no-magic-numbers
     meteor.anchor.set(0.5);
     meteor.x = position;
@@ -57,21 +56,6 @@ export class GameMeteorService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     meteor.height += Math.random() * 20;
     meteor.energy = 10;
-    const energyLabel = new Text({
-      text: '',
-      style: {
-        fontFamily: 'Arial',
-        fontSize: 12,
-        fontWeight: 'bold',
-        fill: 0xffffff,
-        stroke: {
-          color: 0x000000,
-          width: 3,
-        },
-        align: 'center',
-      },
-    });
-    meteor.setEnergyLabel(energyLabel);
     this.object.add(meteor);
     this.application.stage.addChild(meteor);
   }

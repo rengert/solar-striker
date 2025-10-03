@@ -8,22 +8,49 @@ export class GameSprite extends Sprite {
   power = 1;
   reference: ObjectModelType | undefined;
   destroying = false;
+
+  private _energy: number | undefined;
+
   private readonly ySpeed: number;
   private readonly xSpeed: number;
-  private _energy: number | undefined;
   private energyLabel: Text | undefined;
 
   constructor(
     readonly type: ObjectType,
     private readonly explosion: ExplosionService,
-    speed: number,
-    texture: Texture,
+    {
+      speed,
+      texture,
+      hasEnergy,
+    }: {
+      speed: number;
+      texture: Texture;
+      hasEnergy?: boolean;
+    },
   ) {
     super(texture);
 
     this.ySpeed = Math.random() * speed;
     // eslint-disable-next-line no-magic-numbers
     this.xSpeed = (Math.random() * speed) / 2;
+
+    if (hasEnergy) {
+      const energyLabel = new Text({
+        text: '',
+        style: {
+          fontFamily: 'Arial',
+          fontSize: 12,
+          fontWeight: 'bold',
+          fill: 0xffffff,
+          stroke: {
+            color: 0x000000,
+            width: 3,
+          },
+          align: 'center',
+        },
+      });
+      this.setEnergyLabel(energyLabel);
+    }
   }
 
   get energy(): number | undefined {
@@ -35,7 +62,7 @@ export class GameSprite extends Sprite {
     this.updateEnergyLabel();
   }
 
-  setEnergyLabel(label: Text): void {
+  private setEnergyLabel(label: Text): void {
     this.energyLabel = label;
     // eslint-disable-next-line no-magic-numbers
     this.energyLabel.anchor.set(0.5);
