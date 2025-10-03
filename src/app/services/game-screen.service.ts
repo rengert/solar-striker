@@ -9,7 +9,7 @@ export class GameScreenService extends UpdatableService {
   readonly #ship = inject(GameShipService);
 
   private readonly points = new Text({ text: `0 ${icons.points}  `, style: fontAwesomeStyle });
-  private readonly coins = new Text({ text: `0 ${icons.coin}  `, style: fontAwesomeStyle });
+  private readonly coinLabel = new Text({ text: `0 ${icons.coin}  `, style: fontAwesomeStyle });
   private readonly levelLabel = new Text({ text: `1 ${icons.level}  `, style: fontAwesomeStyle });
 
   private lifesLabel: Graphics | undefined;
@@ -22,6 +22,11 @@ export class GameScreenService extends UpdatableService {
   set level(value: number) {
     this.levelLabel!.text = `${value} ${icons.level}  `;
     this.levelLabel!.x = this.application.screen.width - this.levelLabel!.width;
+  }
+
+  set coins(value: number) {
+    this.coinLabel!.text = `${value} ${icons.coin}  `;
+    this.coinLabel!.x = this.application.screen.width - this.coinLabel!.width;
   }
 
   private set lifes(value: number) {
@@ -53,9 +58,9 @@ export class GameScreenService extends UpdatableService {
     this.levelLabel.y = 45;
     this.addToStage(this.levelLabel);
 
-    this.coins.x = this.application.screen.width - this.coins.width;
-    this.coins.y = 30;
-    this.addToStage(this.coins);
+    this.coinLabel.x = this.application.screen.width - this.coinLabel.width;
+    this.coinLabel.y = 30;
+    this.addToStage(this.coinLabel);
   }
 
   update(): void {
