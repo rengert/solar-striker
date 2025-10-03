@@ -7,15 +7,15 @@ import { Popup } from './popup';
 const POPUP_HEIGHT = 454;
 const HALF = 0.5;
 const ROW_START_Y = -50;
-const ROW_VERTICAL_SPACING = 85;
+const ROW_VERTICAL_SPACING = 105;
 const ROW_TITLE_X = -110;
 const DESCRIPTION_Y = 12;
-const LEVEL_LABEL_Y = 52;
-const COST_LABEL_Y = 70;
-const BUTTON_X = 50;
-const BUTTON_Y = 30;
+const LEVEL_LABEL_Y = 32;
+const COST_LABEL_Y = 50;
+const BUTTON_X = 0;
+const BUTTON_Y = 60;
 const BUTTON_WIDTH = 120;
-const BUTTON_HEIGHT = 40;
+const BUTTON_HEIGHT = 30;
 const BACK_BUTTON_OFFSET = 2;
 
 interface UpgradeRow {
@@ -31,13 +31,20 @@ export class HangarPopup extends Popup {
   constructor(private readonly gameService: GameService) {
     super('Hangar', POPUP_HEIGHT);
 
+    this.y = -100;
+
     this.gameService.shipUpgrades.definitions.forEach((definition, index) => {
       const row = this.createUpgradeRow(definition, index);
       this.upgradeRows.set(definition.type, row);
     });
 
     const backButtonIndex = this.gameService.shipUpgrades.definitions.length + BACK_BUTTON_OFFSET;
-    this.addButton('Zurück', () => this.gameService.openNavigation(this), backButtonIndex);
+    const button = this.addButton(
+      'Zurück',
+      () => this.gameService.openNavigation(this),
+      backButtonIndex,
+    );
+    button.y = button.y + BUTTON_HEIGHT;
     this.updateView();
   }
 
@@ -111,12 +118,12 @@ export class HangarPopup extends Popup {
       style: {
         fontFamily: 'DefaultFont',
         fontSize: 12,
-        fill: 0xffffff,
+        fill: 0x000000,
       },
     });
-    buttonText.anchor.set(HALF);
-    buttonText.x = button.width * HALF;
-    buttonText.y = button.height * HALF;
+    buttonText.anchor.set(HALF, HALF);
+    buttonText.x = (BUTTON_WIDTH * HALF) / button.scale.x;
+    buttonText.y = (BUTTON_HEIGHT * HALF) / button.scale.y;
     button.addChild(buttonText);
 
     button.onPress.connect(() => void this.handleUpgrade(definition.type));

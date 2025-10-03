@@ -83,7 +83,7 @@ export abstract class Popup extends Container {
     this.container.addChild(text);
   }
 
-  protected addButton(textContent: string, callback: () => void, index: number): void {
+  protected addButton(textContent: string, callback: () => void, index: number): ButtonContainer {
     const button = new ButtonContainer(Sprite.from(Texture.from('button')));
     button.width = 190;
     button.height = 49;
@@ -106,6 +106,7 @@ export abstract class Popup extends Container {
 
     button.onPress.connect(callback);
     this.container.addChild(button);
+    return button;
   }
 
   protected addToContent(displayObject: Container): void {

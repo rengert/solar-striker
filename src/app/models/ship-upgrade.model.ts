@@ -29,7 +29,7 @@ export const SHIP_UPGRADE_DEFINITIONS: ShipUpgradeDefinition[] = [
   {
     type: ShipUpgradeType.hull,
     title: 'Rumpfverstärkung',
-    description: 'Erhöht die maximale Energie deines Schiffs um 1 pro Stufe.',
+    description: 'Erhöht die maximale Energie',
     baseCost: 50,
     costMultiplier: 1.6,
     maxLevel: 5,
@@ -41,7 +41,7 @@ export const SHIP_UPGRADE_DEFINITIONS: ShipUpgradeDefinition[] = [
   {
     type: ShipUpgradeType.cannons,
     title: 'Zwillingsgeschütz',
-    description: 'Erhöht die Feuerkraft um einen zusätzlichen Schuss pro Stufe.',
+    description: 'Erhöht die Feuerkraft',
     baseCost: 80,
     costMultiplier: 1.7,
     maxLevel: 2,
@@ -53,7 +53,7 @@ export const SHIP_UPGRADE_DEFINITIONS: ShipUpgradeDefinition[] = [
   {
     type: ShipUpgradeType.targeting,
     title: 'Feuerleitcomputer',
-    description: 'Steigert die Schussfrequenz um 0.3 pro Stufe.',
+    description: 'Erhöht die Schussfrequenz',
     baseCost: 60,
     costMultiplier: 1.5,
     maxLevel: 3,
