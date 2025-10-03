@@ -20,7 +20,7 @@ export abstract class Popup extends Container {
 
     this.container = new Container();
     this.container.width = 265;
-    this.container.height = 430;
+    this.container.height = height;
 
     this.addChild(this.container);
     const panel = new Sprite(Texture.from('popup'));

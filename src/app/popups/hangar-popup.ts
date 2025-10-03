@@ -4,9 +4,9 @@ import { ShipUpgradeDefinition, ShipUpgradeType } from '../models/ship-upgrade.m
 import { GameService } from '../services/game.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 420;
+const POPUP_HEIGHT = 454;
 const HALF = 0.5;
-const ROW_START_Y = -20;
+const ROW_START_Y = -50;
 const ROW_VERTICAL_SPACING = 85;
 const ROW_TITLE_X = -110;
 const DESCRIPTION_Y = 12;
