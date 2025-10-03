@@ -55,7 +55,9 @@ export class GameMeteorService extends UpdatableService {
     meteor.width += Math.random() * 20;
     // eslint-disable-next-line no-magic-numbers
     meteor.height += Math.random() * 20;
-    meteor.energy = 10;
+    const baseEnergy = 10;
+    // Increase energy by 5 for each additional level while keeping a minimum of 10
+    meteor.energy = Math.max(baseEnergy, baseEnergy + 5 * (level - 1));
     this.object.add(meteor);
     this.application.stage.addChild(meteor);
   }
