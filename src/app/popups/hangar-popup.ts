@@ -6,7 +6,6 @@ import { Popup } from './popup';
 
 const POPUP_HEIGHT = 420;
 const HALF = 0.5;
-const INFO_TEXT_Y = -50;
 const ROW_START_Y = -20;
 const ROW_VERTICAL_SPACING = 85;
 const ROW_TITLE_X = -110;
@@ -31,8 +30,6 @@ export class HangarPopup extends Popup {
 
   constructor(private readonly gameService: GameService) {
     super('Hangar', POPUP_HEIGHT);
-
-    this.addText('Tausche Münzen für permanente Verbesserungen.', { size: 10 }, { y: INFO_TEXT_Y });
 
     this.gameService.shipUpgrades.definitions.forEach((definition, index) => {
       const row = this.createUpgradeRow(definition, index);
