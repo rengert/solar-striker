@@ -1,10 +1,10 @@
-import { Sprite, Text, Texture, Ticker } from 'pixi.js';
+import { Container, Sprite, Text, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
 import { ObjectType } from './object-type.enum';
 
-export class GameSprite extends Sprite {
+export class GameSprite extends Container {
   power = 1;
   reference: ObjectModelType | undefined;
   destroying = false;
@@ -14,6 +14,9 @@ export class GameSprite extends Sprite {
   private readonly ySpeed: number;
   private readonly xSpeed: number;
   private energyLabel: Text | undefined;
+  private readonly sprite: Sprite;
+
+  readonly anchor: Sprite['anchor'];
 
   constructor(
     readonly type: ObjectType,
@@ -28,7 +31,11 @@ export class GameSprite extends Sprite {
       hasEnergy?: boolean;
     },
   ) {
-    super(texture);
+    super();
+
+    this.sprite = new Sprite(texture);
+    this.anchor = this.sprite.anchor;
+    this.addChild(this.sprite);
 
     this.ySpeed = Math.random() * speed;
     // eslint-disable-next-line no-magic-numbers
