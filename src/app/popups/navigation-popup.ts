@@ -2,9 +2,11 @@ import { GameService } from '../services/game.service';
 import { version } from '../version';
 import { Popup } from './popup';
 
+const POPUP_HEIGHT = 250;
+
 export class NavigationPopup extends Popup {
   constructor(gameService: GameService) {
-    super('Solarstriker');
+    super('Solarstriker', POPUP_HEIGHT);
 
     const buttonIndex = {
       start: 0,
