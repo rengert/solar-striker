@@ -23,6 +23,9 @@ import { UpdatableService } from './updatable.service';
 @Injectable()
 export class GameService {
   readonly kills = signal(0);
+  readonly coins = computed(() =>
+    Math.floor(this.kills() / Math.max(GAME_CONFIG.killsPerCoin, 1)),
+  );
 
   private readonly collectables = inject(GameCollectableService);
   private readonly landscape = inject(GameLandscapeService);
@@ -60,6 +63,7 @@ export class GameService {
 
       this.gameScreen.kills = this.kills();
       this.gameScreen.level = this.level();
+      this.gameScreen.coins = this.coins();
     });
 
     this.object.onDestroyed(ObjectType.enemy, (_, by) => {
