@@ -1,4 +1,9 @@
 import { ObjectModelType } from '../services/object.service';
+import { ObjectType } from '../models/pixijs/object-type.enum';
+
+function isProtectedCollectable(sprite: ObjectModelType, other: ObjectModelType): boolean {
+  return sprite.type === ObjectType.collectable && other.type !== ObjectType.ship;
+}
 
 export function hit(spriteA: ObjectModelType, spriteB: ObjectModelType): boolean {
   if (spriteA.destroyed || spriteB.destroyed || spriteA.destroying || spriteB.destroying) {
@@ -17,13 +22,13 @@ export function hit(spriteA: ObjectModelType, spriteB: ObjectModelType): boolean
     && bounds1.y < bounds2.y + bounds2.height
     && bounds1.y + bounds1.height > bounds2.y;
   if (itemHit) {
-    if (spriteA.energy !== undefined) {
+    if (spriteA.energy !== undefined && !isProtectedCollectable(spriteA, spriteB)) {
       spriteA.energy -= spriteB.power;
       if (spriteA.energy <= 0) {
         spriteA.explode();
       }
     }
-    if (spriteB.energy !== undefined) {
+    if (spriteB.energy !== undefined && !isProtectedCollectable(spriteB, spriteA)) {
       spriteB.energy -= spriteA.power;
       if (spriteB.energy <= 0) {
         spriteB.explode();
