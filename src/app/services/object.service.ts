@@ -29,39 +29,48 @@ export class ObjectService extends UpdatableService {
   }
 
   update(ticker: Ticker): void {
-    this.#objects.update((objects) =>
-      objects.filter((object) => !object.destroyed && !object.destroying),
-    );
+    const objects = this.#objects();
 
-    this.meteors().forEach((object) => object.update(ticker));
-
-    const objectsList = this.#objects();
-    for (let i = 0; i < objectsList.length; i++) {
-      const object1 = objectsList[i];
-      if (object1.destroyed && object1.destroying) {
-        return;
+    for (let i = 0; i < objects.length; i++) {
+      const object = objects[i];
+      if (object.destroyed || object.destroying || object.type !== ObjectType.meteor) {
+        continue;
       }
-      for (let j = 0; j < objectsList.length; j++) {
-        const object2 = objectsList[j];
+      object.update(ticker);
+    }
+
+    for (let i = 0; i < objects.length; i++) {
+      const object1 = objects[i];
+      if (object1.destroyed || object1.destroying) {
+        continue;
+      }
+
+      for (let j = i + 1; j < objects.length; j++) {
+        const object2 = objects[j];
+
         if (
           object1 === object2 ||
           object2.destroyed ||
           object2.destroying ||
-          object1.destroyed ||
-          object1.destroying ||
           !object1.hit(object2)
         ) {
           continue;
         }
+
         this.triggerCallbacks(object1, object2);
         this.triggerCallbacks(object2, object1);
       }
     }
 
-    this.#objects()
-      .filter((item) => item.destroying)
-      .forEach((item) => item.destroy());
-    this.#objects.update((objects) => objects.filter((object) => !object.destroyed));
+    for (let i = 0; i < objects.length; i++) {
+      const object = objects[i];
+      if (!object.destroying) {
+        continue;
+      }
+      object.destroy();
+    }
+
+    this.#objects.set(objects.filter((object) => !object.destroyed));
   }
 
   add(object: AnimatedGameSprite | GameSprite): void {
