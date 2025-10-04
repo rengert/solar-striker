@@ -18,18 +18,18 @@ import { GameMeteorService } from './game-meteor.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
-import { ObjectService } from './object.service';
+import { ObjectModelType, ObjectService } from './object.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
+
+const METEOR_COIN_ENERGY_STEP = 20;
 
 @Injectable()
 export class GameService {
   readonly kills = signal(0);
   readonly storedCoins = signal(0);
-  readonly sessionCoins = computed(() =>
-    Math.floor(this.kills() / Math.max(GAME_CONFIG.killsPerCoin, 1)),
-  );
+  readonly sessionCoins = signal(0);
   readonly coins = computed(() => this.storedCoins() + this.sessionCoins());
 
   private readonly collectables = inject(GameCollectableService);
@@ -41,6 +41,7 @@ export class GameService {
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
   readonly shipUpgrades = inject(ShipUpgradeService);
+  private rewardedMeteors = new WeakSet<ObjectModelType>();
   private readonly updatables: UpdatableService[] = [
     this.collectables,
     this.landscape,
@@ -81,6 +82,21 @@ export class GameService {
         this.kills.update((value) => value + 1);
       }
     });
+
+    this.object.onDestroyed(ObjectType.meteor, (meteor, by) => {
+      if (!this.started() || !this.isShipDestroyer(by)) {
+        return;
+      }
+
+      const coins = this.calculateMeteorCoins(meteor);
+
+      if (coins <= 0 || this.rewardedMeteors.has(meteor)) {
+        return;
+      }
+
+      this.rewardedMeteors.add(meteor);
+      this.sessionCoins.update((value) => value + coins);
+    });
   }
 
   async init(): Promise<void> {
@@ -104,6 +120,8 @@ export class GameService {
     await this.hideAndRemoveScreen(requester);
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
+    this.rewardedMeteors = new WeakSet<ObjectModelType>();
+    this.sessionCoins.set(0);
     this.ship.applyUpgrades();
     this.kills.set(0);
     this.started.set(true);
@@ -228,11 +246,15 @@ export class GameService {
       return false;
     }
 
-    this.storedCoins.update((value) => Math.max(0, value - cost));
+    const previousStoredCoins = this.storedCoins();
+    const previousSessionCoins = this.sessionCoins();
+
+    this.applyCoinCost(cost);
     const upgraded = await this.shipUpgrades.levelUp(type);
 
     if (!upgraded) {
-      this.storedCoins.update((value) => value + cost);
+      this.storedCoins.set(previousStoredCoins);
+      this.sessionCoins.set(previousSessionCoins);
       return false;
     }
 
@@ -243,5 +265,31 @@ export class GameService {
     }
 
     return true;
+  }
+
+  private applyCoinCost(cost: number): void {
+    let remainingCost = cost;
+    const storedCoins = this.storedCoins();
+
+    if (storedCoins >= remainingCost) {
+      this.storedCoins.set(storedCoins - remainingCost);
+      return;
+    }
+
+    remainingCost -= storedCoins;
+    this.storedCoins.set(0);
+
+    const sessionCoins = this.sessionCoins();
+    this.sessionCoins.set(Math.max(0, sessionCoins - remainingCost));
+  }
+
+  private isShipDestroyer(by: ObjectModelType): boolean {
+    return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
+  }
+
+  private calculateMeteorCoins(meteor: ObjectModelType): number {
+    const energy = meteor.initialEnergy ?? meteor.energy ?? 0;
+
+    return Math.floor(energy / METEOR_COIN_ENERGY_STEP);
   }
 }
