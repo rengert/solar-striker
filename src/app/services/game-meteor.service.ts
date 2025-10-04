@@ -7,6 +7,8 @@ import { ExplosionService } from './explosion.service';
 import { ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
+const METEOR_ENERGY_STEP = 5;
+
 @Injectable()
 export class GameMeteorService extends UpdatableService {
   private readonly explosionService = inject(ExplosionService);
@@ -56,8 +58,8 @@ export class GameMeteorService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     meteor.height += Math.random() * 20;
     const baseEnergy = 10;
-    // Increase energy by 5 for each additional level while keeping a minimum of 10
-    meteor.energy = Math.max(baseEnergy, baseEnergy + 5 * (level - 1));
+    // Increase energy by METEOR_ENERGY_STEP for each additional level while keeping a minimum of 10
+    meteor.energy = Math.max(baseEnergy, baseEnergy + METEOR_ENERGY_STEP * (level - 1));
     this.object.add(meteor);
     this.application.stage.addChild(meteor);
   }
