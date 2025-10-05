@@ -10,6 +10,7 @@ export class GameSprite extends Container {
   destroying = false;
 
   private _energy: number | undefined;
+  private initialEnergyValue: number | undefined;
 
   private readonly ySpeed: number;
   private readonly xSpeed: number;
@@ -65,8 +66,15 @@ export class GameSprite extends Container {
   }
 
   set energy(value: number | undefined) {
+    if (value !== undefined && this.initialEnergyValue === undefined) {
+      this.initialEnergyValue = value;
+    }
     this._energy = value;
     this.updateEnergyLabel();
+  }
+
+  get initialEnergy(): number | undefined {
+    return this.initialEnergyValue;
   }
 
   private setEnergyLabel(label: Text): void {

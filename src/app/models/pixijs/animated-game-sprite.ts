@@ -11,6 +11,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   targetX?: number;
 
   protected readonly speed: number = 1;
+  private _initialEnergy: number | undefined;
 
   constructor(
     readonly type: ObjectType,
@@ -30,7 +31,14 @@ export class AnimatedGameSprite extends AnimatedSprite {
   }
 
   set energy(value: number) {
+    if (this._initialEnergy === undefined) {
+      this._initialEnergy = value;
+    }
     this._energy = value;
+  }
+
+  get initialEnergy(): number | undefined {
+    return this._initialEnergy;
   }
 
   explode(): void {
