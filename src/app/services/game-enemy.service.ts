@@ -51,12 +51,16 @@ export class GameEnemyService extends UpdatableService {
 
   private spawn(level: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
+    // eslint-disable-next-line no-magic-numbers
+    const maxSpeed = 0.4 + 0.025 * level;
+    // eslint-disable-next-line no-magic-numbers
+    const speedVariation = 0.6 + Math.random() * 0.4;
+
     const enemy = new Ship(
       ShipType.enemy,
       this.shotService,
       this.explosionService,
-      // eslint-disable-next-line no-magic-numbers
-      0.4 + 0.025 * level,
+      maxSpeed * speedVariation,
       animations['frame'],
     );
     enemy.autoFire = true;
