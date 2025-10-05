@@ -25,6 +25,16 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 
+function isShipDestroyer(by: ObjectModelType): boolean {
+  return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
+}
+
+function calculateMeteorCoins(meteor: ObjectModelType): number {
+  const energy = meteor.initialEnergy ?? meteor.energy ?? 0;
+
+  return Math.floor(energy / METEOR_COIN_ENERGY_STEP);
+}
+
 @Injectable()
 export class GameService {
   readonly kills = signal(0);
@@ -84,11 +94,11 @@ export class GameService {
     });
 
     this.object.onDestroyed(ObjectType.meteor, (meteor, by) => {
-      if (!this.started() || !this.isShipDestroyer(by)) {
+      if (!this.started() || !isShipDestroyer(by)) {
         return;
       }
 
-      const coins = this.calculateMeteorCoins(meteor);
+      const coins = calculateMeteorCoins(meteor);
 
       if (coins <= 0 || this.rewardedMeteors.has(meteor)) {
         return;
@@ -283,13 +293,4 @@ export class GameService {
     this.sessionCoins.set(Math.max(0, sessionCoins - remainingCost));
   }
 
-  private isShipDestroyer(by: ObjectModelType): boolean {
-    return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
-  }
-
-  private calculateMeteorCoins(meteor: ObjectModelType): number {
-    const energy = meteor.initialEnergy ?? meteor.energy ?? 0;
-
-    return Math.floor(energy / METEOR_COIN_ENERGY_STEP);
-  }
 }

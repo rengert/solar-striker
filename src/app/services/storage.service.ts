@@ -6,6 +6,42 @@ export enum Store {
   upgrades = 'upgrades',
 }
 
+function getManyFromStore<T>(
+  storeName: Store,
+  resolver?: (item: T) => boolean,
+): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    const dbRequest = indexedDB.open('data');
+    dbRequest.onerror = function (): void {
+      resolve([]);
+    };
+
+    dbRequest.onupgradeneeded = function (event: IDBVersionChangeEvent): void {
+      (event.currentTarget as IDBOpenDBRequest).transaction?.abort();
+      resolve([]);
+    };
+
+    dbRequest.onsuccess = function (event: Event): void {
+      const database = (event.currentTarget as IDBOpenDBRequest).result;
+      if (!database.objectStoreNames.contains(storeName)) {
+        resolve([]);
+        return;
+      }
+
+      const store = database.transaction([storeName]).objectStore(storeName);
+      const objectRequest = store.getAll();
+
+      objectRequest.onerror = function (): void {
+        reject(Error('Error text'));
+      };
+
+      objectRequest.onsuccess = function (): void {
+        resolve((objectRequest.result as T[]).filter((item) => !resolver || resolver(item)));
+      };
+    };
+  });
+}
+
 @Injectable({ providedIn: 'root' })
 export class StorageService {
   toStore<T>(storeName: string, dataToStore: T | T[], clear = false): Promise<void> {
@@ -43,41 +79,8 @@ export class StorageService {
     });
   }
 
-  getManyFromStore<T>(storeName: Store, resolver?: (item: T) => boolean): Promise<T[]> {
-    return new Promise((resolve, reject) => {
-      const dbRequest = indexedDB.open('data');
-      dbRequest.onerror = function (): void {
-        resolve([]);
-      };
-
-      dbRequest.onupgradeneeded = function (event: IDBVersionChangeEvent): void {
-        (event.currentTarget as IDBOpenDBRequest).transaction?.abort();
-        resolve([]);
-      };
-
-      dbRequest.onsuccess = function (event: Event): void {
-        const database = (event.currentTarget as IDBOpenDBRequest).result;
-        if (!database.objectStoreNames.contains(storeName)) {
-          resolve([]);
-          return;
-        }
-
-        const store = database.transaction([storeName]).objectStore(storeName);
-        const objectRequest = store.getAll();
-
-        objectRequest.onerror = function (): void {
-          reject(Error('Error text'));
-        };
-
-        objectRequest.onsuccess = function (): void {
-          resolve((objectRequest.result as T[]).filter((item) => !resolver || resolver(item)));
-        };
-      };
-    });
-  }
-
   getHighscore(): Promise<{ date: string; kills: number; level: number }[]> {
-    return this.getManyFromStore(Store.games, () => true);
+    return getManyFromStore(Store.games, () => true);
   }
 
   setHighscore(kills: number, level: number): Promise<void> {
@@ -90,7 +93,7 @@ export class StorageService {
   }
 
   async getCoins(): Promise<number> {
-    const entries = await this.getManyFromStore<{ id: string; amount: number }>(
+    const entries = await getManyFromStore<{ id: string; amount: number }>(
       Store.coins,
       (item) => item.id === 'coins',
     );
@@ -111,7 +114,7 @@ export class StorageService {
   }
 
   async getShipUpgrades(): Promise<Record<string, number>> {
-    const entries = await this.getManyFromStore<{ id: string; levels: Record<string, number> }>(
+    const entries = await getManyFromStore<{ id: string; levels: Record<string, number> }>(
       Store.upgrades,
       (item) => item.id === 'ship-upgrades',
     );
