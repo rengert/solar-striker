@@ -11,6 +11,17 @@ interface Dictionary<T> {
   [key: string]: T;
 }
 
+function collectPowerUp(object: ObjectModelType, by: ObjectModelType): void {
+  if (by.type !== ObjectType.ship) {
+    return;
+  }
+  const ship = by as unknown as Ship;
+  const powerUp = object as unknown as PowerUpSprite;
+  ship.shotSpeed += powerUp.config.powerUp.speed;
+  ship.shotPower += powerUp.config.powerUp.shot;
+  ship.energy += powerUp.config.powerUp.energy;
+}
+
 @Injectable()
 export class GameCollectableService extends UpdatableService {
   private readonly object = inject(ObjectService);
@@ -21,7 +32,7 @@ export class GameCollectableService extends UpdatableService {
     super();
 
     this.object.onDestroyed(ObjectType.enemy, (enemy, by) => this.spawn(enemy, by));
-    this.object.onDestroyed(ObjectType.collectable, (powerUp, by) => this.collect(powerUp, by));
+    this.object.onDestroyed(ObjectType.collectable, (powerUp, by) => collectPowerUp(powerUp, by));
   }
 
   async init(): Promise<void> {
@@ -32,17 +43,6 @@ export class GameCollectableService extends UpdatableService {
         this.animations[config.type] = animations[config.animationName];
       }
     }
-  }
-
-  collect(object: ObjectModelType, by: ObjectModelType): void {
-    if (by.type !== ObjectType.ship) {
-      return;
-    }
-    const ship = by as unknown as Ship;
-    const powerUp = object as unknown as PowerUpSprite;
-    ship.shotSpeed += powerUp.config.powerUp.speed;
-    ship.shotPower += powerUp.config.powerUp.shot;
-    ship.energy += powerUp.config.powerUp.energy;
   }
 
   update(): void {
