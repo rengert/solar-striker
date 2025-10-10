@@ -1,9 +1,10 @@
+import { LARGE_POP_UP_HEIGHT } from '../game-constants';
 import { GameService } from '../services/game.service';
 import { Popup } from './popup';
 
 export class YouAreDeadPopup extends Popup {
   constructor(gameService: GameService) {
-    super('Credits');
+    super('Credits', LARGE_POP_UP_HEIGHT);
 
     this.addText('Du bist gestorben', { size: 14 }, { y: -60 });
     this.addText(

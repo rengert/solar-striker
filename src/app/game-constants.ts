@@ -3,6 +3,7 @@ import { ShipType } from './models/pixijs/ship-type.enum';
 import { PowerUpConfig } from './models/power-up-config.model';
 
 export const THE_MIDDLE = 0.5;
+export const LARGE_POP_UP_HEIGHT = 420;
 
 interface Config {
   powerUpConfig: PowerUpConfig[];
