@@ -4,6 +4,12 @@ import { fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
 import { UpdatableService } from './updatable.service';
 
+const HEADER_TOP_PADDING = 20;
+const HEADER_LINE_SPACING = 22;
+const HEADER_SIDE_PADDING = 8;
+const DOUBLE = 2;
+const TRIPPLE = 3;
+
 @Injectable()
 export class GameScreenService extends UpdatableService {
   readonly #ship = inject(GameShipService);
@@ -35,8 +41,8 @@ export class GameScreenService extends UpdatableService {
   }
 
   init(): void {
-    this.points.x = 5;
-    this.points.y = 65;
+    this.points.x = HEADER_SIDE_PADDING;
+    this.points.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * TRIPPLE;
     this.addToStage(this.points);
 
     const energyBarContainer = new Container();
@@ -50,16 +56,16 @@ export class GameScreenService extends UpdatableService {
 
     this.addToStage(energyBarContainer);
 
-    this.lifesLabel.x = 5;
-    this.lifesLabel.y = 55;
+    this.lifesLabel.x = HEADER_SIDE_PADDING;
+    this.lifesLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * DOUBLE;
     this.addToStage(this.lifesLabel);
 
-    this.levelLabel.x = this.application.screen.width - this.levelLabel.width;
-    this.levelLabel.y = 45;
+    this.levelLabel.x = this.application.screen.width - this.levelLabel.width - HEADER_SIDE_PADDING;
+    this.levelLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING;
     this.addToStage(this.levelLabel);
 
-    this.coinLabel.x = this.application.screen.width - this.coinLabel.width;
-    this.coinLabel.y = 30;
+    this.coinLabel.x = this.application.screen.width - this.coinLabel.width - HEADER_SIDE_PADDING;
+    this.coinLabel.y = HEADER_TOP_PADDING;
     this.addToStage(this.coinLabel);
   }
 
