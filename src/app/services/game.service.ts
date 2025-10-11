@@ -134,6 +134,7 @@ export class GameService {
     this.sessionCoins.set(0);
     this.ship.applyUpgrades();
     this.kills.set(0);
+    this.ship.instance.autoFire = false;
     this.started.set(true);
   }
 
@@ -177,6 +178,7 @@ export class GameService {
       if (this.ship.instance.energy === 0) {
         void this.storage.setHighscore(this.kills(), this.level());
         void this.presentPopup(YouAreDeadPopup);
+        this.ship.instance.autoFire = false;
         this.started.set(false);
       }
     });
@@ -185,7 +187,13 @@ export class GameService {
   private setupInteractions(ship: GameShipService): void {
     this.application.stage.eventMode = 'dynamic';
     this.application.stage.hitArea = this.application.screen;
-    this.application.stage.on('pointerdown', () => (ship.instance.autoFire = true));
+    this.application.stage.on('pointerdown', () => {
+      if (!this.started()) {
+        return;
+      }
+
+      ship.instance.autoFire = true;
+    });
     this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
     this.application.stage.on('pointermove', (event: FederatedPointerEvent) => {
       if (!this.started()) {
