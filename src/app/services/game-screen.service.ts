@@ -60,11 +60,11 @@ export class GameScreenService extends UpdatableService {
     this.lifesLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * DOUBLE;
     this.addToStage(this.lifesLabel);
 
-    this.levelLabel.x = this.application.screen.width - this.levelLabel.width;
+    this.levelLabel.x = this.application.screen.width - this.levelLabel.width - HEADER_SIDE_PADDING;
     this.levelLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING;
     this.addToStage(this.levelLabel);
 
-    this.coinLabel.x = this.application.screen.width - this.coinLabel.width;
+    this.coinLabel.x = this.application.screen.width - this.coinLabel.width - HEADER_SIDE_PADDING;
     this.coinLabel.y = HEADER_TOP_PADDING;
     this.addToStage(this.coinLabel);
   }
