@@ -187,9 +187,13 @@ export class GameService {
     this.application.stage.hitArea = this.application.screen;
     this.application.stage.on('pointerdown', () => (ship.instance.autoFire = true));
     this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
-    this.application.stage.on('pointermove', (event: FederatedPointerEvent) =>
-      handleMouseMove(event, ship.instance),
-    );
+    this.application.stage.on('pointermove', (event: FederatedPointerEvent) => {
+      if (!this.started()) {
+        return;
+      }
+
+      handleMouseMove(event, ship.instance);
+    });
   }
 
   private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
