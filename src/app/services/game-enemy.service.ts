@@ -10,6 +10,30 @@ import { UpdatableService } from './updatable.service';
 
 const halfWidth = 10;
 const width = halfWidth + halfWidth;
+const MOVEMENT_TARGET_SNAP_DISTANCE = 5;
+const MOVEMENT_MIN_DISTANCE_RATIO = 0.08;
+const MOVEMENT_MIN_DISTANCE_PIXELS = 40;
+const MOVEMENT_MAX_DISTANCE_RATIO = 0.22;
+const MOVEMENT_MAX_DISTANCE_PIXELS = 110;
+// eslint-disable-next-line no-magic-numbers
+const MOVEMENT_REVERSE_DIRECTION_MULTIPLIER = -1;
+const MOVEMENT_DIRECTIONS = Object.freeze(
+  [
+    MOVEMENT_REVERSE_DIRECTION_MULTIPLIER,
+    Math.abs(MOVEMENT_REVERSE_DIRECTION_MULTIPLIER),
+  ] as const,
+);
+const MOVEMENT_BASE_DELAY = 650;
+const MOVEMENT_RANDOM_DELAY_MIN = 450;
+const MOVEMENT_RANDOM_DELAY_RANGE = 400;
+const MOVEMENT_LEVEL_ACCELERATION = 25;
+const MOVEMENT_LEVEL_ACCELERATION_CAP = 10;
+const MOVEMENT_MIN_DELAY = 350;
+
+interface EnemyMovementState {
+  nextChange: number;
+  targetX?: number;
+}
 
 @Injectable()
 export class GameEnemyService extends UpdatableService {
@@ -21,6 +45,7 @@ export class GameEnemyService extends UpdatableService {
   private lastEnemySpawn: number | null = null;
 
   private enemySprite!: Spritesheet;
+  private readonly movementStates = new WeakMap<Ship, EnemyMovementState>();
 
   async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
@@ -29,13 +54,18 @@ export class GameEnemyService extends UpdatableService {
   update(ticker: Ticker, level: number): void {
     this.elapsed += ticker.deltaMS;
 
-    this.object
-      .enemies()
+    const enemies = this.object.enemies();
+
+    enemies
       // eslint-disable-next-line no-magic-numbers
       .filter((enemy) => enemy.y > this.application.screen.height + 50)
       .forEach((enemy) => {
         enemy.y = 0;
+        enemy.targetX = undefined;
+        this.movementStates.delete(enemy);
       });
+
+    enemies.forEach((enemy) => this.updateMovement(enemy, level));
 
     const check = Math.floor(this.elapsed);
     if (
@@ -71,5 +101,63 @@ export class GameEnemyService extends UpdatableService {
     enemy.y = 0;
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
+
+    this.updateMovement(enemy, level, true);
+  }
+
+  private updateMovement(enemy: Ship, level: number, force = false): void {
+    const screenWidth = this.application.screen.width;
+    const movement = this.getMovementState(enemy);
+
+    const shouldPickNewTarget =
+      force ||
+      movement.nextChange <= this.elapsed ||
+      movement.targetX === undefined ||
+      Math.abs((movement.targetX ?? enemy.x) - enemy.x) < MOVEMENT_TARGET_SNAP_DISTANCE;
+
+    if (shouldPickNewTarget) {
+      movement.targetX = this.getNextHorizontalTarget(enemy.x, screenWidth);
+      movement.nextChange = this.elapsed + this.getNextChangeDelay(level);
+    }
+
+    if (movement.targetX !== undefined) {
+      enemy.targetX = movement.targetX;
+    }
+  }
+
+  private getMovementState(enemy: Ship): EnemyMovementState {
+    if (!this.movementStates.has(enemy)) {
+      this.movementStates.set(enemy, { nextChange: 0 });
+    }
+    // Non-null assertion safe: we just set it when missing.
+    return this.movementStates.get(enemy)!;
+  }
+
+  private getNextHorizontalTarget(currentX: number, screenWidth: number): number {
+    const minDistance = Math.max(screenWidth * MOVEMENT_MIN_DISTANCE_RATIO, MOVEMENT_MIN_DISTANCE_PIXELS);
+    const maxDistance = Math.max(screenWidth * MOVEMENT_MAX_DISTANCE_RATIO, MOVEMENT_MAX_DISTANCE_PIXELS);
+    const preferredDirection =
+      MOVEMENT_DIRECTIONS[Math.floor(Math.random() * MOVEMENT_DIRECTIONS.length)];
+    const travelDistance = minDistance + Math.random() * (maxDistance - minDistance);
+
+    let candidate = currentX + preferredDirection * travelDistance;
+    const minX = halfWidth;
+    const maxX = screenWidth - halfWidth;
+
+    if (candidate < minX || candidate > maxX) {
+      candidate = currentX + preferredDirection * MOVEMENT_REVERSE_DIRECTION_MULTIPLIER * travelDistance;
+    }
+
+    candidate = Math.min(maxX, Math.max(minX, candidate));
+
+    return candidate;
+  }
+
+  private getNextChangeDelay(level: number): number {
+    const randomDelay = MOVEMENT_RANDOM_DELAY_MIN + Math.random() * MOVEMENT_RANDOM_DELAY_RANGE;
+    const levelAcceleration =
+      Math.min(Math.max(level - 1, 0), MOVEMENT_LEVEL_ACCELERATION_CAP) * MOVEMENT_LEVEL_ACCELERATION;
+
+    return Math.max(MOVEMENT_MIN_DELAY, MOVEMENT_BASE_DELAY + randomDelay - levelAcceleration);
   }
 }
