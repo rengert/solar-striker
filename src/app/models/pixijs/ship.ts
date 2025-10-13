@@ -14,6 +14,7 @@ export class Ship extends AnimatedGameSprite {
   maxEnergy: number;
 
   private elapsed = 0;
+  private rotationTarget = 0;
 
   // eslint-disable-next-line max-params
   constructor(
@@ -43,6 +44,9 @@ export class Ship extends AnimatedGameSprite {
   }
 
   override update(ticker: Ticker): void {
+    const previousX = this.x;
+    const previousY = this.y;
+
     super.update(ticker);
 
     this.elapsed += Math.floor(ticker.deltaMS);
@@ -52,6 +56,24 @@ export class Ship extends AnimatedGameSprite {
     if (this.autoFire && check - this.lastShot > 1000 / this.shotSpeed && check !== this.lastShot) {
       this.lastShot = check;
       this.shot();
+    }
+
+    if (this.shipType === ShipType.enemy) {
+      const deltaX = this.x - previousX;
+      const deltaY = this.y - previousY;
+
+      if (deltaX === 0 && deltaY === 0) {
+        this.rotationTarget = 0;
+      } else {
+        const angle = Math.atan2(deltaX, deltaY);
+        // eslint-disable-next-line no-magic-numbers
+        const maxTilt = Math.PI / 5;
+        this.rotationTarget = Math.max(Math.min(angle, maxTilt), -maxTilt);
+      }
+
+      // eslint-disable-next-line no-magic-numbers
+      const smoothing = 0.15;
+      this.rotation += (this.rotationTarget - this.rotation) * smoothing;
     }
   }
 }
