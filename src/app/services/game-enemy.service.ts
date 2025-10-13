@@ -97,6 +97,7 @@ export class GameEnemyService extends UpdatableService {
     enemy.anchor.set(THE_MIDDLE);
     enemy.x = Math.floor(Math.random() * this.application.screen.width - width) + halfWidth;
     enemy.y = 0;
+    enemy.xSpeed = 0.05;
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
 
