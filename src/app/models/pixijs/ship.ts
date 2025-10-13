@@ -73,7 +73,7 @@ export class Ship extends AnimatedGameSprite {
       }
 
       // eslint-disable-next-line no-magic-numbers
-      const smoothing = 0.15;
+      const smoothing = 0.025;
       this.rotation += (this.rotationTarget - this.rotation) * smoothing;
     }
   }
