@@ -9,6 +9,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   reference: ObjectModelType | undefined;
   destroying = false;
   targetX?: number;
+  xSpeed: number = 1;
 
   protected readonly speed: number = 1;
   private _initialEnergy: number | undefined;
@@ -72,6 +73,6 @@ export class AnimatedGameSprite extends AnimatedSprite {
     // eslint-disable-next-line no-magic-numbers
     const speed = distance / 2;
     // eslint-disable-next-line no-magic-numbers
-    return Math.min(speed, 5);
+    return Math.min(speed, 5) * this.xSpeed;
   }
 }

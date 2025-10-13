@@ -8,6 +8,7 @@ export class GameSprite extends Container {
   power = 1;
   reference: ObjectModelType | undefined;
   destroying = false;
+  targetX?: number;
 
   private _energy: number | undefined;
   private initialEnergyValue: number | undefined;
