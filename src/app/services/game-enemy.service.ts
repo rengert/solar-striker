@@ -5,7 +5,7 @@ import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
 import { GameShotService } from './game-shot.service';
-import { ObjectService } from './object.service';
+import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
 const halfWidth = 10;
@@ -17,12 +17,10 @@ const MOVEMENT_MAX_DISTANCE_RATIO = 0.22;
 const MOVEMENT_MAX_DISTANCE_PIXELS = 110;
 // eslint-disable-next-line no-magic-numbers
 const MOVEMENT_REVERSE_DIRECTION_MULTIPLIER = -1;
-const MOVEMENT_DIRECTIONS = Object.freeze(
-  [
-    MOVEMENT_REVERSE_DIRECTION_MULTIPLIER,
-    Math.abs(MOVEMENT_REVERSE_DIRECTION_MULTIPLIER),
-  ] as const,
-);
+const MOVEMENT_DIRECTIONS = Object.freeze([
+  MOVEMENT_REVERSE_DIRECTION_MULTIPLIER,
+  Math.abs(MOVEMENT_REVERSE_DIRECTION_MULTIPLIER),
+] as const);
 const MOVEMENT_BASE_DELAY = 650;
 const MOVEMENT_RANDOM_DELAY_MIN = 450;
 const MOVEMENT_RANDOM_DELAY_RANGE = 400;
@@ -45,7 +43,7 @@ export class GameEnemyService extends UpdatableService {
   private lastEnemySpawn: number | null = null;
 
   private enemySprite!: Spritesheet;
-  private readonly movementStates = new WeakMap<Ship, EnemyMovementState>();
+  private readonly movementStates = new WeakMap<ObjectModelType, EnemyMovementState>();
 
   async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
@@ -105,7 +103,7 @@ export class GameEnemyService extends UpdatableService {
     this.updateMovement(enemy, level, true);
   }
 
-  private updateMovement(enemy: Ship, level: number, force = false): void {
+  private updateMovement(enemy: ObjectModelType, level: number, force = false): void {
     const screenWidth = this.application.screen.width;
     const movement = this.getMovementState(enemy);
 
@@ -125,7 +123,7 @@ export class GameEnemyService extends UpdatableService {
     }
   }
 
-  private getMovementState(enemy: Ship): EnemyMovementState {
+  private getMovementState(enemy: ObjectModelType): EnemyMovementState {
     if (!this.movementStates.has(enemy)) {
       this.movementStates.set(enemy, { nextChange: 0 });
     }
@@ -134,8 +132,14 @@ export class GameEnemyService extends UpdatableService {
   }
 
   private getNextHorizontalTarget(currentX: number, screenWidth: number): number {
-    const minDistance = Math.max(screenWidth * MOVEMENT_MIN_DISTANCE_RATIO, MOVEMENT_MIN_DISTANCE_PIXELS);
-    const maxDistance = Math.max(screenWidth * MOVEMENT_MAX_DISTANCE_RATIO, MOVEMENT_MAX_DISTANCE_PIXELS);
+    const minDistance = Math.max(
+      screenWidth * MOVEMENT_MIN_DISTANCE_RATIO,
+      MOVEMENT_MIN_DISTANCE_PIXELS,
+    );
+    const maxDistance = Math.max(
+      screenWidth * MOVEMENT_MAX_DISTANCE_RATIO,
+      MOVEMENT_MAX_DISTANCE_PIXELS,
+    );
     const preferredDirection =
       MOVEMENT_DIRECTIONS[Math.floor(Math.random() * MOVEMENT_DIRECTIONS.length)];
     const travelDistance = minDistance + Math.random() * (maxDistance - minDistance);
@@ -145,7 +149,8 @@ export class GameEnemyService extends UpdatableService {
     const maxX = screenWidth - halfWidth;
 
     if (candidate < minX || candidate > maxX) {
-      candidate = currentX + preferredDirection * MOVEMENT_REVERSE_DIRECTION_MULTIPLIER * travelDistance;
+      candidate =
+        currentX + preferredDirection * MOVEMENT_REVERSE_DIRECTION_MULTIPLIER * travelDistance;
     }
 
     candidate = Math.min(maxX, Math.max(minX, candidate));
@@ -156,7 +161,8 @@ export class GameEnemyService extends UpdatableService {
   private getNextChangeDelay(level: number): number {
     const randomDelay = MOVEMENT_RANDOM_DELAY_MIN + Math.random() * MOVEMENT_RANDOM_DELAY_RANGE;
     const levelAcceleration =
-      Math.min(Math.max(level - 1, 0), MOVEMENT_LEVEL_ACCELERATION_CAP) * MOVEMENT_LEVEL_ACCELERATION;
+      Math.min(Math.max(level - 1, 0), MOVEMENT_LEVEL_ACCELERATION_CAP) *
+      MOVEMENT_LEVEL_ACCELERATION;
 
     return Math.max(MOVEMENT_MIN_DELAY, MOVEMENT_BASE_DELAY + randomDelay - levelAcceleration);
   }
