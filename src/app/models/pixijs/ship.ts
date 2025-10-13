@@ -68,7 +68,8 @@ export class Ship extends AnimatedGameSprite {
         const angle = Math.atan2(deltaX, deltaY);
         // eslint-disable-next-line no-magic-numbers
         const maxTilt = Math.PI / 5;
-        this.rotationTarget = Math.max(Math.min(angle, maxTilt), -maxTilt);
+        const clampedAngle = Math.min(Math.max(angle, -maxTilt), maxTilt);
+        this.rotationTarget = -clampedAngle;
       }
 
       // eslint-disable-next-line no-magic-numbers
