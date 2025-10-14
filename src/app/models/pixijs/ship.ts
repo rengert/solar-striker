@@ -80,10 +80,10 @@ export class Ship extends AnimatedGameSprite {
         this.rotationTarget = 0;
       } else {
         // eslint-disable-next-line no-magic-numbers
-        const maxTilt = Math.PI / 12;
+        const maxTilt = Math.PI / 8;
         // eslint-disable-next-line no-magic-numbers
         const normalizedMovement = Math.min(Math.max(deltaX / 5, -1), 1);
-        this.rotationTarget = -normalizedMovement * maxTilt;
+        this.rotationTarget = normalizedMovement * maxTilt;
       }
       // eslint-disable-next-line no-magic-numbers
       const smoothing = 0.1;
