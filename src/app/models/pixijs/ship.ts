@@ -58,10 +58,10 @@ export class Ship extends AnimatedGameSprite {
       this.shot();
     }
 
-    if (this.shipType === ShipType.enemy) {
-      const deltaX = this.x - previousX;
-      const deltaY = this.y - previousY;
+    const deltaX = this.x - previousX;
+    const deltaY = this.y - previousY;
 
+    if (this.shipType === ShipType.enemy) {
       if (deltaX === 0 && deltaY === 0) {
         this.rotationTarget = 0;
       } else {
@@ -71,9 +71,22 @@ export class Ship extends AnimatedGameSprite {
         const clampedAngle = Math.min(Math.max(angle, -maxTilt), maxTilt);
         this.rotationTarget = -clampedAngle;
       }
-
       // eslint-disable-next-line no-magic-numbers
       const smoothing = 0.025;
+      this.rotation += (this.rotationTarget - this.rotation) * smoothing;
+    } else {
+      // eslint-disable-next-line no-magic-numbers
+      if (Math.abs(deltaX) < 0.01) {
+        this.rotationTarget = 0;
+      } else {
+        // eslint-disable-next-line no-magic-numbers
+        const maxTilt = Math.PI / 12;
+        // eslint-disable-next-line no-magic-numbers
+        const normalizedMovement = Math.min(Math.max(deltaX / 5, -1), 1);
+        this.rotationTarget = -normalizedMovement * maxTilt;
+      }
+      // eslint-disable-next-line no-magic-numbers
+      const smoothing = 0.1;
       this.rotation += (this.rotationTarget - this.rotation) * smoothing;
     }
   }
