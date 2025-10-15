@@ -41,7 +41,6 @@ export class GameService {
   readonly storedCoins = signal(0);
   readonly sessionCoins = signal(0);
   readonly coins = computed(() => this.storedCoins() + this.sessionCoins());
-  private readonly coinsInitialized = signal(false);
 
   private readonly collectables = inject(GameCollectableService);
   private readonly landscape = inject(GameLandscapeService);
@@ -75,20 +74,14 @@ export class GameService {
 
   constructor() {
     effect(() => {
+      this.gameScreen.coins = this.coins();
+
       if (!this.started()) {
         return;
       }
 
       this.gameScreen.kills = this.kills();
       this.gameScreen.level = this.level();
-      this.gameScreen.coins = this.coins();
-    });
-
-    effect(() => {
-      if (!this.coinsInitialized()) {
-        return;
-      }
-
       void this.storage.setCoins(this.coins());
     });
 
@@ -125,7 +118,6 @@ export class GameService {
     await this.shipUpgrades.init();
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
-    this.coinsInitialized.set(true);
 
     this.setup();
 
@@ -310,5 +302,4 @@ export class GameService {
     const sessionCoins = this.sessionCoins();
     this.sessionCoins.set(Math.max(0, sessionCoins - remainingCost));
   }
-
 }
