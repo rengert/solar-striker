@@ -2,6 +2,7 @@ import { ButtonContainer } from '@pixi/ui';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 import { ShipUpgradeDefinition, ShipUpgradeType } from '../models/ship-upgrade.model';
 import { GameService } from '../services/game.service';
+import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
 const POPUP_HEIGHT = 454;
@@ -28,8 +29,11 @@ interface UpgradeRow {
 export class HangarPopup extends Popup {
   private readonly upgradeRows = new Map<ShipUpgradeType, UpgradeRow>();
 
-  constructor(private readonly gameService: GameService) {
-    super('Hangar', POPUP_HEIGHT);
+  constructor(
+    private readonly gameService: GameService,
+    private readonly translation: TranslationService,
+  ) {
+    super(translation.getTranslation('hangar.title'), POPUP_HEIGHT);
 
     this.y = -100;
 
@@ -40,7 +44,7 @@ export class HangarPopup extends Popup {
 
     const backButtonIndex = this.gameService.shipUpgrades.definitions.length + BACK_BUTTON_OFFSET;
     const button = this.addButton(
-      'Zurück',
+      this.translation.getTranslation('common.back'),
       () => this.gameService.openNavigation(this),
       backButtonIndex,
     );
@@ -54,7 +58,7 @@ export class HangarPopup extends Popup {
     this.addToContent(rowContainer);
 
     const title = new Text({
-      text: definition.title,
+      text: this.translation.getTranslation(definition.titleKey),
       style: {
         fontFamily: 'DefaultFont',
         fontSize: 14,
@@ -67,7 +71,7 @@ export class HangarPopup extends Popup {
     rowContainer.addChild(title);
 
     const description = new Text({
-      text: definition.description,
+      text: this.translation.getTranslation(definition.descriptionKey),
       style: {
         fontFamily: 'DefaultFont',
         fontSize: 10,
@@ -114,7 +118,7 @@ export class HangarPopup extends Popup {
     button.y = BUTTON_Y;
 
     const buttonText = new Text({
-      text: 'Verbessern',
+      text: this.translation.getTranslation('hangar.upgrade'),
       style: {
         fontFamily: 'DefaultFont',
         fontSize: 12,
@@ -145,16 +149,20 @@ export class HangarPopup extends Popup {
   private updateView(): void {
     for (const [type, row] of this.upgradeRows) {
       const level = this.gameService.shipUpgrades.getLevel(type);
-      row.levelText.text = `Stufe ${level} / ${row.definition.maxLevel}`;
+      row.levelText.text = this.translation.getTranslation('hangar.level', {
+        level,
+        max: row.definition.maxLevel,
+      });
 
       const cost = this.gameService.shipUpgrades.getUpgradeCost(type);
 
       if (cost === null) {
-        row.costText.text = 'Maximal ausgebaut';
+        row.costText.text = this.translation.getTranslation('hangar.maxLevel');
         row.button.enabled = false;
       } else {
         const hasCoins = this.gameService.coins() >= cost;
-        row.costText.text = hasCoins ? `Kosten: ${cost}` : `Kosten: ${cost} – zu wenig Münzen`;
+        const key = hasCoins ? 'hangar.cost' : 'hangar.costInsufficient';
+        row.costText.text = this.translation.getTranslation(key, { cost });
         row.button.enabled = hasCoins;
       }
     }

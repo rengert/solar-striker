@@ -1,5 +1,6 @@
-import {Container, Ticker} from 'pixi.js';
+import { Container, Ticker } from 'pixi.js';
 import { GameService } from '../../services/game.service';
+import { TranslationService } from '../../services/translation.service';
 
 export interface AppScreen extends Container {
   show?(): Promise<void>;
@@ -24,7 +25,7 @@ export interface AppScreen extends Container {
 }
 
 export interface AppScreenConstructor {
-  new(service: GameService): AppScreen;
+  new(service: GameService, translation: TranslationService): AppScreen;
 
   assetBundles?: string[];
 }

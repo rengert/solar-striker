@@ -1,12 +1,13 @@
 import { GameService } from '../services/game.service';
 import { version } from '../version';
+import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
 const POPUP_HEIGHT = 250;
 
 export class NavigationPopup extends Popup {
-  constructor(gameService: GameService) {
-    super('Solarstriker', POPUP_HEIGHT);
+  constructor(gameService: GameService, translation: TranslationService) {
+    super(translation.getTranslation('app.title'), POPUP_HEIGHT);
 
     const buttonIndex = {
       start: 0,
@@ -15,11 +16,31 @@ export class NavigationPopup extends Popup {
       credits: 3,
     } as const;
 
-    this.addText(`Version. ${version.code}`, { size: 11, rotated: true }, { y: 135, x: 120 });
+    this.addText(
+      translation.getTranslation('app.version', { version: version.code }),
+      { size: 11, rotated: true },
+      { y: 135, x: 120 },
+    );
 
-    this.addButton('Spiel starten!', () => gameService.start(this), buttonIndex.start);
-    this.addButton('Hangar', () => gameService.openHangar(this), buttonIndex.hangar);
-    this.addButton('Highscore', () => gameService.openHighscore(this), buttonIndex.highscore);
-    this.addButton('Credits', () => gameService.openCredits(this), buttonIndex.credits);
+    this.addButton(
+      translation.getTranslation('navigation.start'),
+      () => gameService.start(this),
+      buttonIndex.start,
+    );
+    this.addButton(
+      translation.getTranslation('navigation.hangar'),
+      () => gameService.openHangar(this),
+      buttonIndex.hangar,
+    );
+    this.addButton(
+      translation.getTranslation('navigation.highscore'),
+      () => gameService.openHighscore(this),
+      buttonIndex.highscore,
+    );
+    this.addButton(
+      translation.getTranslation('navigation.credits'),
+      () => gameService.openCredits(this),
+      buttonIndex.credits,
+    );
   }
 }

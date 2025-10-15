@@ -1,3 +1,4 @@
+import { TranslationKey } from '../i18n/translations';
 import { ShipType } from './pixijs/ship-type.enum';
 
 export enum ShipUpgradeType {
@@ -14,8 +15,8 @@ export interface ShipUpgradeBonus {
 
 export interface ShipUpgradeDefinition {
   type: ShipUpgradeType;
-  title: string;
-  description: string;
+  titleKey: TranslationKey;
+  descriptionKey: TranslationKey;
   baseCost: number;
   costMultiplier: number;
   maxLevel: number;
@@ -28,8 +29,8 @@ export type ShipUpgradeLevels = Record<ShipUpgradeType, number>;
 export const SHIP_UPGRADE_DEFINITIONS: ShipUpgradeDefinition[] = [
   {
     type: ShipUpgradeType.hull,
-    title: 'Rumpfverstärkung',
-    description: 'Erhöht die maximale Energie',
+    titleKey: 'shipUpgrade.hull.title',
+    descriptionKey: 'shipUpgrade.hull.description',
     baseCost: 50,
     costMultiplier: 1.6,
     maxLevel: 5,
@@ -40,8 +41,8 @@ export const SHIP_UPGRADE_DEFINITIONS: ShipUpgradeDefinition[] = [
   },
   {
     type: ShipUpgradeType.cannons,
-    title: 'Zwillingsgeschütz',
-    description: 'Erhöht die Feuerkraft',
+    titleKey: 'shipUpgrade.cannons.title',
+    descriptionKey: 'shipUpgrade.cannons.description',
     baseCost: 80,
     costMultiplier: 1.7,
     maxLevel: 2,
@@ -52,8 +53,8 @@ export const SHIP_UPGRADE_DEFINITIONS: ShipUpgradeDefinition[] = [
   },
   {
     type: ShipUpgradeType.targeting,
-    title: 'Feuerleitcomputer',
-    description: 'Erhöht die Schussfrequenz',
+    titleKey: 'shipUpgrade.targeting.title',
+    descriptionKey: 'shipUpgrade.targeting.description',
     baseCost: 60,
     costMultiplier: 1.5,
     maxLevel: 3,

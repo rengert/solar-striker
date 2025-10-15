@@ -20,6 +20,7 @@ import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
+import { TranslationService } from './translation.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
 
@@ -51,6 +52,7 @@ export class GameService {
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
   readonly shipUpgrades = inject(ShipUpgradeService);
+  private readonly translation = inject(TranslationService);
   private rewardedMeteors = new WeakSet<ObjectModelType>();
   private readonly updatables: UpdatableService[] = [
     this.collectables,
@@ -110,6 +112,7 @@ export class GameService {
   }
 
   async init(): Promise<void> {
+    await this.translation.init();
     await this.collectables.init();
     await this.enemy.init();
     await this.ship.init();
@@ -209,7 +212,7 @@ export class GameService {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
 
-    this.currentPopup = new ctor(this);
+    this.currentPopup = new ctor(this, this.translation);
     await this.addAndShowScreen(this.currentPopup);
   }
 
