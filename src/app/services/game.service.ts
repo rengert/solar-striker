@@ -74,16 +74,14 @@ export class GameService {
 
   constructor() {
     effect(() => {
+      this.gameScreen.coins = this.coins();
+
       if (!this.started()) {
         return;
       }
 
       this.gameScreen.kills = this.kills();
       this.gameScreen.level = this.level();
-      this.gameScreen.coins = this.coins();
-    });
-
-    effect(() => {
       void this.storage.setCoins(this.coins());
     });
 
@@ -304,5 +302,4 @@ export class GameService {
     const sessionCoins = this.sessionCoins();
     this.sessionCoins.set(Math.max(0, sessionCoins - remainingCost));
   }
-
 }
