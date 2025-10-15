@@ -5,6 +5,7 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 export abstract class Popup extends Container {
   private readonly container: Container;
   private readonly background: Sprite;
+  private titleLabel!: Text;
 
   // eslint-disable-next-line no-magic-numbers
   protected constructor(title: string, height = 230) {
@@ -113,8 +114,12 @@ export abstract class Popup extends Container {
     this.container.addChild(displayObject);
   }
 
+  protected updateTitle(text: string): void {
+    this.titleLabel.text = text;
+  }
+
   private addTitle(text: string): void {
-    const title = new Text({
+    this.titleLabel = new Text({
       text,
       style: {
         fontFamily: 'DefaultFont',
@@ -122,11 +127,11 @@ export abstract class Popup extends Container {
         fill: 0xffffff,
       },
     });
-    title.x = 0;
-    title.y = -96;
+    this.titleLabel.x = 0;
+    this.titleLabel.y = -96;
     // eslint-disable-next-line no-magic-numbers
-    title.anchor.set(0.5, 0.5);
-    this.container.addChild(title);
+    this.titleLabel.anchor.set(0.5, 0.5);
+    this.container.addChild(this.titleLabel);
   }
 
   private setLongPopup(height: number): void {

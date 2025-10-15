@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import {
   DEFAULT_LANGUAGE,
+  SUPPORTED_LANGUAGES,
   getLocale,
   SupportedLanguage,
   TranslationKey,
@@ -10,6 +11,8 @@ import {
 
 type TranslationParams = Record<string, string | number>;
 
+const LANGUAGE_STORAGE_KEY = 'preferred-language';
+
 @Injectable({ providedIn: 'root' })
 export class TranslationService {
   private readonly language = signal<SupportedLanguage>(DEFAULT_LANGUAGE);
@@ -18,12 +21,18 @@ export class TranslationService {
   init(): Promise<void> {
     if (!this.initialization) {
       this.initialization = Promise.resolve().then(() => {
-        const detected = resolveLanguage();
+        const stored = this.getStoredLanguage();
+        const detected = stored ?? resolveLanguage();
         this.language.set(detected);
       });
     }
 
     return this.initialization;
+  }
+
+  setLanguage(language: SupportedLanguage): void {
+    this.language.set(language);
+    this.storeLanguage(language);
   }
 
   getTranslation(key: TranslationKey, params?: TranslationParams): string {
@@ -44,5 +53,36 @@ export class TranslationService {
 
   get locale(): string {
     return getLocale(this.language());
+  }
+
+  private getStoredLanguage(): SupportedLanguage | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (!stored) {
+        return null;
+      }
+
+      return SUPPORTED_LANGUAGES.includes(stored as SupportedLanguage)
+        ? (stored as SupportedLanguage)
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private storeLanguage(language: SupportedLanguage): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    } catch {
+      // ignore storage errors
+    }
   }
 }

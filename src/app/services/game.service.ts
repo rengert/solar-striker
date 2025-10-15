@@ -8,6 +8,7 @@ import { CreditsPopup } from '../popups/credits-popup';
 import { HangarPopup } from '../popups/hangar-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
+import { SettingsPopup } from '../popups/settings-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { handleMouseMove } from '../utils/mouse.util';
 import { ApplicationService } from './application.service';
@@ -154,6 +155,11 @@ export class GameService {
   async openHangar(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(HangarPopup);
+  }
+
+  async openSettings(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(SettingsPopup);
   }
 
   async endGame(requester: AppScreen): Promise<void> {

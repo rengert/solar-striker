@@ -14,6 +14,7 @@ export class NavigationPopup extends Popup {
       hangar: 1,
       highscore: 2,
       credits: 3,
+      settings: 4,
     } as const;
 
     this.addText(
@@ -41,6 +42,11 @@ export class NavigationPopup extends Popup {
       translation.getTranslation('navigation.credits'),
       () => gameService.openCredits(this),
       buttonIndex.credits,
+    );
+    this.addButton(
+      translation.getTranslation('navigation.settings'),
+      () => gameService.openSettings(this),
+      buttonIndex.settings,
     );
   }
 }
