@@ -97,7 +97,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
   fr: {
     'app.title': 'Solar Striker',
     'app.version': 'Version {{version}}',
-    'navigation.start': 'Commencer la partie',
+    'navigation.start': 'Lancer le jeu',
     'navigation.hangar': 'Hangar',
     'navigation.highscore': 'Meilleur score',
     'navigation.credits': 'Crédits',
