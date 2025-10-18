@@ -48,7 +48,7 @@ export class HangarPopup extends Popup {
       () => this.gameService.openNavigation(this),
       backButtonIndex,
     );
-    button.y = button.y + BUTTON_HEIGHT;
+    button.button.y = button.button.y + BUTTON_HEIGHT;
     this.updateView();
   }
 

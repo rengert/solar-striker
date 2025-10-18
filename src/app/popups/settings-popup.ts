@@ -1,27 +1,16 @@
-import { ButtonContainer } from '@pixi/ui';
-import { Text } from 'pixi.js';
-import {
-  SUPPORTED_LANGUAGES,
-  SupportedLanguage,
-  TranslationKey,
-} from '../i18n/translations';
+import { SUPPORTED_LANGUAGES, SupportedLanguage, TranslationKey } from '../i18n/translations';
+import { LabeledButton } from '../models/pixijs/labeled-button.model';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
 const POPUP_HEIGHT = 300;
-const BUTTON_INDEX_OFFSET = 1;
+const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
-const HALF = 0.5;
-
-interface LanguageButton {
-  button: ButtonContainer;
-  label: Text;
-}
 
 export class SettingsPopup extends Popup {
-  private readonly languageButtons = new Map<SupportedLanguage, LanguageButton>();
-  private readonly languageLabel: Text;
+  private readonly languageButtons = new Map<SupportedLanguage, LabeledButton>();
+  private readonly backButton: LabeledButton;
 
   constructor(
     private readonly gameService: GameService,
@@ -29,25 +18,12 @@ export class SettingsPopup extends Popup {
   ) {
     super(translation.getTranslation('settings.title'), POPUP_HEIGHT);
 
-    this.languageLabel = new Text({
-      text: this.translation.getTranslation('settings.languageLabel'),
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 12,
-        fill: 0x3c2f1e,
-      },
-    });
-    this.languageLabel.anchor.set(HALF, HALF);
-    this.languageLabel.x = 0;
-    this.languageLabel.y = -80;
-    this.addToContent(this.languageLabel);
-
     SUPPORTED_LANGUAGES.forEach((language, index) => {
       this.createLanguageButton(language, index + BUTTON_INDEX_OFFSET);
     });
 
     const backButtonIndex = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
-    this.addButton(
+    this.backButton = this.addButton(
       this.translation.getTranslation('common.back'),
       () => this.gameService.openNavigation(this),
       backButtonIndex,
@@ -62,8 +38,7 @@ export class SettingsPopup extends Popup {
       () => this.handleLanguageSelection(language),
       index,
     );
-    const label = button.children[button.children.length - 1] as Text;
-    this.languageButtons.set(language, { button, label });
+    this.languageButtons.set(language, button);
   }
 
   private handleLanguageSelection(language: SupportedLanguage): void {
@@ -77,12 +52,12 @@ export class SettingsPopup extends Popup {
 
   private updateContentLanguage(): void {
     this.updateTitle(this.translation.getTranslation('settings.title'));
-    this.languageLabel.text = this.translation.getTranslation('settings.languageLabel');
 
     for (const [language, elements] of this.languageButtons) {
       elements.label.text = this.translation.getTranslation(this.getLanguageKey(language));
     }
 
+    this.backButton.label.text = this.translation.getTranslation('common.back');
     this.highlightSelectedLanguage();
   }
 

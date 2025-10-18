@@ -1,6 +1,7 @@
 import { ButtonContainer } from '@pixi/ui';
 import gsap from 'gsap';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
+import { LabeledButton } from '../models/pixijs/labeled-button.model';
 
 export abstract class Popup extends Container {
   private readonly container: Container;
@@ -84,7 +85,7 @@ export abstract class Popup extends Container {
     this.container.addChild(text);
   }
 
-  protected addButton(textContent: string, callback: () => void, index: number): ButtonContainer {
+  protected addButton(textContent: string, callback: () => void, index: number): LabeledButton {
     const button = new ButtonContainer(Sprite.from(Texture.from('button')));
     button.width = 190;
     button.height = 49;
@@ -92,7 +93,7 @@ export abstract class Popup extends Container {
     // eslint-disable-next-line no-magic-numbers
     button.y = -70 + index * 52;
 
-    const text = new Text({
+    const label = new Text({
       text: textContent,
       style: {
         fontFamily: 'DefaultFont',
@@ -100,14 +101,14 @@ export abstract class Popup extends Container {
       },
     });
     // eslint-disable-next-line no-magic-numbers
-    text.anchor.set(0.5, 0.5);
-    text.x = 100;
-    text.y = 22;
-    button.addChild(text);
+    label.anchor.set(0.5, 0.5);
+    label.x = 100;
+    label.y = 22;
+    button.addChild(label);
 
     button.onPress.connect(callback);
     this.container.addChild(button);
-    return button;
+    return { button, label };
   }
 
   protected addToContent(displayObject: Container): void {
