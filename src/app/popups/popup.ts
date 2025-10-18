@@ -90,7 +90,7 @@ export abstract class Popup extends Container {
     button.height = 49;
     button.x = -95;
     // eslint-disable-next-line no-magic-numbers
-    button.y = -65 + index * 60;
+    button.y = -70 + index * 52;
 
     const text = new Text({
       text: textContent,
