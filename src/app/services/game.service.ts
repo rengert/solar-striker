@@ -8,6 +8,7 @@ import { CreditsPopup } from '../popups/credits-popup';
 import { HangarPopup } from '../popups/hangar-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
+import { SettingsPopup } from '../popups/settings-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { handleMouseMove } from '../utils/mouse.util';
 import { ApplicationService } from './application.service';
@@ -20,6 +21,7 @@ import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
+import { TranslationService } from './translation.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
 
@@ -51,6 +53,7 @@ export class GameService {
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
   readonly shipUpgrades = inject(ShipUpgradeService);
+  private readonly translation = inject(TranslationService);
   private rewardedMeteors = new WeakSet<ObjectModelType>();
   private readonly updatables: UpdatableService[] = [
     this.collectables,
@@ -108,6 +111,7 @@ export class GameService {
   }
 
   async init(): Promise<void> {
+    await this.translation.init();
     await this.collectables.init();
     await this.enemy.init();
     await this.ship.init();
@@ -149,6 +153,11 @@ export class GameService {
   async openHangar(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(HangarPopup);
+  }
+
+  async openSettings(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(SettingsPopup);
   }
 
   async endGame(requester: AppScreen): Promise<void> {
@@ -207,7 +216,7 @@ export class GameService {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
 
-    this.currentPopup = new ctor(this);
+    this.currentPopup = new ctor(this, this.translation);
     await this.addAndShowScreen(this.currentPopup);
   }
 
