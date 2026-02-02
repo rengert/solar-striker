@@ -23,6 +23,7 @@ export class GameScreenService extends UpdatableService {
   set kills(value: number) {
     // eslint-disable-next-line no-magic-numbers
     this.points!.text = value.toString().padStart(7, '0');
+    this.points!.x = this.application.screen.width - this.points!.width - HEADER_SIDE_PADDING;
   }
 
   set level(value: number) {
@@ -41,8 +42,8 @@ export class GameScreenService extends UpdatableService {
   }
 
   init(): void {
-    this.points.x = HEADER_SIDE_PADDING;
-    this.points.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * TRIPPLE;
+    this.points.x = this.application.screen.width - this.points.width - HEADER_SIDE_PADDING;
+    this.points.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * DOUBLE;
     this.addToStage(this.points);
 
     const energyBarContainer = new Container();
@@ -57,7 +58,7 @@ export class GameScreenService extends UpdatableService {
     this.addToStage(energyBarContainer);
 
     this.lifesLabel.x = HEADER_SIDE_PADDING;
-    this.lifesLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * DOUBLE;
+    this.lifesLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * TRIPPLE;
     this.addToStage(this.lifesLabel);
 
     this.levelLabel.x = this.application.screen.width - this.levelLabel.width - HEADER_SIDE_PADDING;
