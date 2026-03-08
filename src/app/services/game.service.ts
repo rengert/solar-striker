@@ -112,6 +112,7 @@ export class GameService {
 
   async init(): Promise<void> {
     await this.translation.init();
+    await document.fonts.load('900 10px "Font Awesome 6 Free"');
     await this.collectables.init();
     await this.enemy.init();
     await this.ship.init();
