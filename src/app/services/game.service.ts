@@ -77,12 +77,11 @@ export class GameService {
 
   constructor() {
     effect(() => {
-      this.gameScreen.coins = this.coins();
-
       if (!this.started()) {
         return;
       }
 
+      this.gameScreen.coins = this.coins();
       this.gameScreen.kills = this.kills();
       this.gameScreen.level = this.level();
       void this.storage.setCoins(this.coins());
@@ -138,6 +137,7 @@ export class GameService {
     this.ship.applyUpgrades();
     this.kills.set(0);
     this.ship.instance.autoFire = false;
+    console.log('start game');
     this.started.set(true);
   }
 

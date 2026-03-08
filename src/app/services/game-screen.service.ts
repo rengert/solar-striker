@@ -14,26 +14,25 @@ const TRIPPLE = 3;
 export class GameScreenService extends UpdatableService {
   readonly #ship = inject(GameShipService);
 
-  private readonly points = new Text({ text: `0 ${icons.points}  `, style: fontAwesomeStyle });
-  private readonly coinLabel = new Text({ text: `0 ${icons.coin}  `, style: fontAwesomeStyle });
-  private readonly levelLabel = new Text({ text: `1 ${icons.level}  `, style: fontAwesomeStyle });
+  private readonly points = new Text({ text: `${icons.points}  0000000`, style: fontAwesomeStyle });
+  private readonly coinLabel = new Text({ text: `${icons.coin}  0000000`, style: fontAwesomeStyle });
+  private readonly levelLabel = new Text({ text: `${icons.level}  0000001`, style: fontAwesomeStyle });
 
   private lifesLabel: Graphics | undefined;
 
   set kills(value: number) {
     // eslint-disable-next-line no-magic-numbers
-    this.points!.text = value.toString().padStart(7, '0');
-    this.points!.x = this.application.screen.width - this.points!.width - HEADER_SIDE_PADDING;
+    this.points!.text = `${icons.points}  ${value.toString().padStart(7, '0')}`;
   }
 
   set level(value: number) {
-    this.levelLabel!.text = `${value} ${icons.level}  `;
-    this.levelLabel!.x = this.application.screen.width - this.levelLabel!.width;
+    // eslint-disable-next-line no-magic-numbers
+    this.levelLabel!.text = `${icons.level}  ${value.toString().padStart(7, '0')}`;
   }
 
   set coins(value: number) {
-    this.coinLabel!.text = `${value} ${icons.coin}  `;
-    this.coinLabel!.x = this.application.screen.width - this.coinLabel!.width;
+    // eslint-disable-next-line no-magic-numbers
+    this.coinLabel!.text = `${icons.coin}  ${value.toString().padStart(7, '0')}`;
   }
 
   private set lifes(value: number) {
@@ -53,13 +52,11 @@ export class GameScreenService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     this.lifesLabel.rect(0, 0, 100, 5);
     this.lifesLabel.fill();
-    energyBarContainer.addChild(this.lifesLabel);
-
-    this.addToStage(energyBarContainer);
-
     this.lifesLabel.x = HEADER_SIDE_PADDING;
     this.lifesLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * TRIPPLE;
-    this.addToStage(this.lifesLabel);
+    energyBarContainer.addChild(this.lifesLabel);
+    this.addToStage(energyBarContainer);
+
 
     this.levelLabel.x = this.application.screen.width - this.levelLabel.width - HEADER_SIDE_PADDING;
     this.levelLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING;
