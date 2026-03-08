@@ -137,7 +137,6 @@ export class GameService {
     this.ship.applyUpgrades();
     this.kills.set(0);
     this.ship.instance.autoFire = false;
-    console.log('start game');
     this.started.set(true);
   }
 
