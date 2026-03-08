@@ -74,10 +74,7 @@ export class ObjectService extends UpdatableService {
   }
 
   add(object: AnimatedGameSprite | GameSprite): void {
-    this.#objects.update((objects) => {
-      objects.push(object);
-      return objects;
-    });
+    this.#objects.update((objects) => [...objects, object]);
   }
 
   triggerCallbacks(object1: ObjectModelType, object2: ObjectModelType): void {
