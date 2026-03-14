@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
+import { GAME_CONFIG } from '../game-constants';
 
 function createMockObject(
   type: ObjectType,
@@ -225,6 +226,107 @@ describe('ObjectService', () => {
 
       // eslint-disable-next-line no-magic-numbers
       expect(killCount).toBe(3);
+    });
+  });
+
+  describe('kill-to-coin logic (via onDestroyed callback)', () => {
+    it('should award 1 coin after every 10 kills by the player', () => {
+      let killCount = 0;
+      let coinCount = 0;
+      service.onDestroyed(ObjectType.enemy, (_, by) => {
+        if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+          killCount++;
+          if (killCount % GAME_CONFIG.killsPerCoin === 0) {
+            coinCount++;
+          }
+        }
+      });
+
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+
+      for (let i = 0; i < GAME_CONFIG.killsPerCoin; i++) {
+        const enemy = createMockObject(ObjectType.enemy, { destroying: true });
+        service.triggerCallbacks(enemy, playerRocket);
+      }
+
+      expect(killCount).toBe(GAME_CONFIG.killsPerCoin);
+      expect(coinCount).toBe(1);
+    });
+
+    it('should award 2 coins after 20 kills by the player', () => {
+      let killCount = 0;
+      let coinCount = 0;
+      service.onDestroyed(ObjectType.enemy, (_, by) => {
+        if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+          killCount++;
+          if (killCount % GAME_CONFIG.killsPerCoin === 0) {
+            coinCount++;
+          }
+        }
+      });
+
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+
+      // eslint-disable-next-line no-magic-numbers
+      for (let i = 0; i < GAME_CONFIG.killsPerCoin * 2; i++) {
+        const enemy = createMockObject(ObjectType.enemy, { destroying: true });
+        service.triggerCallbacks(enemy, playerRocket);
+      }
+
+      // eslint-disable-next-line no-magic-numbers
+      expect(killCount).toBe(GAME_CONFIG.killsPerCoin * 2);
+      // eslint-disable-next-line no-magic-numbers
+      expect(coinCount).toBe(2);
+    });
+
+    it('should NOT award a coin before reaching the killsPerCoin threshold', () => {
+      let killCount = 0;
+      let coinCount = 0;
+      service.onDestroyed(ObjectType.enemy, (_, by) => {
+        if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+          killCount++;
+          if (killCount % GAME_CONFIG.killsPerCoin === 0) {
+            coinCount++;
+          }
+        }
+      });
+
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+
+      for (let i = 0; i < GAME_CONFIG.killsPerCoin - 1; i++) {
+        const enemy = createMockObject(ObjectType.enemy, { destroying: true });
+        service.triggerCallbacks(enemy, playerRocket);
+      }
+
+      expect(killCount).toBe(GAME_CONFIG.killsPerCoin - 1);
+      expect(coinCount).toBe(0);
+    });
+
+    it('should NOT award a coin for kills by enemies', () => {
+      let killCount = 0;
+      let coinCount = 0;
+      service.onDestroyed(ObjectType.enemy, (_, by) => {
+        if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+          killCount++;
+          if (killCount % GAME_CONFIG.killsPerCoin === 0) {
+            coinCount++;
+          }
+        }
+      });
+
+      const enemyShip = createMockObject(ObjectType.enemy);
+      const enemyRocket = createMockObject(ObjectType.rocket, { reference: enemyShip });
+
+      for (let i = 0; i < GAME_CONFIG.killsPerCoin; i++) {
+        const enemy = createMockObject(ObjectType.enemy, { destroying: true });
+        service.triggerCallbacks(enemy, enemyRocket);
+      }
+
+      expect(killCount).toBe(0);
+      expect(coinCount).toBe(0);
     });
   });
 });

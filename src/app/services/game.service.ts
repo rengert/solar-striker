@@ -90,6 +90,10 @@ export class GameService {
     this.object.onDestroyed(ObjectType.enemy, (_, by) => {
       if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
         this.kills.update((value) => value + 1);
+        const newKills = this.kills();
+        if (newKills % GAME_CONFIG.killsPerCoin === 0) {
+          this.sessionCoins.update((value) => value + 1);
+        }
       }
     });
 

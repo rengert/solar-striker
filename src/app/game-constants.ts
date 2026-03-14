@@ -33,7 +33,7 @@ interface GameConfig extends Config {
 export const GAME_CONFIG: GameConfig = {
   killLevelFactor: 0.1,
   collectableFactor: 0.2,
-  killsPerCoin: 25,
+  killsPerCoin: 10,
   enemy: {
     autoSpawnSpeed: 0.35, // per second
     maxCount: 20,
