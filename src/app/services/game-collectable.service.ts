@@ -17,8 +17,8 @@ function collectPowerUp(object: ObjectModelType, by: ObjectModelType): void {
   }
   const ship = by as unknown as Ship;
   const powerUp = object as unknown as PowerUpSprite;
-  ship.shotSpeed += powerUp.config.powerUp.shot;
-  ship.shotPower += powerUp.config.powerUp.speed;
+  ship.shotSpeed += powerUp.config.powerUp.speed;
+  ship.shotPower += powerUp.config.powerUp.shot;
   ship.energy += powerUp.config.powerUp.energy;
 }
 

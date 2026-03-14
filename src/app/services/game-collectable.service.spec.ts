@@ -62,33 +62,33 @@ describe('GameCollectableService - collectPowerUp', () => {
     TestBed.inject(GameCollectableService);
   });
 
-  it('should increase ship.shotSpeed when a shotSpeed power-up is collected', () => {
+  it('should increase ship.shotSpeed via the speed config field', () => {
     const ship = createMockShip({ shotSpeed: 1.5 });
-    const powerUp = createMockPowerUp({ speed: 0, shot: 1, energy: 0 });
-
-    objectService.triggerCallbacks(powerUp, ship);
-
-    expect((ship as unknown as { shotSpeed: number }).shotSpeed).toBe(2.5);
-  });
-
-  it('should increase ship.shotPower when a shotPower power-up (bolt) is collected', () => {
-    const ship = createMockShip({ shotPower: 1 });
     const powerUp = createMockPowerUp({ speed: 0.1, shot: 0, energy: 0 });
 
     objectService.triggerCallbacks(powerUp, ship);
 
     // eslint-disable-next-line no-magic-numbers
-    expect((ship as unknown as { shotPower: number }).shotPower).toBeCloseTo(1.1);
+    expect((ship as unknown as { shotSpeed: number }).shotSpeed).toBeCloseTo(1.6);
   });
 
-  it('should increase ship.shotPower and ship.energy when a shotPower power-up (pill) is collected', () => {
-    const ship = createMockShip({ shotPower: 1, energy: 8 });
+  it('should increase ship.shotPower via the shot config field', () => {
+    const ship = createMockShip({ shotPower: 1 });
+    const powerUp = createMockPowerUp({ speed: 0, shot: 1, energy: 0 });
+
+    objectService.triggerCallbacks(powerUp, ship);
+
+    expect((ship as unknown as { shotPower: number }).shotPower).toBe(2);
+  });
+
+  it('should increase ship.energy and ship.shotSpeed when a pill power-up is collected', () => {
+    const ship = createMockShip({ shotSpeed: 1.5, energy: 8 });
     const powerUp = createMockPowerUp({ speed: 0.1, shot: 0, energy: 1 });
 
     objectService.triggerCallbacks(powerUp, ship);
 
     // eslint-disable-next-line no-magic-numbers
-    expect((ship as unknown as { shotPower: number }).shotPower).toBeCloseTo(1.1);
+    expect((ship as unknown as { shotSpeed: number }).shotSpeed).toBeCloseTo(1.6);
     expect((ship as unknown as { energy: number }).energy).toBe(9);
   });
 
@@ -111,12 +111,12 @@ describe('GameCollectableService - collectPowerUp', () => {
     expect((enemy as unknown as { shotPower: number }).shotPower).toBe(1);
   });
 
-  it('should NOT modify ship.shotSpeed when shot field is zero', () => {
-    const ship = createMockShip({ shotSpeed: 1.5 });
+  it('should NOT modify ship.shotPower when shot field is zero', () => {
+    const ship = createMockShip({ shotPower: 1 });
     const powerUp = createMockPowerUp({ speed: 0.1, shot: 0, energy: 0 });
 
     objectService.triggerCallbacks(powerUp, ship);
 
-    expect((ship as unknown as { shotSpeed: number }).shotSpeed).toBe(1.5);
+    expect((ship as unknown as { shotPower: number }).shotPower).toBe(1);
   });
 });
