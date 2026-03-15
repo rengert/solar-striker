@@ -78,6 +78,7 @@ describe('GameCollectableService - collectPowerUp', () => {
 
     objectService.triggerCallbacks(powerUp, ship);
 
+    // eslint-disable-next-line no-magic-numbers
     expect((ship as unknown as { shotPower: number }).shotPower).toBe(2);
   });
 
@@ -89,6 +90,7 @@ describe('GameCollectableService - collectPowerUp', () => {
 
     // eslint-disable-next-line no-magic-numbers
     expect((ship as unknown as { shotSpeed: number }).shotSpeed).toBeCloseTo(1.6);
+    // eslint-disable-next-line no-magic-numbers
     expect((ship as unknown as { energy: number }).energy).toBe(9);
   });
 
@@ -107,6 +109,7 @@ describe('GameCollectableService - collectPowerUp', () => {
 
     objectService.triggerCallbacks(powerUp, enemy);
 
+    // eslint-disable-next-line no-magic-numbers
     expect((enemy as unknown as { shotSpeed: number }).shotSpeed).toBe(0.2);
     expect((enemy as unknown as { shotPower: number }).shotPower).toBe(1);
   });
