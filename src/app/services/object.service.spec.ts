@@ -227,4 +227,47 @@ describe('ObjectService', () => {
       expect(killCount).toBe(3);
     });
   });
+
+  describe('update', () => {
+    it('should retain objects added via callbacks triggered during collision detection', () => {
+      let spawnedCollectable: ObjectModelType | null = null;
+
+      service.onDestroyed(ObjectType.enemy, (_, by) => {
+        if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+          const collectable = createMockObject(ObjectType.collectable, {
+            destroy: () => {
+              collectable.destroyed = true;
+            },
+          });
+          service.add(collectable as never);
+          spawnedCollectable = collectable;
+        }
+      });
+
+      const playerShip = createMockObject(ObjectType.ship);
+      const rocket = createMockObject(ObjectType.rocket, {
+        reference: playerShip,
+        hit: (other: ObjectModelType) => {
+          if (other === enemy) {
+            enemy.destroying = true;
+          }
+          return other === enemy;
+        },
+      });
+      const enemy = createMockObject(ObjectType.enemy, {
+        destroy: () => {
+          enemy.destroyed = true;
+        },
+      });
+
+      service.add(rocket as never);
+      service.add(enemy as never);
+
+      const mockTicker = { deltaMS: 16 } as never;
+      service.update(mockTicker);
+
+      expect(spawnedCollectable).not.toBeNull();
+      expect(service.objects()).toContain(spawnedCollectable!);
+    });
+  });
 });
