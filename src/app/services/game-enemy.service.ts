@@ -21,12 +21,12 @@ const MOVEMENT_DIRECTIONS = Object.freeze([
   MOVEMENT_REVERSE_DIRECTION_MULTIPLIER,
   Math.abs(MOVEMENT_REVERSE_DIRECTION_MULTIPLIER),
 ] as const);
-const MOVEMENT_BASE_DELAY = 650;
-const MOVEMENT_RANDOM_DELAY_MIN = 450;
+const MOVEMENT_BASE_DELAY = 500;
+const MOVEMENT_RANDOM_DELAY_MIN = 350;
 const MOVEMENT_RANDOM_DELAY_RANGE = 400;
 const MOVEMENT_LEVEL_ACCELERATION = 25;
 const MOVEMENT_LEVEL_ACCELERATION_CAP = 10;
-const MOVEMENT_MIN_DELAY = 350;
+const MOVEMENT_MIN_DELAY = 250;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -80,7 +80,7 @@ export class GameEnemyService extends UpdatableService {
   private spawn(level: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
     // eslint-disable-next-line no-magic-numbers
-    const maxSpeed = 0.4 + 0.025 * level;
+    const maxSpeed = 0.5 + 0.03 * level;
     // eslint-disable-next-line no-magic-numbers
     const speedVariation = 0.6 + Math.random() * 0.4;
 
