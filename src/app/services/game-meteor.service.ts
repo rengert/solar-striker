@@ -45,7 +45,7 @@ export class GameMeteorService extends UpdatableService {
     const index = Math.floor(Math.random() * 4) + 1;
     const meteor = new GameSprite(ObjectType.meteor, this.explosionService, {
       // eslint-disable-next-line no-magic-numbers
-      speed: 0.08 + 0.1 * level,
+      speed: 0.12 + 0.12 * level,
       texture: Texture.from(`meteor${index}`),
       hasEnergy: true,
     });

@@ -35,21 +35,21 @@ export const GAME_CONFIG: GameConfig = {
   collectableFactor: 0.2,
   killsPerCoin: 10,
   enemy: {
-    autoSpawnSpeed: 0.35, // per second
+    autoSpawnSpeed: 0.5, // per second
     maxCount: 20,
   },
   meteor: {
-    autoSpawnSpeed: 0.135, // per second
+    autoSpawnSpeed: 0.2, // per second
   },
   ships: {
     [ShipType.ship]: {
-      rocketSpeed: 1.99,
-      shotSpeed: 1.5,
+      rocketSpeed: 2.5,
+      shotSpeed: 2.0,
       energy: 10,
     },
     [ShipType.enemy]: {
-      rocketSpeed: 0.4,
-      shotSpeed: 0.2,
+      rocketSpeed: 0.55,
+      shotSpeed: 0.3,
       energy: 1,
     },
   },
