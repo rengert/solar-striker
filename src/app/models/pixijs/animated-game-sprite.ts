@@ -1,4 +1,4 @@
-import { AnimatedSprite, FrameObject, Texture, Ticker } from 'pixi.js';
+import { AnimatedSprite, FrameObject, Text, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
@@ -13,6 +13,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
 
   protected readonly speed: number = 1;
   private _initialEnergy: number | undefined;
+  private energyLabel: Text | undefined;
 
   constructor(
     readonly type: ObjectType,
@@ -36,10 +37,42 @@ export class AnimatedGameSprite extends AnimatedSprite {
       this._initialEnergy = value;
     }
     this._energy = value;
+    this.updateEnergyLabel();
   }
 
   get initialEnergy(): number | undefined {
     return this._initialEnergy;
+  }
+
+  enableEnergyDisplay(): void {
+    this.energyLabel = new Text({
+      text: '',
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 12,
+        fontWeight: 'bold',
+        fill: 0xffffff,
+        stroke: {
+          color: 0x000000,
+          // eslint-disable-next-line no-magic-numbers
+          width: 3,
+        },
+        align: 'center',
+      },
+    });
+    // eslint-disable-next-line no-magic-numbers
+    this.energyLabel.anchor.set(0.5);
+    this.energyLabel.position.set(0, 0);
+    this.addChild(this.energyLabel);
+    this.updateEnergyLabel();
+  }
+
+  private updateEnergyLabel(): void {
+    if (!this.energyLabel) {
+      return;
+    }
+    this.energyLabel.text = this._energy?.toString() ?? '';
+    this.energyLabel.visible = this._energy !== undefined;
   }
 
   explode(): void {

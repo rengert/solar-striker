@@ -27,6 +27,8 @@ const MOVEMENT_RANDOM_DELAY_RANGE = 400;
 const MOVEMENT_LEVEL_ACCELERATION = 25;
 const MOVEMENT_LEVEL_ACCELERATION_CAP = 10;
 const MOVEMENT_MIN_DELAY = 250;
+const ENEMY_BASE_ENERGY = 1;
+const ENEMY_ENERGY_LEVEL_STEP = 3;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -98,6 +100,10 @@ export class GameEnemyService extends UpdatableService {
     enemy.x = Math.floor(Math.random() * this.application.screen.width - width) + halfWidth;
     enemy.y = 0;
     enemy.xSpeed = 0.05;
+    const levelEnergy = ENEMY_BASE_ENERGY + Math.floor((level - 1) / ENEMY_ENERGY_LEVEL_STEP);
+    enemy.maxEnergy = levelEnergy;
+    enemy.energy = levelEnergy;
+    enemy.enableEnergyDisplay();
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
 
