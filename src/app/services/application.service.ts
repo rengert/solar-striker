@@ -38,6 +38,8 @@ export class ApplicationService {
     await this.app.init({
       resizeTo: document.body,
       backgroundColor: 0x000000,
+      autoDensity: true,
+      resolution: window.devicePixelRatio || 1,
     });
 
     Assets.add({ alias: 'popup', src: 'assets/ui/navigation-popup.png' });
