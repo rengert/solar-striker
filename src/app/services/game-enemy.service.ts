@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG, THE_MIDDLE } from '../game-constants';
+import { AnimatedGameSprite, LoopData } from '../models/pixijs/animated-game-sprite';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
@@ -29,6 +30,16 @@ const MOVEMENT_LEVEL_ACCELERATION_CAP = 10;
 const MOVEMENT_MIN_DELAY = 250;
 const ENEMY_BASE_ENERGY = 1;
 const ENEMY_ENERGY_LEVEL_STEP = 3;
+// eslint-disable-next-line no-magic-numbers
+const LOOP_CHANCE = 0.15;
+// eslint-disable-next-line no-magic-numbers
+const LOOP_RADIUS = 70;
+// eslint-disable-next-line no-magic-numbers
+const LOOP_DURATION_MS = 2500;
+// eslint-disable-next-line no-magic-numbers
+const LOOP_ANGULAR_SPEED = (Math.PI * 2) / LOOP_DURATION_MS;
+// eslint-disable-next-line no-magic-numbers
+const LOOP_MIN_START_Y = LOOP_RADIUS * 2;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -62,6 +73,9 @@ export class GameEnemyService extends UpdatableService {
       .forEach((enemy) => {
         enemy.y = 0;
         enemy.targetX = undefined;
+        if (enemy instanceof AnimatedGameSprite) {
+          enemy.loopData = undefined;
+        }
         this.movementStates.delete(enemy);
       });
 
@@ -114,6 +128,10 @@ export class GameEnemyService extends UpdatableService {
     const screenWidth = this.application.screen.width;
     const movement = this.getMovementState(enemy);
 
+    if (enemy instanceof AnimatedGameSprite && enemy.loopData) {
+      return;
+    }
+
     const shouldPickNewTarget =
       force ||
       movement.nextChange <= this.elapsed ||
@@ -121,8 +139,26 @@ export class GameEnemyService extends UpdatableService {
       Math.abs((movement.targetX ?? enemy.x) - enemy.x) < MOVEMENT_TARGET_SNAP_DISTANCE;
 
     if (shouldPickNewTarget) {
-      movement.targetX = this.getNextHorizontalTarget(enemy.x, screenWidth);
-      movement.nextChange = this.elapsed + this.getNextChangeDelay(level);
+      if (!force && Math.random() < LOOP_CHANCE && enemy instanceof AnimatedGameSprite
+        && enemy.y >= LOOP_MIN_START_Y) {
+        // eslint-disable-next-line no-magic-numbers
+        const direction = MOVEMENT_DIRECTIONS[Math.floor(Math.random() * MOVEMENT_DIRECTIONS.length)] as 1 | -1;
+        const loopData: LoopData = {
+          startX: enemy.x,
+          startY: enemy.y,
+          radius: LOOP_RADIUS,
+          direction,
+          progress: 0,
+          speed: LOOP_ANGULAR_SPEED,
+        };
+        enemy.loopData = loopData;
+        enemy.targetX = undefined;
+        movement.targetX = undefined;
+        movement.nextChange = this.elapsed + LOOP_DURATION_MS + this.getNextChangeDelay(level);
+      } else {
+        movement.targetX = this.getNextHorizontalTarget(enemy.x, screenWidth);
+        movement.nextChange = this.elapsed + this.getNextChangeDelay(level);
+      }
     }
 
     if (movement.targetX !== undefined) {

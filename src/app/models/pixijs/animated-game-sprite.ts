@@ -4,12 +4,26 @@ import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
 import { ObjectType } from './object-type.enum';
 
+// eslint-disable-next-line no-magic-numbers
+const TWO_PI = Math.PI * 2;
+
+export interface LoopData {
+  readonly startX: number;
+  readonly startY: number;
+  readonly radius: number;
+  // eslint-disable-next-line no-magic-numbers
+  readonly direction: 1 | -1;
+  readonly speed: number;
+  progress: number;
+}
+
 export class AnimatedGameSprite extends AnimatedSprite {
   power = 1;
   reference: ObjectModelType | undefined;
   destroying = false;
   targetX?: number;
   xSpeed: number = 1;
+  loopData: LoopData | undefined;
 
   protected readonly speed: number = 1;
   private _initialEnergy: number | undefined;
@@ -87,13 +101,24 @@ export class AnimatedGameSprite extends AnimatedSprite {
     }
     super.update(ticker);
 
-    // eslint-disable-next-line no-magic-numbers
-    this.y += ticker.deltaMS * this.speed * 0.2;
-
-    if (this.targetX && this.x !== this.targetX) {
+    if (this.loopData) {
+      this.loopData.progress += ticker.deltaMS * this.loopData.speed;
+      this.x =
+        this.loopData.startX +
+        this.loopData.radius * Math.sin(this.loopData.progress) * this.loopData.direction;
+      this.y = this.loopData.startY - this.loopData.radius * (1 - Math.cos(this.loopData.progress));
+      if (this.loopData.progress >= TWO_PI) {
+        this.loopData = undefined;
+      }
+    } else {
       // eslint-disable-next-line no-magic-numbers
-      const direction = this.targetX > this.x ? 1 : -1;
-      this.x += direction * this.getSpeed(this.targetX, this.x);
+      this.y += ticker.deltaMS * this.speed * 0.2;
+
+      if (this.targetX && this.x !== this.targetX) {
+        // eslint-disable-next-line no-magic-numbers
+        const direction = this.targetX > this.x ? 1 : -1;
+        this.x += direction * this.getSpeed(this.targetX, this.x);
+      }
     }
   }
 
