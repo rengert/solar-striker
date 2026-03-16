@@ -10,7 +10,6 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
 const halfWidth = 10;
-const width = halfWidth + halfWidth;
 const MOVEMENT_TARGET_SNAP_DISTANCE = 5;
 const MOVEMENT_MIN_DISTANCE_RATIO = 0.08;
 const MOVEMENT_MIN_DISTANCE_PIXELS = 40;
@@ -30,16 +29,19 @@ const MOVEMENT_LEVEL_ACCELERATION_CAP = 10;
 const MOVEMENT_MIN_DELAY = 250;
 const ENEMY_BASE_ENERGY = 1;
 const ENEMY_ENERGY_LEVEL_STEP = 3;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_CHANCE = 0.15;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_RADIUS = 70;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_DURATION_MS = 2500;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_ANGULAR_SPEED = (Math.PI * 2) / LOOP_DURATION_MS;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_MIN_START_Y = LOOP_RADIUS * 2;
+const ENEMY_XSPEED = 0.05;
+const LARGE_ENEMY_SPAWN_CHANCE = 0.15;
+const LARGE_ENEMY_SCALE = 2;
+const LARGE_ENEMY_ENERGY_MULTIPLIER = 3;
+const LARGE_ENEMY_SPEED_MULTIPLIER = 1.5;
+const LARGE_ENEMY_SHOT_SPEED = 0.8;
+const LARGE_ENEMY_HALF_WIDTH = halfWidth * LARGE_ENEMY_SCALE;
+const LARGE_ENEMY_XSPEED = 0.08;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -95,28 +97,41 @@ export class GameEnemyService extends UpdatableService {
 
   private spawn(level: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
+    const isLarge = Math.random() < LARGE_ENEMY_SPAWN_CHANCE;
     // eslint-disable-next-line no-magic-numbers
     const maxSpeed = 0.5 + 0.03 * level;
     // eslint-disable-next-line no-magic-numbers
     const speedVariation = 0.6 + Math.random() * 0.4;
+    const speedMultiplier = isLarge ? LARGE_ENEMY_SPEED_MULTIPLIER : 1;
 
     const enemy = new Ship(
       ShipType.enemy,
       this.shotService,
       this.explosionService,
-      maxSpeed * speedVariation,
+      maxSpeed * speedVariation * speedMultiplier,
       animations['frame'],
     );
     enemy.autoFire = true;
     enemy.animationSpeed = 0.167;
     enemy.play();
     enemy.anchor.set(THE_MIDDLE);
-    enemy.x = Math.floor(Math.random() * this.application.screen.width - width) + halfWidth;
+    const spawnHalfWidth = isLarge ? LARGE_ENEMY_HALF_WIDTH : halfWidth;
+    const spawnWidth = spawnHalfWidth + spawnHalfWidth;
+    enemy.x = Math.floor(Math.random() * (this.application.screen.width - spawnWidth)) + spawnHalfWidth;
     enemy.y = 0;
-    enemy.xSpeed = 0.05;
     const levelEnergy = ENEMY_BASE_ENERGY + Math.floor((level - 1) / ENEMY_ENERGY_LEVEL_STEP);
-    enemy.maxEnergy = levelEnergy;
-    enemy.energy = levelEnergy;
+    if (isLarge) {
+      enemy.scale.set(LARGE_ENEMY_SCALE);
+      const largeEnergy = levelEnergy * LARGE_ENEMY_ENERGY_MULTIPLIER;
+      enemy.maxEnergy = largeEnergy;
+      enemy.energy = largeEnergy;
+      enemy.shotSpeed = LARGE_ENEMY_SHOT_SPEED;
+      enemy.xSpeed = LARGE_ENEMY_XSPEED;
+    } else {
+      enemy.xSpeed = ENEMY_XSPEED;
+      enemy.maxEnergy = levelEnergy;
+      enemy.energy = levelEnergy;
+    }
     enemy.enableEnergyDisplay();
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
