@@ -45,6 +45,8 @@ const baseTranslation = {
   'youAreDead.message': 'Du bist leider unterlegen\nund der Kampf ist vorbei',
   'youAreDead.points': 'Punkte',
   'youAreDead.sessionCoins': 'Münzen in dieser Session',
+  'game.pause': 'Pause',
+  'game.resume': 'Weiter spielen',
 } as const;
 
 export type TranslationKey = keyof typeof baseTranslation;
@@ -93,6 +95,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'youAreDead.message': 'You were defeated\nand the battle is over',
     'youAreDead.points': 'Points',
     'youAreDead.sessionCoins': 'Coins in this session',
+    'game.pause': 'Pause',
+    'game.resume': 'Resume',
   } satisfies TranslationDictionary,
   fr: {
     'app.title': 'Solar Striker',
@@ -135,6 +139,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'youAreDead.message': 'Vous avez été vaincu\net la bataille est terminée',
     'youAreDead.points': 'Points',
     'youAreDead.sessionCoins': 'Pièces de cette session',
+    'game.pause': 'Pause',
+    'game.resume': 'Reprendre',
   } satisfies TranslationDictionary,
 };
 

@@ -54,7 +54,10 @@ describe('GameService', () => {
         { provide: GameEnemyService, useValue: {} },
         { provide: GameLandscapeService, useValue: {} },
         { provide: GameMeteorService, useValue: {} },
-        { provide: GameScreenService, useValue: { coins: 0, kills: 0, level: 0 } },
+        {
+          provide: GameScreenService,
+          useValue: { coins: 0, kills: 0, level: 0, pauseButtonVisible: false, onPause: undefined },
+        },
         { provide: GameShipService, useValue: {} },
         { provide: GameShotService, useValue: {} },
         { provide: ShipUpgradeService, useValue: {} },
@@ -125,6 +128,23 @@ describe('GameService', () => {
 
       expect(service.kills()).toBe(0);
       expect(service.sessionCoins()).toBe(0);
+    });
+  });
+
+  describe('pause state', () => {
+    it('should not pause when the game has not been started', async () => {
+      // pause() should be a no-op when the game is not started.
+      await expectAsync(service.pause()).toBeResolved();
+      // The game should not report as having any kills or coins changed.
+      expect(service.kills()).toBe(0);
+      expect(service.sessionCoins()).toBe(0);
+    });
+
+    it('should not pause when already paused', async () => {
+      // Calling pause() twice should not throw and should be idempotent
+      // when the game is not started.
+      await service.pause();
+      await expectAsync(service.pause()).toBeResolved();
     });
   });
 });

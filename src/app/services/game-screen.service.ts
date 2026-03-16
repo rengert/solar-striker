@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
 import { UpdatableService } from './updatable.service';
@@ -9,6 +9,7 @@ const HEADER_LINE_SPACING = 22;
 const HEADER_SIDE_PADDING = 8;
 const DOUBLE = 2;
 const TRIPPLE = 3;
+const PAUSE_BUTTON_FONT_SIZE = 20;
 
 @Injectable()
 export class GameScreenService extends UpdatableService {
@@ -19,6 +20,9 @@ export class GameScreenService extends UpdatableService {
   private readonly levelLabel = new Text({ text: `${icons.level}  0000001`, style: fontAwesomeStyle });
 
   private lifesLabel: Graphics | undefined;
+  private pauseButton?: Text;
+
+  onPause?: () => void;
 
   set kills(value: number) {
     // eslint-disable-next-line no-magic-numbers
@@ -33,6 +37,12 @@ export class GameScreenService extends UpdatableService {
   set coins(value: number) {
     // eslint-disable-next-line no-magic-numbers
     this.coinLabel!.text = `${icons.coin}  ${value.toString().padStart(7, '0')}`;
+  }
+
+  set pauseButtonVisible(visible: boolean) {
+    if (this.pauseButton) {
+      this.pauseButton.visible = visible;
+    }
   }
 
   private set lifes(value: number) {
@@ -65,6 +75,23 @@ export class GameScreenService extends UpdatableService {
     this.coinLabel.x = this.application.screen.width - this.coinLabel.width - HEADER_SIDE_PADDING;
     this.coinLabel.y = HEADER_TOP_PADDING;
     this.addToStage(this.coinLabel);
+
+    this.pauseButton = new Text({
+      text: icons.pause,
+      style: new TextStyle({
+        fontFamily: 'Font Awesome 6 Free',
+        fontWeight: '900',
+        fontSize: PAUSE_BUTTON_FONT_SIZE,
+        fill: 0xffffff,
+      }),
+    });
+    this.pauseButton.x = HEADER_SIDE_PADDING;
+    this.pauseButton.y = HEADER_TOP_PADDING;
+    this.pauseButton.visible = false;
+    this.pauseButton.eventMode = 'static';
+    this.pauseButton.cursor = 'pointer';
+    this.pauseButton.on('pointerdown', () => this.onPause?.());
+    this.addToStage(this.pauseButton);
   }
 
   update(): void {
