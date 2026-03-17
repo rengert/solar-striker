@@ -3,6 +3,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { GameService } from './game.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
+import { AppScreen } from '../models/pixijs/app-screen';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -58,13 +59,17 @@ describe('GameService', () => {
           provide: GameScreenService,
           useValue: { coins: 0, kills: 0, level: 0, pauseButtonVisible: false, onPause: undefined },
         },
-        { provide: GameShipService, useValue: {} },
+        {
+          provide: GameShipService,
+          useValue: { instance: { autoFire: false }, applyUpgrades: jasmine.createSpy('applyUpgrades') },
+        },
         { provide: GameShotService, useValue: {} },
         { provide: ShipUpgradeService, useValue: {} },
         { provide: TranslationService, useValue: {} },
         {
           provide: StorageService,
           useValue: {
+            getCoins: jasmine.createSpy('getCoins').and.returnValue(Promise.resolve(0)),
             setCoins: jasmine.createSpy('setCoins').and.returnValue(Promise.resolve()),
           },
         },
@@ -132,19 +137,46 @@ describe('GameService', () => {
   });
 
   describe('pause state', () => {
-    it('should not pause when the game has not been started', async () => {
-      // pause() should be a no-op when the game is not started.
-      await expectAsync(service.pause()).toBeResolved();
-      // The game should not report as having any kills or coins changed.
-      expect(service.kills()).toBe(0);
-      expect(service.sessionCoins()).toBe(0);
+    let presentPopupSpy: jasmine.Spy;
+
+    beforeEach(() => {
+      // Prevent popup construction (which requires PixiJS textures) from interfering
+      // with state-machine tests by replacing presentPopup with a no-op spy.
+      presentPopupSpy = spyOn(
+        service as unknown as { presentPopup: () => Promise<void> },
+        'presentPopup',
+      ).and.returnValue(Promise.resolve());
     });
 
-    it('should not pause when already paused', async () => {
-      // Calling pause() twice should not throw and should be idempotent
-      // when the game is not started.
+    it('should report paused as false initially', () => {
+      expect(service.paused()).toBe(false);
+    });
+
+    it('should not change paused state when game is not started', async () => {
       await service.pause();
-      await expectAsync(service.pause()).toBeResolved();
+      expect(service.paused()).toBe(false);
+    });
+
+    it('should set paused to true when pause() is called during an active game', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      expect(service.paused()).toBe(true);
+    });
+
+    it('should not pause again when already paused (idempotent)', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      await service.pause();
+
+      expect(presentPopupSpy).toHaveBeenCalledTimes(1);
+      expect(service.paused()).toBe(true);
+    });
+
+    it('should clear paused state when resume() is called', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      await service.resume({} as AppScreen);
+      expect(service.paused()).toBe(false);
     });
   });
 });

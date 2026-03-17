@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { Container, FederatedPointerEvent, Graphics, Text, TextStyle } from 'pixi.js';
 import { fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
 import { UpdatableService } from './updatable.service';
@@ -90,7 +90,10 @@ export class GameScreenService extends UpdatableService {
     this.pauseButton.visible = false;
     this.pauseButton.eventMode = 'static';
     this.pauseButton.cursor = 'pointer';
-    this.pauseButton.on('pointerdown', () => this.onPause?.());
+    this.pauseButton.on('pointerdown', (event: FederatedPointerEvent): void => {
+      event.stopPropagation();
+      this.onPause?.();
+    });
     this.addToStage(this.pauseButton);
   }
 
