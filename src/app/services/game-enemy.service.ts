@@ -10,7 +10,6 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
 const halfWidth = 10;
-const width = halfWidth + halfWidth;
 const MOVEMENT_TARGET_SNAP_DISTANCE = 5;
 const MOVEMENT_MIN_DISTANCE_RATIO = 0.08;
 const MOVEMENT_MIN_DISTANCE_PIXELS = 40;
@@ -30,16 +29,20 @@ const MOVEMENT_LEVEL_ACCELERATION_CAP = 10;
 const MOVEMENT_MIN_DELAY = 250;
 const ENEMY_BASE_ENERGY = 1;
 const ENEMY_ENERGY_LEVEL_STEP = 3;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_CHANCE = 0.15;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_RADIUS = 70;
-// eslint-disable-next-line no-magic-numbers
 const LOOP_DURATION_MS = 2500;
 // eslint-disable-next-line no-magic-numbers
 const LOOP_ANGULAR_SPEED = (Math.PI * 2) / LOOP_DURATION_MS;
 // eslint-disable-next-line no-magic-numbers
 const LOOP_MIN_START_Y = LOOP_RADIUS * 2;
+const ENEMY_XSPEED = 0.05;
+const LARGE_ENEMY_SPAWN_CHANCE = 0.15;
+const LARGE_ENEMY_SCALE = 2;
+const LARGE_ENEMY_ENERGY_MULTIPLIER = 3;
+const LARGE_ENEMY_SPEED_MULTIPLIER = 1.5;
+const LARGE_ENEMY_SHOT_SPEED = 0.8;
+const LARGE_ENEMY_XSPEED = 0.08;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -95,28 +98,42 @@ export class GameEnemyService extends UpdatableService {
 
   private spawn(level: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
+    const isLarge = Math.random() < LARGE_ENEMY_SPAWN_CHANCE;
     // eslint-disable-next-line no-magic-numbers
     const maxSpeed = 0.5 + 0.03 * level;
     // eslint-disable-next-line no-magic-numbers
     const speedVariation = 0.6 + Math.random() * 0.4;
+    const speedMultiplier = isLarge ? LARGE_ENEMY_SPEED_MULTIPLIER : 1;
 
     const enemy = new Ship(
       ShipType.enemy,
       this.shotService,
       this.explosionService,
-      maxSpeed * speedVariation,
+      maxSpeed * speedVariation * speedMultiplier,
       animations['frame'],
     );
     enemy.autoFire = true;
     enemy.animationSpeed = 0.167;
     enemy.play();
     enemy.anchor.set(THE_MIDDLE);
-    enemy.x = Math.floor(Math.random() * this.application.screen.width - width) + halfWidth;
-    enemy.y = 0;
-    enemy.xSpeed = 0.05;
     const levelEnergy = ENEMY_BASE_ENERGY + Math.floor((level - 1) / ENEMY_ENERGY_LEVEL_STEP);
-    enemy.maxEnergy = levelEnergy;
-    enemy.energy = levelEnergy;
+    if (isLarge) {
+      enemy.scale.set(LARGE_ENEMY_SCALE);
+      const largeEnergy = levelEnergy * LARGE_ENEMY_ENERGY_MULTIPLIER;
+      enemy.maxEnergy = largeEnergy;
+      enemy.energy = largeEnergy;
+      enemy.shotSpeed = LARGE_ENEMY_SHOT_SPEED;
+      enemy.xSpeed = LARGE_ENEMY_XSPEED;
+    } else {
+      enemy.xSpeed = ENEMY_XSPEED;
+      enemy.maxEnergy = levelEnergy;
+      enemy.energy = levelEnergy;
+    }
+    // eslint-disable-next-line no-magic-numbers
+    const enemyHalfWidth = enemy.width / 2;
+    const usableWidth = Math.max(0, this.application.screen.width - enemy.width);
+    enemy.x = Math.floor(Math.random() * usableWidth) + enemyHalfWidth;
+    enemy.y = 0;
     enemy.enableEnergyDisplay();
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
@@ -156,7 +173,9 @@ export class GameEnemyService extends UpdatableService {
         movement.targetX = undefined;
         movement.nextChange = this.elapsed + LOOP_DURATION_MS + this.getNextChangeDelay(level);
       } else {
-        movement.targetX = this.getNextHorizontalTarget(enemy.x, screenWidth);
+        // eslint-disable-next-line no-magic-numbers
+        const enemyHalfWidth = enemy instanceof AnimatedGameSprite ? enemy.width / 2 : halfWidth;
+        movement.targetX = this.getNextHorizontalTarget(enemy.x, screenWidth, enemyHalfWidth);
         movement.nextChange = this.elapsed + this.getNextChangeDelay(level);
       }
     }
@@ -174,7 +193,7 @@ export class GameEnemyService extends UpdatableService {
     return this.movementStates.get(enemy)!;
   }
 
-  private getNextHorizontalTarget(currentX: number, screenWidth: number): number {
+  private getNextHorizontalTarget(currentX: number, screenWidth: number, enemyHalfWidth: number): number {
     const minDistance = Math.max(
       screenWidth * MOVEMENT_MIN_DISTANCE_RATIO,
       MOVEMENT_MIN_DISTANCE_PIXELS,
@@ -188,8 +207,8 @@ export class GameEnemyService extends UpdatableService {
     const travelDistance = minDistance + Math.random() * (maxDistance - minDistance);
 
     let candidate = currentX + preferredDirection * travelDistance;
-    const minX = halfWidth;
-    const maxX = screenWidth - halfWidth;
+    const minX = enemyHalfWidth;
+    const maxX = screenWidth - enemyHalfWidth;
 
     if (candidate < minX || candidate > maxX) {
       candidate =
