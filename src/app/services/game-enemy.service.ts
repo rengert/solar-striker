@@ -32,7 +32,9 @@ const ENEMY_ENERGY_LEVEL_STEP = 3;
 const LOOP_CHANCE = 0.15;
 const LOOP_RADIUS = 70;
 const LOOP_DURATION_MS = 2500;
+// eslint-disable-next-line no-magic-numbers
 const LOOP_ANGULAR_SPEED = (Math.PI * 2) / LOOP_DURATION_MS;
+// eslint-disable-next-line no-magic-numbers
 const LOOP_MIN_START_Y = LOOP_RADIUS * 2;
 const ENEMY_XSPEED = 0.05;
 const LARGE_ENEMY_SPAWN_CHANCE = 0.15;
@@ -41,16 +43,6 @@ const LARGE_ENEMY_ENERGY_MULTIPLIER = 3;
 const LARGE_ENEMY_SPEED_MULTIPLIER = 1.5;
 const LARGE_ENEMY_SHOT_SPEED = 0.8;
 const LARGE_ENEMY_XSPEED = 0.08;
-// eslint-disable-next-line no-magic-numbers
-const LOOP_CHANCE = 0.15;
-// eslint-disable-next-line no-magic-numbers
-const LOOP_RADIUS = 70;
-// eslint-disable-next-line no-magic-numbers
-const LOOP_DURATION_MS = 2500;
-// eslint-disable-next-line no-magic-numbers
-const LOOP_ANGULAR_SPEED = (Math.PI * 2) / LOOP_DURATION_MS;
-// eslint-disable-next-line no-magic-numbers
-const LOOP_MIN_START_Y = LOOP_RADIUS * 2;
 
 interface EnemyMovementState {
   nextChange: number;
