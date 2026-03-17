@@ -34,7 +34,7 @@ function isShipDestroyer(by: ObjectModelType): boolean {
 function calculateMeteorCoins(meteor: ObjectModelType): number {
   const energy = meteor.initialEnergy ?? meteor.energy ?? 0;
 
-  return Math.floor(energy / METEOR_COIN_ENERGY_STEP);
+  return Math.max(1, Math.floor(energy / METEOR_COIN_ENERGY_STEP));
 }
 
 @Injectable()
