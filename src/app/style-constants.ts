@@ -5,6 +5,7 @@ export const icons = {
   points: '\uf54c',
   life: '\uf004',
   level: '\uf188',
+  pause: '\uf04c',
 };
 
 export const textStyle = new TextStyle({

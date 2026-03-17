@@ -8,6 +8,7 @@ import { CreditsPopup } from '../popups/credits-popup';
 import { HangarPopup } from '../popups/hangar-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
+import { PausePopup } from '../popups/pause-popup';
 import { SettingsPopup } from '../popups/settings-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { handleMouseMove } from '../utils/mouse.util';
@@ -71,6 +72,8 @@ export class GameService {
   private currentPopup?: AppScreen;
 
   private readonly started = signal(false);
+  readonly #paused = signal(false);
+  readonly paused = this.#paused.asReadonly();
 
   private readonly application = inject(ApplicationService);
   private readonly storage = inject(StorageService);
@@ -129,6 +132,12 @@ export class GameService {
 
     this.setup();
 
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && this.started() && !this.#paused()) {
+        void this.pause();
+      }
+    });
+
     await this.presentPopup(NavigationPopup);
   }
 
@@ -141,12 +150,30 @@ export class GameService {
     this.ship.applyUpgrades();
     this.kills.set(0);
     this.ship.instance.autoFire = false;
+    this.#paused.set(false);
     this.started.set(true);
+    this.gameScreen.pauseButtonVisible = true;
   }
 
   async openCredits(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(CreditsPopup);
+  }
+
+  async pause(): Promise<void> {
+    if (!this.started() || this.#paused()) {
+      return;
+    }
+
+    this.ship.instance.autoFire = false;
+    this.#paused.set(true);
+    await this.presentPopup(PausePopup);
+  }
+
+  async resume(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    this.currentPopup = undefined;
+    this.#paused.set(false);
   }
 
   async openNavigation(requester: AppScreen): Promise<void> {
@@ -178,9 +205,10 @@ export class GameService {
   private setup(): void {
     this.ship.spawn();
     this.setupInteractions(this.ship);
+    this.gameScreen.onPause = (): void => void this.pause();
 
     this.application.ticker.add((delta) => {
-      if (!this.started()) {
+      if (!this.started() || this.#paused()) {
         return;
       }
 
@@ -191,6 +219,7 @@ export class GameService {
         void this.presentPopup(YouAreDeadPopup);
         this.ship.instance.autoFire = false;
         this.started.set(false);
+        this.gameScreen.pauseButtonVisible = false;
       }
     });
   }
@@ -199,7 +228,7 @@ export class GameService {
     this.application.stage.eventMode = 'dynamic';
     this.application.stage.hitArea = this.application.screen;
     this.application.stage.on('pointerdown', () => {
-      if (!this.started()) {
+      if (!this.started() || this.#paused()) {
         return;
       }
 
@@ -207,7 +236,7 @@ export class GameService {
     });
     this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
     this.application.stage.on('pointermove', (event: FederatedPointerEvent) => {
-      if (!this.started()) {
+      if (!this.started() || this.#paused()) {
         return;
       }
 

@@ -3,6 +3,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { GameService } from './game.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
+import { AppScreen } from '../models/pixijs/app-screen';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -54,14 +55,21 @@ describe('GameService', () => {
         { provide: GameEnemyService, useValue: {} },
         { provide: GameLandscapeService, useValue: {} },
         { provide: GameMeteorService, useValue: {} },
-        { provide: GameScreenService, useValue: { coins: 0, kills: 0, level: 0 } },
-        { provide: GameShipService, useValue: {} },
+        {
+          provide: GameScreenService,
+          useValue: { coins: 0, kills: 0, level: 0, pauseButtonVisible: false, onPause: undefined },
+        },
+        {
+          provide: GameShipService,
+          useValue: { instance: { autoFire: false }, applyUpgrades: jasmine.createSpy('applyUpgrades') },
+        },
         { provide: GameShotService, useValue: {} },
         { provide: ShipUpgradeService, useValue: {} },
         { provide: TranslationService, useValue: {} },
         {
           provide: StorageService,
           useValue: {
+            getCoins: jasmine.createSpy('getCoins').and.returnValue(Promise.resolve(0)),
             setCoins: jasmine.createSpy('setCoins').and.returnValue(Promise.resolve()),
           },
         },
@@ -128,6 +136,47 @@ describe('GameService', () => {
     });
   });
 
+  describe('pause state', () => {
+    let presentPopupSpy: jasmine.Spy;
+
+    beforeEach(() => {
+      // Prevent popup construction (which requires PixiJS textures) from interfering
+      // with state-machine tests by replacing presentPopup with a no-op spy.
+      presentPopupSpy = spyOn(
+        service as unknown as { presentPopup: () => Promise<void> },
+        'presentPopup',
+      ).and.returnValue(Promise.resolve());
+    });
+
+    it('should report paused as false initially', () => {
+      expect(service.paused()).toBe(false);
+    });
+
+    it('should not change paused state when game is not started', async () => {
+      await service.pause();
+      expect(service.paused()).toBe(false);
+    });
+
+    it('should set paused to true when pause() is called during an active game', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      expect(service.paused()).toBe(true);
+    });
+
+    it('should not pause again when already paused (idempotent)', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      await service.pause();
+
+      expect(presentPopupSpy).toHaveBeenCalledTimes(1);
+      expect(service.paused()).toBe(true);
+    });
+
+    it('should clear paused state when resume() is called', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      await service.resume({} as AppScreen);
+      expect(service.paused()).toBe(false);});
   describe('meteor-to-coin logic', () => {
     beforeEach(() => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -180,4 +229,4 @@ describe('GameService', () => {
       expect(service.sessionCoins()).toBe(1);
     });
   });
-});
+
