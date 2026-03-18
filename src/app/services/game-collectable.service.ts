@@ -20,6 +20,7 @@ function collectPowerUp(object: ObjectModelType, by: ObjectModelType): void {
   ship.shotSpeed += powerUp.config.powerUp.speed;
   ship.shotPower += powerUp.config.powerUp.shot;
   ship.energy += powerUp.config.powerUp.energy;
+  ship.shieldTicks += powerUp.config.powerUp.shield ?? 0;
 }
 
 @Injectable()
@@ -70,6 +71,9 @@ export class GameCollectableService extends UpdatableService {
     powerUp.x = x;
     powerUp.y = y;
     powerUp.power = 0;
+    if (powerUpType.tint !== undefined) {
+      powerUp.tint = powerUpType.tint;
+    }
     this.application.stage.addChild(powerUp);
     this.object.add(powerUp);
   }

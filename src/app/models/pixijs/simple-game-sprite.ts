@@ -10,6 +10,10 @@ export class GameSprite extends Container {
   destroying = false;
   targetX?: number;
 
+  get isShielded(): boolean {
+    return false;
+  }
+
   private _energy: number | undefined;
   private initialEnergyValue: number | undefined;
 
