@@ -5,6 +5,7 @@ import { AnimatedGameSprite, LoopData } from '../models/pixijs/animated-game-spr
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
+import { GameScreenService } from './game-screen.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
@@ -44,6 +45,23 @@ const LARGE_ENEMY_SPEED_MULTIPLIER = 1.5;
 const LARGE_ENEMY_SHOT_SPEED = 0.8;
 const LARGE_ENEMY_XSPEED = 0.08;
 
+const BOSS_LEVEL_INTERVAL =
+  GAME_CONFIG.boss.killsInterval * GAME_CONFIG.killLevelFactor;
+const BOSS_ENERGY_BASE = 30;
+const BOSS_ENERGY_LEVEL_STEP = 5;
+const BOSS_SCALE = 3;
+const BOSS_SPEED = 0.12;
+const BOSS_SHOT_SPEED = 0.8;
+const BOSS_SHOT_POWER = 3;
+const BOSS_XSPEED = 0.035;
+// eslint-disable-next-line no-magic-numbers
+const BOSS_TINT = 0xff3333;
+const BOSS_SWEEP_MARGIN = 30;
+const BOSS_SWEEP_INTERVAL_MS = 3000;
+const BOSS_MINIMUM_LEVEL = 2;
+const BOSS_SCREEN_CENTER_DIVIDER = 2;
+const ENEMY_ANIMATION_SPEED = 0.167;
+
 interface EnemyMovementState {
   nextChange: number;
   targetX?: number;
@@ -54,9 +72,12 @@ export class GameEnemyService extends UpdatableService {
   private readonly explosionService = inject(ExplosionService);
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
+  private readonly gameScreen = inject(GameScreenService);
 
   private elapsed = 0;
   private lastEnemySpawn: number | null = null;
+  private lastBossLevel = 0;
+  private boss: Ship | null = null;
 
   private enemySprite!: Spritesheet;
   private readonly movementStates = new WeakMap<ObjectModelType, EnemyMovementState>();
@@ -67,6 +88,21 @@ export class GameEnemyService extends UpdatableService {
 
   update(ticker: Ticker, level: number): void {
     this.elapsed += ticker.deltaMS;
+
+    if (this.boss?.destroying || this.boss?.destroyed) {
+      this.boss = null;
+    }
+
+    const bossLevelThreshold = Math.floor(level / BOSS_LEVEL_INTERVAL) * BOSS_LEVEL_INTERVAL;
+    if (
+      bossLevelThreshold >= BOSS_MINIMUM_LEVEL &&
+      bossLevelThreshold !== this.lastBossLevel &&
+      !this.boss
+    ) {
+      this.lastBossLevel = bossLevelThreshold;
+      this.spawnBoss(bossLevelThreshold);
+      this.gameScreen.showBossWarning();
+    }
 
     const enemies = this.object.enemies();
 
@@ -113,7 +149,7 @@ export class GameEnemyService extends UpdatableService {
       animations['frame'],
     );
     enemy.autoFire = true;
-    enemy.animationSpeed = 0.167;
+    enemy.animationSpeed = ENEMY_ANIMATION_SPEED;
     enemy.play();
     enemy.anchor.set(THE_MIDDLE);
     const levelEnergy = ENEMY_BASE_ENERGY + Math.floor((level - 1) / ENEMY_ENERGY_LEVEL_STEP);
@@ -142,6 +178,11 @@ export class GameEnemyService extends UpdatableService {
   }
 
   private updateMovement(enemy: ObjectModelType, level: number, force = false): void {
+    if (enemy instanceof AnimatedGameSprite && enemy.isBoss) {
+      this.updateBossMovement(enemy);
+      return;
+    }
+
     const screenWidth = this.application.screen.width;
     const movement = this.getMovementState(enemy);
 
@@ -183,6 +224,65 @@ export class GameEnemyService extends UpdatableService {
     if (movement.targetX !== undefined) {
       enemy.targetX = movement.targetX;
     }
+  }
+
+  private spawnBoss(level: number): void {
+    const animations: Record<string, Texture[]> = this.enemySprite.animations;
+    const bossEnergy = BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (level - 1);
+
+    const boss = new Ship(
+      ShipType.enemy,
+      this.shotService,
+      this.explosionService,
+      BOSS_SPEED,
+      animations['frame'],
+    );
+    boss.isBoss = true;
+    boss.autoFire = true;
+    boss.animationSpeed = ENEMY_ANIMATION_SPEED;
+    boss.play();
+    boss.anchor.set(THE_MIDDLE);
+    boss.scale.set(BOSS_SCALE);
+    boss.maxEnergy = bossEnergy;
+    boss.energy = bossEnergy;
+    boss.shotSpeed = BOSS_SHOT_SPEED;
+    boss.shotPower = BOSS_SHOT_POWER;
+    boss.xSpeed = BOSS_XSPEED;
+    // eslint-disable-next-line no-magic-numbers
+    boss.tint = BOSS_TINT;
+    boss.x = this.application.screen.width / BOSS_SCREEN_CENTER_DIVIDER;
+    boss.y = 0;
+    boss.enableEnergyDisplay();
+    this.object.add(boss);
+    this.application.stage.addChild(boss);
+    this.boss = boss;
+
+    this.updateBossMovement(boss);
+  }
+
+  private updateBossMovement(boss: AnimatedGameSprite): void {
+    const movement = this.getMovementState(boss);
+    const screenWidth = this.application.screen.width;
+    const bossHalfWidth = boss.width / BOSS_SCREEN_CENTER_DIVIDER;
+    const margin = bossHalfWidth + BOSS_SWEEP_MARGIN;
+
+    const isAtTarget =
+      movement.targetX !== undefined &&
+      Math.abs(movement.targetX - boss.x) < MOVEMENT_TARGET_SNAP_DISTANCE;
+    const isOverdue = movement.nextChange <= this.elapsed;
+
+    if (movement.targetX === undefined || isAtTarget || isOverdue) {
+      const rightTarget = screenWidth - margin;
+      const leftTarget = margin;
+      const currentTarget = movement.targetX;
+      movement.targetX =
+        currentTarget === undefined || currentTarget > screenWidth / BOSS_SCREEN_CENTER_DIVIDER
+          ? leftTarget
+          : rightTarget;
+      movement.nextChange = this.elapsed + BOSS_SWEEP_INTERVAL_MS;
+    }
+
+    boss.targetX = movement.targetX;
   }
 
   private getMovementState(enemy: ObjectModelType): EnemyMovementState {

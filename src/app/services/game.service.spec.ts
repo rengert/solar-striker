@@ -93,6 +93,28 @@ describe('GameService', () => {
       expect(service.sessionCoins()).toBe(1);
     });
 
+    it('should award bonus coins when a boss enemy is killed by the player', () => {
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+      const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
+
+      objectService.triggerCallbacks(bossEnemy, playerRocket);
+
+      expect(service.kills()).toBe(1);
+      expect(service.sessionCoins()).toBe(GAME_CONFIG.boss.coinsReward);
+    });
+
+    it('should NOT award boss bonus coins when a boss is killed by an enemy', () => {
+      const enemyShip = createMockObject(ObjectType.enemy);
+      const enemyRocket = createMockObject(ObjectType.rocket, { reference: enemyShip });
+      const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
+
+      objectService.triggerCallbacks(bossEnemy, enemyRocket);
+
+      expect(service.kills()).toBe(0);
+      expect(service.sessionCoins()).toBe(0);
+    });
+
     it('should award 2 coins after 20 kills by the player', () => {
       const playerShip = createMockObject(ObjectType.ship);
       const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });

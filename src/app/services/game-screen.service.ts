@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Container, FederatedPointerEvent, Graphics, Text, TextStyle } from 'pixi.js';
+import { gsap } from 'gsap';
 import { fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
 import { UpdatableService } from './updatable.service';
@@ -10,6 +11,11 @@ const HEADER_SIDE_PADDING = 8;
 const DOUBLE = 2;
 const TRIPPLE = 3;
 const PAUSE_BUTTON_FONT_SIZE = 20;
+const BOSS_WARNING_FONT_SIZE = 28;
+const BOSS_WARNING_STROKE_WIDTH = 4;
+const BOSS_WARNING_DISPLAY_MS = 2800;
+const BOSS_WARNING_FADE_S = 0.6;
+const SCREEN_CENTER_DIVIDER = 2;
 
 @Injectable()
 export class GameScreenService extends UpdatableService {
@@ -99,5 +105,40 @@ export class GameScreenService extends UpdatableService {
 
   update(): void {
     this.lifes = this.#ship.instance.energy;
+  }
+
+  showBossWarning(): void {
+    const warning = new Text({
+      text: '⚠ BOSS APPROACHING ⚠',
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: BOSS_WARNING_FONT_SIZE,
+        fontWeight: 'bold',
+        // eslint-disable-next-line no-magic-numbers
+        fill: 0xff3333,
+        stroke: {
+          // eslint-disable-next-line no-magic-numbers
+          color: 0x000000,
+          width: BOSS_WARNING_STROKE_WIDTH,
+        },
+        align: 'center',
+      }),
+    });
+    // eslint-disable-next-line no-magic-numbers
+    warning.anchor.set(0.5);
+    warning.x = this.application.screen.width / SCREEN_CENTER_DIVIDER;
+    warning.y = this.application.screen.height / SCREEN_CENTER_DIVIDER;
+    this.addToStage(warning);
+
+    setTimeout(() => {
+      void gsap.to(warning, {
+        alpha: 0,
+        duration: BOSS_WARNING_FADE_S,
+        onComplete: () => {
+          warning.parent?.removeChild(warning);
+          warning.destroy();
+        },
+      });
+    }, BOSS_WARNING_DISPLAY_MS);
   }
 }
