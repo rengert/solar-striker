@@ -4,9 +4,11 @@ export interface PowerUpConfig {
   type: PowerUp;
   assetUrl: string;
   animationName: string;
+  tint?: number;
   powerUp: {
     speed: number;
     shot: number;
     energy: number;
+    shield?: number;
   };
 }

@@ -4,6 +4,8 @@ import { PowerUpConfig } from './models/power-up-config.model';
 
 export const THE_MIDDLE = 0.5;
 export const LARGE_POP_UP_HEIGHT = 420;
+// eslint-disable-next-line no-magic-numbers
+export const SHIELD_DURATION_MS = 5000;
 
 interface Config {
   powerUpConfig: PowerUpConfig[];
@@ -100,6 +102,19 @@ export const GAME_CONFIG: GameConfig = {
         speed: 0.1,
         shot: 0,
         energy: 1,
+      },
+    },
+    {
+      type: PowerUp.shield,
+      assetUrl: 'assets/game/powerups/power-up-2.json',
+      animationName: 'power-up-2',
+      // eslint-disable-next-line no-magic-numbers
+      tint: 0x00ccff,
+      powerUp: {
+        speed: 0,
+        shot: 0,
+        energy: 0,
+        shield: SHIELD_DURATION_MS,
       },
     },
   ],

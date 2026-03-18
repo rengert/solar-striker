@@ -26,6 +26,10 @@ export class AnimatedGameSprite extends AnimatedSprite {
   xSpeed: number = 1;
   loopData: LoopData | undefined;
 
+  get isShielded(): boolean {
+    return false;
+  }
+
   protected readonly speed: number = 1;
   private _initialEnergy: number | undefined;
   private energyLabel: Text | undefined;

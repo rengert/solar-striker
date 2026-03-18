@@ -3,6 +3,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameCollectableService } from './game-collectable.service';
+import { SHIELD_DURATION_MS } from '../game-constants';
 
 function createMockShip(overrides: Record<string, unknown> = {}): ObjectModelType {
   return {
@@ -14,6 +15,7 @@ function createMockShip(overrides: Record<string, unknown> = {}): ObjectModelTyp
     power: 1,
     shotSpeed: 1.5,
     shotPower: 1,
+    shieldTicks: 0,
     ...overrides,
   } as unknown as ObjectModelType;
 }
@@ -22,6 +24,7 @@ function createMockPowerUp(powerUpConfig: {
   speed: number;
   shot: number;
   energy: number;
+  shield?: number;
 }): ObjectModelType {
   return {
     type: ObjectType.collectable,
@@ -122,4 +125,50 @@ describe('GameCollectableService - collectPowerUp', () => {
 
     expect((ship as unknown as { shotPower: number }).shotPower).toBe(1);
   });
+
+  it('should activate shield on the ship when a shield power-up is collected', () => {
+    const ship = createMockShip({ shieldTicks: 0 });
+    const powerUp = createMockPowerUp({ speed: 0, shot: 0, energy: 0, shield: SHIELD_DURATION_MS });
+
+    objectService.triggerCallbacks(powerUp, ship);
+
+    expect((ship as unknown as { shieldTicks: number }).shieldTicks).toBe(SHIELD_DURATION_MS);
+  });
+
+  it('should stack shield duration when a shield power-up is collected while already shielded', () => {
+    const ship = createMockShip({ shieldTicks: SHIELD_DURATION_MS });
+    const powerUp = createMockPowerUp({ speed: 0, shot: 0, energy: 0, shield: SHIELD_DURATION_MS });
+
+    objectService.triggerCallbacks(powerUp, ship);
+
+    // eslint-disable-next-line no-magic-numbers
+    expect((ship as unknown as { shieldTicks: number }).shieldTicks).toBe(SHIELD_DURATION_MS * 2);
+  });
+
+  it('should NOT activate shield when the shield field is absent (regular power-up)', () => {
+    const ship = createMockShip({ shieldTicks: 0 });
+    const powerUp = createMockPowerUp({ speed: 0.1, shot: 0, energy: 0 });
+
+    objectService.triggerCallbacks(powerUp, ship);
+
+    expect((ship as unknown as { shieldTicks: number }).shieldTicks).toBe(0);
+  });
+
+  it('should NOT apply shield to a non-ship object', () => {
+    const enemy = {
+      type: ObjectType.enemy,
+      destroying: false,
+      destroyed: false,
+      reference: undefined,
+      energy: 1,
+      power: 1,
+      shieldTicks: 0,
+    } as unknown as ObjectModelType;
+    const powerUp = createMockPowerUp({ speed: 0, shot: 0, energy: 0, shield: SHIELD_DURATION_MS });
+
+    objectService.triggerCallbacks(powerUp, enemy);
+
+    expect((enemy as unknown as { shieldTicks: number }).shieldTicks).toBe(0);
+  });
 });
+

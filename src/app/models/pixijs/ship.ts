@@ -6,12 +6,22 @@ import { AnimatedGameSprite } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 import { ShipType } from './ship-type.enum';
 
+// eslint-disable-next-line no-magic-numbers
+const SHIELD_TINT = 0x00ccff;
+// eslint-disable-next-line no-magic-numbers
+const NO_TINT = 0xffffff;
+// eslint-disable-next-line no-magic-numbers
+const SHIELD_PULSE_SPEED = 0.005;
+// eslint-disable-next-line no-magic-numbers
+const COLOR_CHANNEL_MASK = 0xff;
+
 export class Ship extends AnimatedGameSprite {
   shotPower = 1;
   shotSpeed: number;
   lastShot = 0;
   autoFire = false;
   maxEnergy: number;
+  shieldTicks = 0;
 
   private elapsed = 0;
   private rotationTarget = 0;
@@ -29,6 +39,10 @@ export class Ship extends AnimatedGameSprite {
     this.maxEnergy = GAME_CONFIG.ships[this.shipType].energy;
     this.energy = this.maxEnergy;
     this.shotSpeed = GAME_CONFIG.ships[this.shipType].shotSpeed;
+  }
+
+  override get isShielded(): boolean {
+    return this.shieldTicks > 0;
   }
 
   override get energy(): number {
@@ -56,6 +70,26 @@ export class Ship extends AnimatedGameSprite {
     if (this.autoFire && check - this.lastShot > 1000 / this.shotSpeed && check !== this.lastShot) {
       this.lastShot = check;
       this.shot();
+    }
+
+    if (this.shieldTicks > 0) {
+      this.shieldTicks = Math.max(0, this.shieldTicks - ticker.deltaMS);
+      // eslint-disable-next-line no-magic-numbers
+      const pulse = (Math.sin(this.elapsed * SHIELD_PULSE_SPEED) + 1) / 2;
+      // eslint-disable-next-line no-magic-numbers
+      const shieldG = (SHIELD_TINT >> 8) & COLOR_CHANNEL_MASK;
+      // eslint-disable-next-line no-magic-numbers
+      const whiteR = (NO_TINT >> 16) & COLOR_CHANNEL_MASK;
+      // eslint-disable-next-line no-magic-numbers
+      const whiteG = (NO_TINT >> 8) & COLOR_CHANNEL_MASK;
+      const whiteB = NO_TINT & COLOR_CHANNEL_MASK;
+      const r = Math.round(pulse * whiteR);
+      const g = Math.round(shieldG + pulse * (whiteG - shieldG));
+      const b = whiteB;
+      // eslint-disable-next-line no-magic-numbers
+      this.tint = (r << 16) | (g << 8) | b;
+    } else {
+      this.tint = NO_TINT;
     }
 
     const deltaX = this.x - previousX;
