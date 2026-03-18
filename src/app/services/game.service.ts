@@ -81,11 +81,12 @@ export class GameService {
 
   constructor() {
     effect(() => {
+      this.gameScreen.coins = this.coins();
+
       if (!this.started()) {
         return;
       }
 
-      this.gameScreen.coins = this.coins();
       this.gameScreen.kills = this.kills();
       this.gameScreen.level = this.level();
       void this.storage.setCoins(this.coins());

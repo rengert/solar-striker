@@ -158,6 +158,23 @@ describe('GameService', () => {
     });
   });
 
+  describe('HUD coin display', () => {
+    let gameScreenMock: { coins: number };
+
+    beforeEach(() => {
+      gameScreenMock = TestBed.inject(GameScreenService) as unknown as { coins: number };
+    });
+
+    it('should update HUD coin display when storedCoins changes, even before the game starts', () => {
+      const storedCoinsFromStorage = 42;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).storedCoins.set(storedCoinsFromStorage);
+      TestBed.flushEffects();
+
+      expect(gameScreenMock.coins).toBe(storedCoinsFromStorage);
+    });
+  });
+
   describe('pause state', () => {
     let presentPopupSpy: jasmine.Spy;
 
