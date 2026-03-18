@@ -25,6 +25,10 @@ interface GameConfig extends Config {
       energy: number;
     }
   >;
+  boss: {
+    killsInterval: number;
+    coinsReward: number;
+  };
   killLevelFactor: number;
   collectableFactor: number;
   killsPerCoin: number;
@@ -40,6 +44,10 @@ export const GAME_CONFIG: GameConfig = {
   },
   meteor: {
     autoSpawnSpeed: 0.2, // per second
+  },
+  boss: {
+    killsInterval: 50,
+    coinsReward: 10,
   },
   ships: {
     [ShipType.ship]: {

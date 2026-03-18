@@ -1,6 +1,7 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG } from '../game-constants';
+import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
@@ -90,12 +91,15 @@ export class GameService {
       void this.storage.setCoins(this.coins());
     });
 
-    this.object.onDestroyed(ObjectType.enemy, (_, by) => {
+    this.object.onDestroyed(ObjectType.enemy, (destroyedEnemy, by) => {
       if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
         this.kills.update((value) => value + 1);
         const newKills = this.kills();
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.sessionCoins.update((value) => value + 1);
+        }
+        if ((destroyedEnemy as AnimatedGameSprite).isBoss) {
+          this.sessionCoins.update((value) => value + GAME_CONFIG.boss.coinsReward);
         }
       }
     });

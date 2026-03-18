@@ -19,6 +19,7 @@ export interface LoopData {
 
 export class AnimatedGameSprite extends AnimatedSprite {
   power = 1;
+  isBoss = false;
   reference: ObjectModelType | undefined;
   destroying = false;
   targetX?: number;
