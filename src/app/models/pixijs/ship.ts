@@ -6,13 +6,9 @@ import { AnimatedGameSprite } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 import { ShipType } from './ship-type.enum';
 
-// eslint-disable-next-line no-magic-numbers
 const SHIELD_TINT = 0x00ccff;
-// eslint-disable-next-line no-magic-numbers
 const NO_TINT = 0xffffff;
-// eslint-disable-next-line no-magic-numbers
 const SHIELD_PULSE_SPEED = 0.005;
-// eslint-disable-next-line no-magic-numbers
 const COLOR_CHANNEL_MASK = 0xff;
 
 export class Ship extends AnimatedGameSprite {
