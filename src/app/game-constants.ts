@@ -4,7 +4,6 @@ import { PowerUpConfig } from './models/power-up-config.model';
 
 export const THE_MIDDLE = 0.5;
 export const LARGE_POP_UP_HEIGHT = 420;
-// eslint-disable-next-line no-magic-numbers
 export const SHIELD_DURATION_MS = 5000;
 
 interface Config {
