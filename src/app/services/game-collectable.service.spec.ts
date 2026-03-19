@@ -5,6 +5,9 @@ import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameCollectableService } from './game-collectable.service';
 import { OFF_SCREEN_BUFFER, SHIELD_DURATION_MS } from '../game-constants';
 
+const MOCK_SCREEN_HEIGHT = 600;
+const MOCK_SCREEN_WIDTH = 400;
+
 function createMockShip(overrides: Record<string, unknown> = {}): ObjectModelType {
   return {
     type: ObjectType.ship,
@@ -25,6 +28,7 @@ function createMockPowerUp(powerUpConfig: {
   shot: number;
   energy: number;
   shield?: number;
+  nuke?: boolean;
 }): ObjectModelType {
   return {
     type: ObjectType.collectable,
@@ -39,6 +43,47 @@ function createMockPowerUp(powerUpConfig: {
   } as unknown as ObjectModelType;
 }
 
+function createMockEnemy(): ObjectModelType {
+  const enemy: Record<string, unknown> = {
+    type: ObjectType.enemy,
+    destroying: false,
+    destroyed: false,
+    reference: undefined,
+    energy: 5,
+    power: 1,
+    explode: jasmine.createSpy('explode').and.callFake(() => {
+      enemy['destroying'] = true;
+    }),
+  };
+  return enemy as unknown as ObjectModelType;
+}
+
+function createMockMeteor(): ObjectModelType {
+  const meteor: Record<string, unknown> = {
+    type: ObjectType.meteor,
+    destroying: false,
+    destroyed: false,
+    reference: undefined,
+    energy: 10,
+    power: 0,
+    explode: jasmine.createSpy('explode').and.callFake(() => {
+      meteor['destroying'] = true;
+    }),
+  };
+  return meteor as unknown as ObjectModelType;
+}
+
+function buildApplicationServiceMock(): Record<string, unknown> {
+  return {
+    stage: { addChild: jasmine.createSpy('addChild') },
+    screen: { height: MOCK_SCREEN_HEIGHT, width: MOCK_SCREEN_WIDTH },
+    ticker: {
+      add: jasmine.createSpy('add'),
+      remove: jasmine.createSpy('remove'),
+    },
+  };
+}
+
 describe('GameCollectableService - collectPowerUp', () => {
   let objectService: ObjectService;
 
@@ -49,14 +94,7 @@ describe('GameCollectableService - collectPowerUp', () => {
         GameCollectableService,
         {
           provide: ApplicationService,
-          useValue: {
-            stage: { addChild: jasmine.createSpy('addChild') },
-            screen: { height: 600 },
-            ticker: {
-              add: jasmine.createSpy('add'),
-              remove: jasmine.createSpy('remove'),
-            },
-          },
+          useValue: buildApplicationServiceMock(),
         },
       ],
     });
@@ -171,13 +209,70 @@ describe('GameCollectableService - collectPowerUp', () => {
 
     expect((enemy as unknown as { shieldTicks: number }).shieldTicks).toBe(0);
   });
+
+  describe('nuke power-up', () => {
+    it('should explode all enemies when a nuke power-up is collected', () => {
+      const ship = createMockShip();
+      const nuke = createMockPowerUp({ speed: 0, shot: 0, energy: 0, nuke: true });
+      const enemy1 = createMockEnemy();
+      const enemy2 = createMockEnemy();
+      objectService.add(enemy1 as never);
+      objectService.add(enemy2 as never);
+
+      objectService.triggerCallbacks(nuke, ship);
+
+      expect((enemy1 as unknown as { explode: jasmine.Spy }).explode).toHaveBeenCalled();
+      expect((enemy2 as unknown as { explode: jasmine.Spy }).explode).toHaveBeenCalled();
+    });
+
+    it('should explode all meteors when a nuke power-up is collected', () => {
+      const ship = createMockShip();
+      const nuke = createMockPowerUp({ speed: 0, shot: 0, energy: 0, nuke: true });
+      const meteor1 = createMockMeteor();
+      const meteor2 = createMockMeteor();
+      objectService.add(meteor1 as never);
+      objectService.add(meteor2 as never);
+
+      objectService.triggerCallbacks(nuke, ship);
+
+      expect((meteor1 as unknown as { explode: jasmine.Spy }).explode).toHaveBeenCalled();
+      expect((meteor2 as unknown as { explode: jasmine.Spy }).explode).toHaveBeenCalled();
+    });
+
+    it('should NOT trigger nuke when collected by a non-ship object', () => {
+      const enemy = {
+        type: ObjectType.enemy,
+        destroying: false,
+        destroyed: false,
+        reference: undefined,
+        energy: 1,
+        power: 1,
+      } as unknown as ObjectModelType;
+      const nuke = createMockPowerUp({ speed: 0, shot: 0, energy: 0, nuke: true });
+      const targetEnemy = createMockEnemy();
+      objectService.add(targetEnemy as never);
+
+      objectService.triggerCallbacks(nuke, enemy);
+
+      expect((targetEnemy as unknown as { explode: jasmine.Spy }).explode).not.toHaveBeenCalled();
+    });
+
+    it('should NOT explode nuke targets when nuke field is absent', () => {
+      const ship = createMockShip();
+      const powerUp = createMockPowerUp({ speed: 0.1, shot: 0, energy: 0 });
+      const enemy = createMockEnemy();
+      objectService.add(enemy as never);
+
+      objectService.triggerCallbacks(powerUp, ship);
+
+      expect((enemy as unknown as { explode: jasmine.Spy }).explode).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe('GameCollectableService - update (off-screen cleanup)', () => {
   let objectService: ObjectService;
   let collectableService: GameCollectableService;
-
-  const SCREEN_HEIGHT = 600;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -186,14 +281,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
         GameCollectableService,
         {
           provide: ApplicationService,
-          useValue: {
-            stage: { addChild: jasmine.createSpy('addChild') },
-            screen: { height: SCREEN_HEIGHT },
-            ticker: {
-              add: jasmine.createSpy('add'),
-              remove: jasmine.createSpy('remove'),
-            },
-          },
+          useValue: buildApplicationServiceMock(),
         },
       ],
     });
@@ -219,7 +307,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
   }
 
   it('should destroy a collectable that has fallen below the screen (y > screenHeight + OFF_SCREEN_BUFFER)', () => {
-    const collectable = createMockCollectable(SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1);
+    const collectable = createMockCollectable(MOCK_SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1);
     objectService.add(collectable as never);
 
     collectableService.update();
@@ -240,7 +328,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
   });
 
   it('should NOT destroy a collectable exactly at the boundary (y === screenHeight + OFF_SCREEN_BUFFER)', () => {
-    const collectable = createMockCollectable(SCREEN_HEIGHT + OFF_SCREEN_BUFFER);
+    const collectable = createMockCollectable(MOCK_SCREEN_HEIGHT + OFF_SCREEN_BUFFER);
     objectService.add(collectable as never);
 
     collectableService.update();
@@ -250,7 +338,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
   });
 
   it('should destroy all off-screen collectables and leave on-screen ones intact', () => {
-    const offScreen = createMockCollectable(SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1);
+    const offScreen = createMockCollectable(MOCK_SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1);
     // eslint-disable-next-line no-magic-numbers
     const onScreen = createMockCollectable(400);
     objectService.add(offScreen as never);

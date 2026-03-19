@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { Assets, Spritesheet, Texture } from 'pixi.js';
-import { GAME_CONFIG, OFF_SCREEN_BUFFER } from '../game-constants';
+import { Assets, Graphics, Spritesheet, Text, TextStyle, Texture } from 'pixi.js';
+import { gsap } from 'gsap';
+import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
@@ -11,17 +12,15 @@ interface Dictionary<T> {
   [key: string]: T;
 }
 
-function collectPowerUp(object: ObjectModelType, by: ObjectModelType): void {
-  if (by.type !== ObjectType.ship) {
-    return;
-  }
-  const ship = by as unknown as Ship;
-  const powerUp = object as unknown as PowerUpSprite;
-  ship.shotSpeed += powerUp.config.powerUp.speed;
-  ship.shotPower += powerUp.config.powerUp.shot;
-  ship.energy += powerUp.config.powerUp.energy;
-  ship.shieldTicks += powerUp.config.powerUp.shield ?? 0;
-}
+const NUKE_FLASH_ALPHA = 0.9;
+const NUKE_FLASH_DURATION_S = 0.5;
+const NUKE_FONT_SIZE = 48;
+const NUKE_STROKE_WIDTH = 6;
+const NUKE_TEXT_DISPLAY_MS = 1500;
+const NUKE_TEXT_FADE_S = 0.4;
+const NUKE_FLASH_COLOR = 0xffffff;
+const NUKE_TEXT_COLOR = 0xff6600;
+const CENTER_DIVISOR = 2;
 
 @Injectable()
 export class GameCollectableService extends UpdatableService {
@@ -33,7 +32,7 @@ export class GameCollectableService extends UpdatableService {
     super();
 
     this.object.onDestroyed(ObjectType.enemy, (enemy, by) => this.spawn(enemy, by));
-    this.object.onDestroyed(ObjectType.collectable, (powerUp, by) => collectPowerUp(powerUp, by));
+    this.object.onDestroyed(ObjectType.collectable, (powerUp, by) => this.collectPowerUp(powerUp, by));
   }
 
   async init(): Promise<void> {
@@ -51,6 +50,74 @@ export class GameCollectableService extends UpdatableService {
       .collectables()
       .filter((collectable) => collectable.y > this.application.screen.height + OFF_SCREEN_BUFFER)
       .forEach((collectable) => collectable.destroy());
+  }
+
+  private collectPowerUp(object: ObjectModelType, by: ObjectModelType): void {
+    if (by.type !== ObjectType.ship) {
+      return;
+    }
+    const ship = by as unknown as Ship;
+    const powerUp = object as unknown as PowerUpSprite;
+    ship.shotSpeed += powerUp.config.powerUp.speed;
+    ship.shotPower += powerUp.config.powerUp.shot;
+    ship.energy += powerUp.config.powerUp.energy;
+    ship.shieldTicks += powerUp.config.powerUp.shield ?? 0;
+
+    if (powerUp.config.powerUp.nuke === true) {
+      this.applyNuke(by);
+    }
+  }
+
+  private applyNuke(ship: ObjectModelType): void {
+    [...this.object.enemies(), ...this.object.meteors()].forEach((target) => {
+      target.explode();
+      this.object.triggerCallbacks(target, ship);
+    });
+
+    const flash = new Graphics();
+    flash.fill(NUKE_FLASH_COLOR);
+    flash.rect(0, 0, this.application.screen.width, this.application.screen.height);
+    flash.fill();
+    flash.alpha = NUKE_FLASH_ALPHA;
+    this.application.stage.addChild(flash);
+    void gsap.to(flash, {
+      alpha: 0,
+      duration: NUKE_FLASH_DURATION_S,
+      onComplete: () => {
+        flash.parent?.removeChild(flash);
+        flash.destroy();
+      },
+    });
+
+    const text = new Text({
+      text: '☢ NUKE! ☢',
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: NUKE_FONT_SIZE,
+        fontWeight: 'bold',
+        fill: NUKE_TEXT_COLOR,
+        stroke: {
+          color: NUKE_FLASH_COLOR,
+          width: NUKE_STROKE_WIDTH,
+        },
+        align: 'center',
+      }),
+    });
+    text.anchor.set(THE_MIDDLE);
+    text.x = this.application.screen.width / CENTER_DIVISOR;
+    text.y = this.application.screen.height / CENTER_DIVISOR;
+    this.application.stage.addChild(text);
+
+    setTimeout(() => {
+      void gsap.to(text, {
+        alpha: 0,
+        duration: NUKE_TEXT_FADE_S,
+        onComplete: () => {
+          text.parent?.removeChild(text);
+          text.destroy();
+        },
+      });
+    }, NUKE_TEXT_DISPLAY_MS);
   }
 
   private spawn({ x, y }: ObjectModelType, { type, reference }: ObjectModelType): void {

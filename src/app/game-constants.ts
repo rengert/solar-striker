@@ -117,5 +117,18 @@ export const GAME_CONFIG: GameConfig = {
         shield: SHIELD_DURATION_MS,
       },
     },
+    {
+      type: PowerUp.nuke,
+      assetUrl: 'assets/game/powerups/bolt/bolt.json',
+      animationName: 'bolt',
+      // eslint-disable-next-line no-magic-numbers
+      tint: 0xff4400,
+      powerUp: {
+        speed: 0,
+        shot: 0,
+        energy: 0,
+        nuke: true,
+      },
+    },
   ],
 };
