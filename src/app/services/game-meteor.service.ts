@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Texture, Ticker } from 'pixi.js';
-import { GAME_CONFIG } from '../game-constants';
+import { GAME_CONFIG, OFF_SCREEN_BUFFER } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
 import { ExplosionService } from './explosion.service';
@@ -23,8 +23,7 @@ export class GameMeteorService extends UpdatableService {
 
     this.object
       .meteors()
-      // eslint-disable-next-line no-magic-numbers
-      .filter((meteor) => meteor.y > this.application.screen.height + 50)
+      .filter((meteor) => meteor.y > this.application.screen.height + OFF_SCREEN_BUFFER)
       .forEach((meteor) => meteor.destroy());
 
     const check = Math.floor(this.elapsed);
