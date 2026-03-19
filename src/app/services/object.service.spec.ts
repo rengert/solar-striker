@@ -72,6 +72,26 @@ describe('ObjectService', () => {
       expect(service.meteors().length).toBe(1);
     });
 
+    it('should make added rockets visible in rockets() computed signal', () => {
+      const rocket = createMockObject(ObjectType.rocket);
+
+      expect(service.rockets().length).toBe(0);
+
+      service.add(rocket as never);
+
+      expect(service.rockets().length).toBe(1);
+    });
+
+    it('should make added collectables visible in collectables() computed signal', () => {
+      const collectable = createMockObject(ObjectType.collectable);
+
+      expect(service.collectables().length).toBe(0);
+
+      service.add(collectable as never);
+
+      expect(service.collectables().length).toBe(1);
+    });
+
     it('should accumulate multiple added objects', () => {
       service.add(createMockObject(ObjectType.enemy) as never);
       service.add(createMockObject(ObjectType.enemy) as never);

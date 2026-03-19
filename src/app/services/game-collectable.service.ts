@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture } from 'pixi.js';
-import { GAME_CONFIG } from '../game-constants';
+import { GAME_CONFIG, OFF_SCREEN_BUFFER } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
@@ -47,7 +47,10 @@ export class GameCollectableService extends UpdatableService {
   }
 
   update(): void {
-    //
+    this.object
+      .collectables()
+      .filter((collectable) => collectable.y > this.application.screen.height + OFF_SCREEN_BUFFER)
+      .forEach((collectable) => collectable.destroy());
   }
 
   private spawn({ x, y }: ObjectModelType, { type, reference }: ObjectModelType): void {

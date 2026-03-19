@@ -63,6 +63,7 @@ export class GameService {
     this.enemy,
     this.ship,
     this.meteor,
+    this.shotService,
     this.object,
     this.gameScreen,
   ];

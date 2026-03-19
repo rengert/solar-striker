@@ -1,18 +1,17 @@
 /* eslint-disable no-magic-numbers */
 import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture } from 'pixi.js';
-import { GAME_CONFIG } from '../game-constants';
+import { GAME_CONFIG, OFF_SCREEN_BUFFER } from '../game-constants';
 import { Rocket } from '../models/pixijs/rocket';
 import { Ship } from '../models/pixijs/ship';
-import { ApplicationService } from './application.service';
 import { ExplosionService } from './explosion.service';
 import { ObjectService } from './object.service';
+import { UpdatableService } from './updatable.service';
 
 @Injectable()
-export class GameShotService {
+export class GameShotService extends UpdatableService {
   private laserAnimation: Texture[] | undefined;
 
-  private readonly application = inject(ApplicationService);
   private readonly explosionService = inject(ExplosionService);
   private readonly object = inject(ObjectService);
 
@@ -53,6 +52,9 @@ export class GameShotService {
   }
 
   update(): void {
-    //
+    this.object
+      .rockets()
+      .filter((rocket) => rocket.y < -OFF_SCREEN_BUFFER || rocket.y > this.application.screen.height + OFF_SCREEN_BUFFER)
+      .forEach((rocket) => rocket.destroy());
   }
 }

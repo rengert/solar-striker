@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
-import { GAME_CONFIG, THE_MIDDLE } from '../game-constants';
+import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { AnimatedGameSprite, LoopData } from '../models/pixijs/animated-game-sprite';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
@@ -107,8 +107,7 @@ export class GameEnemyService extends UpdatableService {
     const enemies = this.object.enemies();
 
     enemies
-      // eslint-disable-next-line no-magic-numbers
-      .filter((enemy) => enemy.y > this.application.screen.height + 50)
+      .filter((enemy) => enemy.y > this.application.screen.height + OFF_SCREEN_BUFFER)
       .forEach((enemy) => {
         enemy.y = 0;
         enemy.targetX = undefined;

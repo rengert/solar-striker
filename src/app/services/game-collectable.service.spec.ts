@@ -3,7 +3,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameCollectableService } from './game-collectable.service';
-import { SHIELD_DURATION_MS } from '../game-constants';
+import { OFF_SCREEN_BUFFER, SHIELD_DURATION_MS } from '../game-constants';
 
 function createMockShip(overrides: Record<string, unknown> = {}): ObjectModelType {
   return {
@@ -51,6 +51,7 @@ describe('GameCollectableService - collectPowerUp', () => {
           provide: ApplicationService,
           useValue: {
             stage: { addChild: jasmine.createSpy('addChild') },
+            screen: { height: 600 },
             ticker: {
               add: jasmine.createSpy('add'),
               remove: jasmine.createSpy('remove'),
@@ -169,6 +170,98 @@ describe('GameCollectableService - collectPowerUp', () => {
     objectService.triggerCallbacks(powerUp, enemy);
 
     expect((enemy as unknown as { shieldTicks: number }).shieldTicks).toBe(0);
+  });
+});
+
+describe('GameCollectableService - update (off-screen cleanup)', () => {
+  let objectService: ObjectService;
+  let collectableService: GameCollectableService;
+
+  const SCREEN_HEIGHT = 600;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        ObjectService,
+        GameCollectableService,
+        {
+          provide: ApplicationService,
+          useValue: {
+            stage: { addChild: jasmine.createSpy('addChild') },
+            screen: { height: SCREEN_HEIGHT },
+            ticker: {
+              add: jasmine.createSpy('add'),
+              remove: jasmine.createSpy('remove'),
+            },
+          },
+        },
+      ],
+    });
+
+    objectService = TestBed.inject(ObjectService);
+    collectableService = TestBed.inject(GameCollectableService);
+  });
+
+  function createMockCollectable(y: number): ObjectModelType {
+    const collectable: Record<string, unknown> = {
+      type: ObjectType.collectable,
+      destroying: false,
+      destroyed: false,
+      reference: undefined,
+      energy: 0,
+      power: 0,
+      y,
+      destroy: jasmine.createSpy('destroy').and.callFake(() => {
+        collectable['destroyed'] = true;
+      }),
+    };
+    return collectable as unknown as ObjectModelType;
+  }
+
+  it('should destroy a collectable that has fallen below the screen (y > screenHeight + OFF_SCREEN_BUFFER)', () => {
+    const collectable = createMockCollectable(SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1);
+    objectService.add(collectable as never);
+
+    collectableService.update();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((collectable as any).destroy).toHaveBeenCalled();
+  });
+
+  it('should NOT destroy a collectable that is still on-screen', () => {
+    // eslint-disable-next-line no-magic-numbers
+    const collectable = createMockCollectable(300);
+    objectService.add(collectable as never);
+
+    collectableService.update();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((collectable as any).destroy).not.toHaveBeenCalled();
+  });
+
+  it('should NOT destroy a collectable exactly at the boundary (y === screenHeight + OFF_SCREEN_BUFFER)', () => {
+    const collectable = createMockCollectable(SCREEN_HEIGHT + OFF_SCREEN_BUFFER);
+    objectService.add(collectable as never);
+
+    collectableService.update();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((collectable as any).destroy).not.toHaveBeenCalled();
+  });
+
+  it('should destroy all off-screen collectables and leave on-screen ones intact', () => {
+    const offScreen = createMockCollectable(SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1);
+    // eslint-disable-next-line no-magic-numbers
+    const onScreen = createMockCollectable(400);
+    objectService.add(offScreen as never);
+    objectService.add(onScreen as never);
+
+    collectableService.update();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((offScreen as any).destroy).toHaveBeenCalled();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((onScreen as any).destroy).not.toHaveBeenCalled();
   });
 });
 

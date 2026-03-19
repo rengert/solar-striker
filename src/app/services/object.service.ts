@@ -17,6 +17,8 @@ export class ObjectService extends UpdatableService {
   readonly objects = computed(() => this.#objects().filter((object) => !object.destroyed));
   readonly enemies = computed(() => this.objects().filter(filterBy(ObjectType.enemy)));
   readonly meteors = computed(() => this.objects().filter(filterBy(ObjectType.meteor)));
+  readonly rockets = computed(() => this.objects().filter(filterBy(ObjectType.rocket)));
+  readonly collectables = computed(() => this.objects().filter(filterBy(ObjectType.collectable)));
 
   private readonly destroyedCallbacks = new Map<ObjectType, DestroyedCallback[]>();
 
