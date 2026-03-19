@@ -10,5 +10,6 @@ export interface PowerUpConfig {
     shot: number;
     energy: number;
     shield?: number;
+    nuke?: boolean;
   };
 }
