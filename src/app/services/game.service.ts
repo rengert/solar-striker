@@ -173,6 +173,7 @@ export class GameService {
 
     this.ship.instance.autoFire = false;
     this.#paused.set(true);
+    this.application.ticker.stop();
     await this.presentPopup(PausePopup);
   }
 
@@ -180,6 +181,7 @@ export class GameService {
     await this.hideAndRemoveScreen(requester);
     this.currentPopup = undefined;
     this.#paused.set(false);
+    this.application.ticker.start();
   }
 
   async openNavigation(requester: AppScreen): Promise<void> {
