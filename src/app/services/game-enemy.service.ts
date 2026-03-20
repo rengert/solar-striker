@@ -44,6 +44,7 @@ const LARGE_ENEMY_ENERGY_MULTIPLIER = 3;
 const LARGE_ENEMY_SPEED_MULTIPLIER = 1.5;
 const LARGE_ENEMY_SHOT_SPEED = 0.8;
 const LARGE_ENEMY_XSPEED = 0.08;
+const LARGE_ENEMY_EXPLOSION_COUNT = 3;
 
 const BOSS_LEVEL_INTERVAL =
   GAME_CONFIG.boss.killsInterval * GAME_CONFIG.killLevelFactor;
@@ -60,6 +61,7 @@ const BOSS_SWEEP_MARGIN = 30;
 const BOSS_SWEEP_INTERVAL_MS = 3000;
 const BOSS_MINIMUM_LEVEL = 2;
 const BOSS_SCREEN_CENTER_DIVIDER = 2;
+const BOSS_EXPLOSION_COUNT = 5;
 const ENEMY_ANIMATION_SPEED = 0.167;
 
 interface EnemyMovementState {
@@ -159,6 +161,7 @@ export class GameEnemyService extends UpdatableService {
       enemy.energy = largeEnergy;
       enemy.shotSpeed = LARGE_ENEMY_SHOT_SPEED;
       enemy.xSpeed = LARGE_ENEMY_XSPEED * speedVariation;
+      enemy.explosionCount = LARGE_ENEMY_EXPLOSION_COUNT;
     } else {
       enemy.xSpeed = ENEMY_XSPEED * speedVariation;
       enemy.maxEnergy = levelEnergy;
@@ -247,6 +250,7 @@ export class GameEnemyService extends UpdatableService {
     boss.shotSpeed = BOSS_SHOT_SPEED;
     boss.shotPower = BOSS_SHOT_POWER;
     boss.xSpeed = BOSS_XSPEED;
+    boss.explosionCount = BOSS_EXPLOSION_COUNT;
     // eslint-disable-next-line no-magic-numbers
     boss.tint = BOSS_TINT;
     boss.x = this.application.screen.width / BOSS_SCREEN_CENTER_DIVIDER;

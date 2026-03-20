@@ -7,6 +7,17 @@ import { ObjectType } from './object-type.enum';
 // eslint-disable-next-line no-magic-numbers
 const TWO_PI = Math.PI * 2;
 
+const MULTI_EXPLOSION_OFFSET_FRACTION = 0.4;
+const HALF_DIVISOR = 2;
+export const MULTI_EXPLOSION_INTERVAL_MS = 150;
+
+interface ChainExplosionCenter {
+  readonly x: number;
+  readonly y: number;
+  readonly halfW: number;
+  readonly halfH: number;
+}
+
 export interface LoopData {
   readonly startX: number;
   readonly startY: number;
@@ -22,6 +33,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   isBoss = false;
   reference: ObjectModelType | undefined;
   destroying = false;
+  explosionCount = 1;
   targetX?: number;
   xSpeed: number = 1;
   loopData: LoopData | undefined;
@@ -36,7 +48,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
 
   constructor(
     readonly type: ObjectType,
-    private readonly explosion: ExplosionService | null,
+    protected readonly explosion: ExplosionService | null,
     speed: number,
     textures: Texture[] | FrameObject[],
   ) {
@@ -95,8 +107,34 @@ export class AnimatedGameSprite extends AnimatedSprite {
   }
 
   explode(): void {
-    void this.explosion?.explode(this.x, this.y);
+    if (this.explosionCount > 1) {
+      const center: ChainExplosionCenter = {
+        x: this.x,
+        y: this.y,
+        halfW: this.width / HALF_DIVISOR,
+        halfH: this.height / HALF_DIVISOR,
+      };
+      void this.triggerChainExplosion(center, this.explosionCount);
+    } else {
+      void this.explosion?.explode(this.x, this.y);
+    }
     this.destroying = true;
+  }
+
+  private async triggerChainExplosion(
+    center: ChainExplosionCenter,
+    count: number,
+  ): Promise<void> {
+    for (let i = 0; i < count; i++) {
+      if (i > 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, MULTI_EXPLOSION_INTERVAL_MS));
+      }
+      // eslint-disable-next-line no-magic-numbers
+      const offsetX = (Math.random() * 2 - 1) * center.halfW * MULTI_EXPLOSION_OFFSET_FRACTION;
+      // eslint-disable-next-line no-magic-numbers
+      const offsetY = (Math.random() * 2 - 1) * center.halfH * MULTI_EXPLOSION_OFFSET_FRACTION;
+      void this.explosion?.explode(center.x + offsetX, center.y + offsetY);
+    }
   }
 
   override update(ticker: Ticker): void {
