@@ -34,6 +34,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   reference: ObjectModelType | undefined;
   destroying = false;
   explosionCount = 1;
+  explosionScale = 1;
   targetX?: number;
   xSpeed: number = 1;
   loopData: LoopData | undefined;
@@ -116,7 +117,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
       };
       void this.triggerChainExplosion(center, this.explosionCount);
     } else {
-      void this.explosion?.explode(this.x, this.y);
+      void this.explosion?.explode(this.x, this.y, this.explosionScale);
     }
     this.destroying = true;
   }
@@ -133,7 +134,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
       const offsetX = (Math.random() * 2 - 1) * center.halfW * MULTI_EXPLOSION_OFFSET_FRACTION;
       // eslint-disable-next-line no-magic-numbers
       const offsetY = (Math.random() * 2 - 1) * center.halfH * MULTI_EXPLOSION_OFFSET_FRACTION;
-      void this.explosion?.explode(center.x + offsetX, center.y + offsetY);
+      void this.explosion?.explode(center.x + offsetX, center.y + offsetY, this.explosionScale);
     }
   }
 
