@@ -47,6 +47,8 @@ describe('GameService', () => {
             ticker: {
               add: jasmine.createSpy('add'),
               remove: jasmine.createSpy('remove'),
+              stop: jasmine.createSpy('stop'),
+              start: jasmine.createSpy('start'),
             },
             screen: { width: 800, height: 600 },
           },
@@ -177,6 +179,7 @@ describe('GameService', () => {
 
   describe('pause state', () => {
     let presentPopupSpy: jasmine.Spy;
+    let tickerMock: { add: jasmine.Spy; remove: jasmine.Spy; stop: jasmine.Spy; start: jasmine.Spy };
 
     beforeEach(() => {
       // Prevent popup construction (which requires PixiJS textures) from interfering
@@ -185,6 +188,7 @@ describe('GameService', () => {
         service as unknown as { presentPopup: () => Promise<void> },
         'presentPopup',
       ).and.returnValue(Promise.resolve());
+      tickerMock = TestBed.inject(ApplicationService).ticker as unknown as typeof tickerMock;
     });
 
     it('should report paused as false initially', () => {
@@ -216,6 +220,24 @@ describe('GameService', () => {
       await service.pause();
       await service.resume({} as AppScreen);
       expect(service.paused()).toBe(false);
+    });
+
+    it('should stop the ticker when pause() is called during an active game', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      expect(tickerMock.stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not stop the ticker when game is not started', async () => {
+      await service.pause();
+      expect(tickerMock.stop).not.toHaveBeenCalled();
+    });
+
+    it('should start the ticker when resume() is called', async () => {
+      await service.start({} as AppScreen);
+      await service.pause();
+      await service.resume({} as AppScreen);
+      expect(tickerMock.start).toHaveBeenCalledTimes(1);
     });
   });
 
