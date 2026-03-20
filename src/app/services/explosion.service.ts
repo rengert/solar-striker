@@ -11,6 +11,7 @@ export class ExplosionService {
   async explode(
     x: number,
     y: number,
+    scale = 1,
     oncomplete: (explosion: AnimatedSprite) => void = (): void => {},
   ): Promise<void> {
     // explode
@@ -20,6 +21,7 @@ export class ExplosionService {
     explosion.loop = false;
     explosion.x = x;
     explosion.y = y;
+    explosion.scale.set(scale);
     // eslint-disable-next-line no-magic-numbers
     explosion.rotation = Math.random() * 360;
     explosion.onComplete = (): void => {
