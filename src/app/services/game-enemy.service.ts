@@ -158,9 +158,9 @@ export class GameEnemyService extends UpdatableService {
       enemy.maxEnergy = largeEnergy;
       enemy.energy = largeEnergy;
       enemy.shotSpeed = LARGE_ENEMY_SHOT_SPEED;
-      enemy.xSpeed = LARGE_ENEMY_XSPEED;
+      enemy.xSpeed = LARGE_ENEMY_XSPEED * speedVariation;
     } else {
-      enemy.xSpeed = ENEMY_XSPEED;
+      enemy.xSpeed = ENEMY_XSPEED * speedVariation;
       enemy.maxEnergy = levelEnergy;
       enemy.energy = levelEnergy;
     }
