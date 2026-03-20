@@ -6,6 +6,7 @@ export const THE_MIDDLE = 0.5;
 export const LARGE_POP_UP_HEIGHT = 420;
 export const SHIELD_DURATION_MS = 5000;
 export const OFF_SCREEN_BUFFER = 50;
+export const MAX_SHOT_POWER = 3;
 
 interface Config {
   powerUpConfig: PowerUpConfig[];

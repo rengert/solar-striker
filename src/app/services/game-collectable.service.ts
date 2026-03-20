@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Graphics, Spritesheet, Text, TextStyle, Texture } from 'pixi.js';
 import { gsap } from 'gsap';
-import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
+import { GAME_CONFIG, MAX_SHOT_POWER, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
@@ -59,7 +59,7 @@ export class GameCollectableService extends UpdatableService {
     const ship = by as unknown as Ship;
     const powerUp = object as unknown as PowerUpSprite;
     ship.shotSpeed += powerUp.config.powerUp.speed;
-    ship.shotPower += powerUp.config.powerUp.shot;
+    ship.shotPower = Math.min(ship.shotPower + powerUp.config.powerUp.shot, MAX_SHOT_POWER);
     ship.energy += powerUp.config.powerUp.energy;
     ship.shieldTicks += powerUp.config.powerUp.shield ?? 0;
 

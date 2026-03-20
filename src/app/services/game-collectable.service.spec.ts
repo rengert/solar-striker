@@ -3,7 +3,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameCollectableService } from './game-collectable.service';
-import { OFF_SCREEN_BUFFER, SHIELD_DURATION_MS } from '../game-constants';
+import { MAX_SHOT_POWER, OFF_SCREEN_BUFFER, SHIELD_DURATION_MS } from '../game-constants';
 
 const MOCK_SCREEN_HEIGHT = 600;
 const MOCK_SCREEN_WIDTH = 400;
@@ -122,6 +122,25 @@ describe('GameCollectableService - collectPowerUp', () => {
 
     // eslint-disable-next-line no-magic-numbers
     expect((ship as unknown as { shotPower: number }).shotPower).toBe(2);
+  });
+
+  it('should NOT increase ship.shotPower beyond MAX_SHOT_POWER', () => {
+    const ship = createMockShip({ shotPower: MAX_SHOT_POWER });
+    const powerUp = createMockPowerUp({ speed: 0, shot: 1, energy: 0 });
+
+    objectService.triggerCallbacks(powerUp, ship);
+
+    expect((ship as unknown as { shotPower: number }).shotPower).toBe(MAX_SHOT_POWER);
+  });
+
+  it('should cap ship.shotPower at MAX_SHOT_POWER when collecting multiple shot power-ups', () => {
+    const ship = createMockShip({ shotPower: MAX_SHOT_POWER - 1 });
+    const powerUp = createMockPowerUp({ speed: 0, shot: 1, energy: 0 });
+
+    objectService.triggerCallbacks(powerUp, ship);
+    objectService.triggerCallbacks(powerUp, ship);
+
+    expect((ship as unknown as { shotPower: number }).shotPower).toBe(MAX_SHOT_POWER);
   });
 
   it('should increase ship.energy and ship.shotSpeed when a pill power-up is collected', () => {
