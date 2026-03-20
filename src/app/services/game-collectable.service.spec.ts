@@ -267,6 +267,44 @@ describe('GameCollectableService - collectPowerUp', () => {
 
       expect((enemy as unknown as { explode: jasmine.Spy }).explode).not.toHaveBeenCalled();
     });
+
+    it('should NOT explode enemies that are already destroying when nuke is collected', () => {
+      const ship = createMockShip();
+      const nuke = createMockPowerUp({ speed: 0, shot: 0, energy: 0, nuke: true });
+      const destroyingEnemy: Record<string, unknown> = {
+        type: ObjectType.enemy,
+        destroying: true,
+        destroyed: false,
+        reference: undefined,
+        energy: 0,
+        power: 1,
+        explode: jasmine.createSpy('explode'),
+      };
+      objectService.add(destroyingEnemy as never);
+
+      objectService.triggerCallbacks(nuke, ship);
+
+      expect((destroyingEnemy as unknown as { explode: jasmine.Spy }).explode).not.toHaveBeenCalled();
+    });
+
+    it('should NOT explode enemies that are already destroyed when nuke is collected', () => {
+      const ship = createMockShip();
+      const nuke = createMockPowerUp({ speed: 0, shot: 0, energy: 0, nuke: true });
+      const destroyedEnemy: Record<string, unknown> = {
+        type: ObjectType.enemy,
+        destroying: false,
+        destroyed: true,
+        reference: undefined,
+        energy: 0,
+        power: 1,
+        explode: jasmine.createSpy('explode'),
+      };
+      objectService.add(destroyedEnemy as never);
+
+      objectService.triggerCallbacks(nuke, ship);
+
+      expect((destroyedEnemy as unknown as { explode: jasmine.Spy }).explode).not.toHaveBeenCalled();
+    });
   });
 });
 

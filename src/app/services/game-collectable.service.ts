@@ -69,10 +69,12 @@ export class GameCollectableService extends UpdatableService {
   }
 
   private applyNuke(ship: ObjectModelType): void {
-    [...this.object.enemies(), ...this.object.meteors()].forEach((target) => {
-      target.explode();
-      this.object.triggerCallbacks(target, ship);
-    });
+    [...this.object.enemies(), ...this.object.meteors()]
+      .filter((target) => !target.destroying && !target.destroyed)
+      .forEach((target) => {
+        target.explode();
+        this.object.triggerCallbacks(target, ship);
+      });
 
     const flash = new Graphics();
     flash.fill(NUKE_FLASH_COLOR);
