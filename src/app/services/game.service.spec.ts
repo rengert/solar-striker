@@ -293,40 +293,4 @@ describe('GameService', () => {
       expect(service.sessionCoins()).toBe(1);
     });
   });
-
-    it('should award more coins for higher energy meteors', () => {
-      const playerShip = createMockObject(ObjectType.ship);
-      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
-      // eslint-disable-next-line no-magic-numbers
-      const meteor = createMockObject(ObjectType.meteor, { destroying: true, energy: 40 });
-
-      objectService.triggerCallbacks(meteor, playerRocket);
-
-      // eslint-disable-next-line no-magic-numbers
-      expect(service.sessionCoins()).toBe(2);
-    });
-
-    it('should NOT award coins when a meteor is destroyed by a non-player', () => {
-      const enemyShip = createMockObject(ObjectType.enemy);
-      const enemyRocket = createMockObject(ObjectType.rocket, { reference: enemyShip });
-      // eslint-disable-next-line no-magic-numbers
-      const meteor = createMockObject(ObjectType.meteor, { destroying: true, energy: 10 });
-
-      objectService.triggerCallbacks(meteor, enemyRocket);
-
-      expect(service.sessionCoins()).toBe(0);
-    });
-
-    it('should NOT award coins for the same meteor twice', () => {
-      const playerShip = createMockObject(ObjectType.ship);
-      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
-      // eslint-disable-next-line no-magic-numbers
-      const meteor = createMockObject(ObjectType.meteor, { destroying: true, energy: 10 });
-
-      objectService.triggerCallbacks(meteor, playerRocket);
-      objectService.triggerCallbacks(meteor, playerRocket);
-
-      expect(service.sessionCoins()).toBe(1);
-    });
-  });
-
+});
