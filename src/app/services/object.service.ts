@@ -73,8 +73,19 @@ export class ObjectService extends UpdatableService {
     }
 
     this.#objects.update((current) => {
-      const filtered = current.filter((object) => !object.destroyed);
-      return filtered.length === current.length ? current : filtered;
+      let hasDestroyed = false;
+      for (let i = 0; i < current.length; i++) {
+        if (current[i].destroyed) {
+          hasDestroyed = true;
+          break;
+        }
+      }
+
+      if (!hasDestroyed) {
+        return current;
+      }
+
+      return current.filter((object) => !object.destroyed);
     });
   }
 
