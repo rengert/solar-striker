@@ -129,6 +129,9 @@ export class AnimatedGameSprite extends AnimatedSprite {
     for (let i = 0; i < count; i++) {
       if (i > 0) {
         await new Promise<void>((resolve) => setTimeout(resolve, MULTI_EXPLOSION_INTERVAL_MS));
+        if (this.destroyed) {
+          return;
+        }
       }
       // eslint-disable-next-line no-magic-numbers
       const offsetX = (Math.random() * 2 - 1) * center.halfW * MULTI_EXPLOSION_OFFSET_FRACTION;

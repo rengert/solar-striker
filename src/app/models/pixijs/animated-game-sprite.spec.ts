@@ -90,6 +90,22 @@ describe('AnimatedGameSprite - explode()', () => {
     expect(sprite.destroying).toBeTrue();
   });
 
+  it('should stop chain explosions if the sprite is destroyed mid-chain', (done) => {
+    const explosionService = createMockExplosionService();
+    const sprite = createSprite(explosionService, LARGE_EXPLOSION_COUNT);
+
+    sprite.explode();
+    // Destroy the sprite immediately after triggering the chain; subsequent
+    // delayed explosions must not fire.
+    sprite.destroy();
+
+    const totalDelayMs = MULTI_EXPLOSION_INTERVAL_MS * (LARGE_EXPLOSION_COUNT - 1) + EXPLOSION_TIMER_BUFFER_MS;
+    setTimeout(() => {
+      expect(explosionService.explode).toHaveBeenCalledTimes(1);
+      done();
+    }, totalDelayMs);
+  });
+
   it('should default explosionCount to 1', () => {
     const sprite = new AnimatedGameSprite(ObjectType.enemy, null, 1, [Texture.EMPTY]);
 

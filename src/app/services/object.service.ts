@@ -72,7 +72,10 @@ export class ObjectService extends UpdatableService {
       object.destroy();
     }
 
-    this.#objects.update((current) => current.filter((object) => !object.destroyed));
+    this.#objects.update((current) => {
+      const filtered = current.filter((object) => !object.destroyed);
+      return filtered.length === current.length ? current : filtered;
+    });
   }
 
   add(object: AnimatedGameSprite | GameSprite): void {

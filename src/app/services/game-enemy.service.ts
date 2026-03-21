@@ -115,6 +115,10 @@ export class GameEnemyService extends UpdatableService {
       .forEach((enemy) => {
         enemy.y = 0;
         enemy.targetX = undefined;
+        enemy.rotation = 0;
+        if (enemy instanceof Ship) {
+          enemy.energy = enemy.maxEnergy;
+        }
         if (enemy instanceof AnimatedGameSprite) {
           enemy.loopData = undefined;
         }
