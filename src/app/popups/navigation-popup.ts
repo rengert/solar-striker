@@ -4,10 +4,19 @@ import { version } from '../version';
 import { Popup } from './popup';
 
 const POPUP_HEIGHT = 250;
+// eslint-disable-next-line no-magic-numbers
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const DAILY_SURPRISE_ICONS = ['✨', '🚀', '☄️'] as const;
+
+export function getDailySurpriseIcon(now: Date = new Date()): string {
+  const daySinceEpoch = Math.floor(now.getTime() / DAY_IN_MS);
+  const index = daySinceEpoch % DAILY_SURPRISE_ICONS.length;
+  return DAILY_SURPRISE_ICONS[index];
+}
 
 export class NavigationPopup extends Popup {
   constructor(gameService: GameService, translation: TranslationService) {
-    super(translation.getTranslation('app.title'), POPUP_HEIGHT);
+    super(`${translation.getTranslation('app.title')} ${getDailySurpriseIcon()}`, POPUP_HEIGHT);
 
     const buttonIndex = {
       start: 0,
