@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, OnDestroy } from '@angular/core';
 import { Container, FederatedPointerEvent, Graphics, Text, TextStyle } from 'pixi.js';
 import { gsap } from 'gsap';
 import { fontAwesomeStyle, icons } from '../style-constants';
@@ -25,10 +25,28 @@ const FLOAT_POP_DURATION = 0.9;
 const FLOAT_UP_DISTANCE = 40;
 const HUD_LABEL_SPACING = 8;
 const COMBO_POP_START_SCALE = 1.4;
+// Health animation & flash constants
+const HEALTH_TWEEN_DURATION = 0.25;
+const DAMAGE_FLASH_DURATION = 0.12;
+const LOW_HEALTH_THRESHOLD = 30; // percent
+const PULSE_DURATION = 0.6;
+const PULSE_SCALE = 1.15;
+const MIN_HEALTH_DELTA = 0.05;
 
 @Injectable()
-export class GameScreenService extends UpdatableService {
+export class GameScreenService extends UpdatableService implements OnDestroy {
   readonly #ship = inject(GameShipService);
+
+  // health animation fields
+  // inferred from previous width (100px / 10)
+  // eslint-disable-next-line @typescript-eslint/naming-convention, no-magic-numbers
+  private readonly maxHealthUnits = 10;
+  private lastHealth = 0;
+  private isPulsing = false;
+  private healthTween?: ReturnType<typeof gsap.to>;
+  private pulseTween?: ReturnType<typeof gsap.to>;
+  private damageFlashTween?: ReturnType<typeof gsap.to>;
+  private damageOverlay?: Graphics;
 
   private readonly points = new Text({ text: `${icons.points}  0000000`, style: fontAwesomeStyle });
   private readonly coinLabel = new Text({ text: `${icons.coin}  0000000`, style: fontAwesomeStyle });
@@ -105,8 +123,45 @@ export class GameScreenService extends UpdatableService {
   }
 
   private set lifes(value: number) {
+    // Smoothly animate health bar using scale.x instead of directly setting width.
+    if (!this.lifesLabel) {
+      return;
+    }
+
+    // clamp value
+    const clamped = Math.max(0, Math.min(value, this.maxHealthUnits));
+    const targetScaleX = clamped / this.maxHealthUnits;
+
+    // ignore tiny changes
+    if (Math.abs(clamped - this.lastHealth) < MIN_HEALTH_DELTA) {
+      this.lastHealth = clamped;
+      return;
+    }
+
+    // if health decreased -> damage flash
+    if (clamped < this.lastHealth) {
+      this.showDamageFlash();
+    }
+
+    // kill any running health tween and start a smooth one
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      gsap.killTweensOf(this.lifesLabel.scale);
+    } catch {}
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    this.healthTween = gsap.to(this.lifesLabel.scale, { x: targetScaleX, duration: HEALTH_TWEEN_DURATION, ease: 'power2.out' });
+
+    // low-health pulse control (percentage)
+    const pct = targetScaleX;
     // eslint-disable-next-line no-magic-numbers
-    this.lifesLabel!.width = value * 10;
+    const lowThreshold = LOW_HEALTH_THRESHOLD / 100;
+    if (pct <= lowThreshold && !this.isPulsing) {
+      this.startPulse();
+    } else if (pct > lowThreshold && this.isPulsing) {
+      this.stopPulse();
+    }
+
+    this.lastHealth = clamped;
   }
 
   init(): void {
@@ -121,9 +176,24 @@ export class GameScreenService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     this.lifesLabel.rect(0, 0, 100, 5);
     this.lifesLabel.fill();
+    // ensure scale is reset and origin at left so scale.x shrinks from left to right
+    this.lifesLabel.scale.set(1, 1);
     this.lifesLabel.x = HEADER_SIDE_PADDING;
     this.lifesLabel.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * TRIPPLE;
+
+    // red damage overlay sits above the health bar and is used for quick flash
+    this.damageOverlay = new Graphics();
+    // eslint-disable-next-line no-magic-numbers
+    this.damageOverlay.beginFill(0xff0000);
+    // same size as health bar
+    // eslint-disable-next-line no-magic-numbers
+    this.damageOverlay.drawRect(0, 0, 100, 5);
+    this.damageOverlay.endFill();
+    this.damageOverlay.alpha = 0;
+    this.damageOverlay.x = this.lifesLabel.x;
+    this.damageOverlay.y = this.lifesLabel.y;
     energyBarContainer.addChild(this.lifesLabel);
+    energyBarContainer.addChild(this.damageOverlay);
     this.addToStage(energyBarContainer);
 
 
@@ -165,6 +235,75 @@ export class GameScreenService extends UpdatableService {
 
   update(): void {
     this.lifes = this.#ship.instance.energy;
+  }
+
+  // zeigt kurz einen roten Flash über der Gesundheitsleiste
+  private showDamageFlash(): void {
+    if (!this.damageOverlay) {
+      return;
+    }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      gsap.killTweensOf(this.damageOverlay);
+    } catch {}
+    this.damageOverlay.alpha = 0.6;
+    this.damageOverlay.visible = true;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    this.damageFlashTween = gsap.to(this.damageOverlay, {
+      alpha: 0,
+      duration: DAMAGE_FLASH_DURATION,
+      ease: 'power1.out',
+      onComplete: () => {
+        if (this.damageOverlay) {
+          this.damageOverlay.visible = false;
+        }
+      },
+    });
+  }
+
+  // startet pulse tween (skaliert y leicht) für low-health
+  private startPulse(): void {
+    if (!this.lifesLabel) {
+      return;
+    }
+    this.isPulsing = true;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      gsap.killTweensOf(this.lifesLabel.scale);
+    } catch {}
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, no-magic-numbers
+    this.pulseTween = gsap.to(this.lifesLabel.scale, { y: PULSE_SCALE, duration: PULSE_DURATION / 2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  }
+
+  // stoppt Pulse und stellt scale.y wieder her
+  private stopPulse(): void {
+    if (!this.lifesLabel) {
+      this.isPulsing = false;
+      return;
+    }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      gsap.killTweensOf(this.lifesLabel.scale);
+    } catch {}
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    gsap.to(this.lifesLabel.scale, { y: 1, duration: 0.12, ease: 'power1.out' });
+    this.isPulsing = false;
+  }
+
+  ngOnDestroy(): void {
+    try {
+      // kill any running tweens to avoid running after destroy
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      if (this.lifesLabel?.scale) {
+        gsap.killTweensOf(this.lifesLabel.scale);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      if (this.damageOverlay) {
+        gsap.killTweensOf(this.damageOverlay);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      gsap.killTweensOf(this.floatingContainer);
+    } catch {}
   }
 
   /**
