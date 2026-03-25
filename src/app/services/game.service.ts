@@ -29,6 +29,9 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 
+const COMBO_WINDOW_MS = 3000;
+const MAX_COMBO = 5;
+
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
 }
@@ -45,6 +48,10 @@ export class GameService {
   readonly storedCoins = signal(0);
   readonly sessionCoins = signal(0);
   readonly coins = computed(() => this.storedCoins() + this.sessionCoins());
+  readonly combo = signal(1);
+  readonly highestCombo = signal(1);
+
+  private comboTimer?: number;
 
   private readonly collectables = inject(GameCollectableService);
   private readonly landscape = inject(GameLandscapeService);
@@ -90,6 +97,8 @@ export class GameService {
 
       this.gameScreen.kills = this.kills();
       this.gameScreen.level = this.level();
+      this.gameScreen.combo = this.combo();
+      this.gameScreen.highestCombo = this.highestCombo();
       void this.storage.setCoins(this.coins());
     });
 
@@ -97,11 +106,13 @@ export class GameService {
       if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
         this.kills.update((value) => value + 1);
         const newKills = this.kills();
+        // increase combo on player kill
+        this.increaseCombo();
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
-          this.sessionCoins.update((value) => value + 1);
+          this.addCoins(1);
         }
         if ((destroyedEnemy as AnimatedGameSprite).isBoss) {
-          this.sessionCoins.update((value) => value + GAME_CONFIG.boss.coinsReward);
+          this.addCoins(GAME_CONFIG.boss.coinsReward);
         }
       }
     });
@@ -118,8 +129,47 @@ export class GameService {
       }
 
       this.rewardedMeteors.add(meteor);
-      this.sessionCoins.update((value) => value + coins);
+      this.addCoins(coins);
     });
+  }
+
+  private increaseCombo(): void {
+    // If timer is active, we are in a combo window
+    const currentCombo = this.combo();
+
+    if (this.comboTimer) {
+      // increase combo but do not exceed MAX_COMBO
+      const next = Math.min(MAX_COMBO, currentCombo + 1);
+      this.combo.set(next);
+      this.highestCombo.set(Math.max(this.highestCombo(), next));
+      window.clearTimeout(this.comboTimer);
+      this.comboTimer = window.setTimeout(() => this.resetCombo(), COMBO_WINDOW_MS);
+      return;
+    }
+
+    // No timer -> start a new combo sequence (combo becomes 2)
+    const startedCombo = 2;
+    this.combo.set(startedCombo);
+    this.highestCombo.set(Math.max(this.highestCombo(), startedCombo));
+    this.comboTimer = window.setTimeout(() => this.resetCombo(), COMBO_WINDOW_MS);
+  }
+
+  private resetCombo(): void {
+    this.combo.set(1);
+    if (this.comboTimer) {
+      window.clearTimeout(this.comboTimer);
+      this.comboTimer = undefined;
+    }
+  }
+
+  private addCoins(baseCoins: number): void {
+    // multiply awarded coins by current combo
+    const multiplier = Math.max(1, Math.floor(this.combo()));
+    const amount = Math.max(0, Math.floor(baseCoins * multiplier));
+    if (amount === 0) {
+      return;
+    }
+    this.sessionCoins.update((value) => value + amount);
   }
 
   async init(): Promise<void> {

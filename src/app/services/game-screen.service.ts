@@ -24,6 +24,7 @@ export class GameScreenService extends UpdatableService {
   private readonly points = new Text({ text: `${icons.points}  0000000`, style: fontAwesomeStyle });
   private readonly coinLabel = new Text({ text: `${icons.coin}  0000000`, style: fontAwesomeStyle });
   private readonly levelLabel = new Text({ text: `${icons.level}  0000001`, style: fontAwesomeStyle });
+  private readonly comboLabel = new Text({ text: `x1`, style: fontAwesomeStyle });
 
   private lifesLabel: Graphics | undefined;
   private pauseButton?: Text;
@@ -43,6 +44,22 @@ export class GameScreenService extends UpdatableService {
   set coins(value: number) {
     // eslint-disable-next-line no-magic-numbers
     this.coinLabel!.text = `${icons.coin}  ${value.toString().padStart(7, '0')}`;
+  }
+
+  set combo(value: number) {
+    this.comboLabel.text = `x${value}`;
+    // position combo label left of coin label
+    this.comboLabel.x = this.coinLabel.x - this.comboLabel.width - 8;
+    this.comboLabel.y = this.coinLabel.y;
+    // pop animation
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    this.comboLabel.scale.set(1.4);
+    void gsap.to(this.comboLabel.scale, { x: 1, y: 1, duration: 0.25 });
+  }
+
+  // highestCombo is received but not displayed in HUD; setter kept for compatibility
+  set highestCombo(_value: number) {
+    // no-op for now
   }
 
   set pauseButtonVisible(visible: boolean) {
@@ -81,6 +98,11 @@ export class GameScreenService extends UpdatableService {
     this.coinLabel.x = this.application.screen.width - this.coinLabel.width - HEADER_SIDE_PADDING;
     this.coinLabel.y = HEADER_TOP_PADDING;
     this.addToStage(this.coinLabel);
+
+    // combo label sits left of the coin label
+    this.comboLabel.x = this.coinLabel.x - this.comboLabel.width - 8;
+    this.comboLabel.y = this.coinLabel.y;
+    this.addToStage(this.comboLabel);
 
     this.pauseButton = new Text({
       text: icons.pause,
