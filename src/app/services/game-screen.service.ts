@@ -16,6 +16,15 @@ const BOSS_WARNING_STROKE_WIDTH = 4;
 const BOSS_WARNING_DISPLAY_MS = 2800;
 const BOSS_WARNING_FADE_S = 0.6;
 const SCREEN_CENTER_DIVIDER = 2;
+// floating popup / HUD constants (avoid magic numbers)
+const FLOAT_POP_OFFSET_X = 20;
+const FLOAT_POP_OFFSET_Y = 8;
+const FLOAT_START_SCALE = 1.2;
+const FLOAT_SCALE_BACK_DURATION = 0.12;
+const FLOAT_POP_DURATION = 0.9;
+const FLOAT_UP_DISTANCE = 40;
+const HUD_LABEL_SPACING = 8;
+const COMBO_POP_START_SCALE = 1.4;
 
 @Injectable()
 export class GameScreenService extends UpdatableService {
@@ -26,14 +35,41 @@ export class GameScreenService extends UpdatableService {
   private readonly levelLabel = new Text({ text: `${icons.level}  0000001`, style: fontAwesomeStyle });
   private readonly comboLabel = new Text({ text: `x1`, style: fontAwesomeStyle });
 
+  // Floating score popup container and style
+  private readonly floatingContainer = new Container();
+  private readonly floatingTextStyle = new TextStyle({
+    fontFamily: 'Arial',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fill: 0xffffff,
+    stroke: {
+      // eslint-disable-next-line no-magic-numbers
+      color: 0x000000,
+      width: 2,
+    },
+    align: 'center',
+  });
+
+  // track last kills value to show deltas
+  private lastKills = 0;
+
   private lifesLabel: Graphics | undefined;
   private pauseButton?: Text;
 
   onPause?: () => void;
 
   set kills(value: number) {
+    // show delta as floating popup when kills increased
+    const delta = value - this.lastKills;
     // eslint-disable-next-line no-magic-numbers
     this.points!.text = `${icons.points}  ${value.toString().padStart(7, '0')}`;
+    if (delta > 0) {
+      // show near the points label
+      const x = this.points.x - FLOAT_POP_OFFSET_X;
+      const y = this.points.y + FLOAT_POP_OFFSET_Y;
+      this.showFloatingText(`+${delta}`, x, y);
+    }
+    this.lastKills = value;
   }
 
   set level(value: number) {
@@ -49,12 +85,12 @@ export class GameScreenService extends UpdatableService {
   set combo(value: number) {
     this.comboLabel.text = `x${value}`;
     // position combo label left of coin label
-    this.comboLabel.x = this.coinLabel.x - this.comboLabel.width - 8;
+    this.comboLabel.x = this.coinLabel.x - this.comboLabel.width - HUD_LABEL_SPACING;
     this.comboLabel.y = this.coinLabel.y;
     // pop animation
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    this.comboLabel.scale.set(1.4);
-    void gsap.to(this.comboLabel.scale, { x: 1, y: 1, duration: 0.25 });
+    this.comboLabel.scale.set(COMBO_POP_START_SCALE);
+    void gsap.to(this.comboLabel.scale, { x: 1, y: 1, duration: FLOAT_SCALE_BACK_DURATION });
   }
 
   // highestCombo is received but not displayed in HUD; setter kept for compatibility
@@ -100,9 +136,11 @@ export class GameScreenService extends UpdatableService {
     this.addToStage(this.coinLabel);
 
     // combo label sits left of the coin label
-    this.comboLabel.x = this.coinLabel.x - this.comboLabel.width - 8;
+    this.comboLabel.x = this.coinLabel.x - this.comboLabel.width - HUD_LABEL_SPACING;
     this.comboLabel.y = this.coinLabel.y;
     this.addToStage(this.comboLabel);
+    // add floating popup container to the stage (for +score popups)
+    this.addToStage(this.floatingContainer);
 
     this.pauseButton = new Text({
       text: icons.pause,
@@ -127,6 +165,36 @@ export class GameScreenService extends UpdatableService {
 
   update(): void {
     this.lifes = this.#ship.instance.energy;
+  }
+
+  /**
+   * Zeigt ein kleines animiertes Text-Popup an (z.B. "+5") und entfernt es nach der Animation.
+   */
+  showFloatingText(text: string, x?: number, y?: number): void {
+    const txt = new Text({ text, style: this.floatingTextStyle });
+    // eslint-disable-next-line no-magic-numbers
+    txt.anchor.set(0.5);
+    txt.x = x ?? (this.points.x - FLOAT_POP_OFFSET_X);
+    txt.y = y ?? (this.points.y + FLOAT_POP_OFFSET_Y);
+    // start slightly bigger for a pop effect
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    txt.scale.set(FLOAT_START_SCALE);
+    this.floatingContainer.addChild(txt);
+
+    // small pop back to normal
+    void gsap.to(txt.scale, { x: 1, y: 1, duration: FLOAT_SCALE_BACK_DURATION });
+
+    // float up and fade out
+    void gsap.to(txt, {
+      y: txt.y - FLOAT_UP_DISTANCE,
+      alpha: 0,
+      duration: FLOAT_POP_DURATION,
+      ease: 'power1.out',
+      onComplete: () => {
+        txt.parent?.removeChild(txt);
+        txt.destroy();
+      },
+    });
   }
 
   showBossWarning(): void {
