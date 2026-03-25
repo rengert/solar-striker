@@ -43,9 +43,6 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   private readonly maxHealthUnits = 10;
   private lastHealth = 0;
   private isPulsing = false;
-  private healthTween?: ReturnType<typeof gsap.to>;
-  private pulseTween?: ReturnType<typeof gsap.to>;
-  private damageFlashTween?: ReturnType<typeof gsap.to>;
   private damageOverlay?: Graphics;
 
   private readonly points = new Text({ text: `${icons.points}  0000000`, style: fontAwesomeStyle });
@@ -148,8 +145,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       gsap.killTweensOf(this.lifesLabel.scale);
     } catch {}
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    this.healthTween = gsap.to(this.lifesLabel.scale, { x: targetScaleX, duration: HEALTH_TWEEN_DURATION, ease: 'power2.out' });
+    gsap.to(this.lifesLabel.scale, { x: targetScaleX, duration: HEALTH_TWEEN_DURATION, ease: 'power2.out' });
 
     // low-health pulse control (percentage)
     const pct = targetScaleX;
@@ -184,11 +180,11 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     // red damage overlay sits above the health bar and is used for quick flash
     this.damageOverlay = new Graphics();
     // eslint-disable-next-line no-magic-numbers
-    this.damageOverlay.beginFill(0xff0000);
+    this.damageOverlay.fill(0xff0000);
     // same size as health bar
     // eslint-disable-next-line no-magic-numbers
-    this.damageOverlay.drawRect(0, 0, 100, 5);
-    this.damageOverlay.endFill();
+    this.damageOverlay.rect(0, 0, 100, 5);
+    this.damageOverlay.fill();
     this.damageOverlay.alpha = 0;
     this.damageOverlay.x = this.lifesLabel.x;
     this.damageOverlay.y = this.lifesLabel.y;
@@ -248,8 +244,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     } catch {}
     this.damageOverlay.alpha = 0.6;
     this.damageOverlay.visible = true;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    this.damageFlashTween = gsap.to(this.damageOverlay, {
+    gsap.to(this.damageOverlay, {
       alpha: 0,
       duration: DAMAGE_FLASH_DURATION,
       ease: 'power1.out',
@@ -268,11 +263,9 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     }
     this.isPulsing = true;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       gsap.killTweensOf(this.lifesLabel.scale);
     } catch {}
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, no-magic-numbers
-    this.pulseTween = gsap.to(this.lifesLabel.scale, { y: PULSE_SCALE, duration: PULSE_DURATION / 2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+    gsap.to(this.lifesLabel.scale, { y: PULSE_SCALE, duration: PULSE_DURATION / 2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   }
 
   // stoppt Pulse und stellt scale.y wieder her
@@ -282,10 +275,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       return;
     }
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       gsap.killTweensOf(this.lifesLabel.scale);
     } catch {}
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     gsap.to(this.lifesLabel.scale, { y: 1, duration: 0.12, ease: 'power1.out' });
     this.isPulsing = false;
   }
