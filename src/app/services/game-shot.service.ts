@@ -8,6 +8,14 @@ import { ExplosionService } from './explosion.service';
 import { ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
+const SHOT_OFFSETS: [number, number][][] = [
+  [[0, -22]],
+  [[-22, -6], [22, -6]],
+  [[-22, -6], [0, -22], [22, -6]],
+  [[-33, -6], [-11, -6], [11, -6], [33, -6]],
+  [[-44, -6], [-22, -6], [0, -22], [22, -6], [44, -6]],
+];
+
 @Injectable()
 export class GameShotService extends UpdatableService {
   private laserAnimation: Texture[] | undefined;
@@ -28,6 +36,7 @@ export class GameShotService extends UpdatableService {
     const speed = up
       ? -GAME_CONFIG.ships[ship.shipType].rocketSpeed
       : GAME_CONFIG.ships[ship.shipType].rocketSpeed;
+    const offsets = SHOT_OFFSETS[power - 1];
     for (let i = 1; i <= power; i++) {
       const shot = new Rocket(this.explosionService, speed, this.laserAnimation!);
       shot.reference = ship;
@@ -35,16 +44,9 @@ export class GameShotService extends UpdatableService {
       shot.play();
       shot.rotation = up ? 0 : Math.PI;
       shot.anchor.set(0.5);
-      if (power === 1 || (power === 3 && i === 2)) {
-        shot.x = x;
-        shot.y = y - 22;
-      } else if (power > 1 && i === 1) {
-        shot.x = x - 22;
-        shot.y = y - 6;
-      } else {
-        shot.x = x + 22;
-        shot.y = y - 6;
-      }
+      const [dx, dy] = offsets[i - 1];
+      shot.x = x + dx;
+      shot.y = y + dy;
 
       this.object.add(shot);
       this.application.stage.addChild(shot);
