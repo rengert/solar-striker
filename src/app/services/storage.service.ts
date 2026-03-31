@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
+import { AchievementState } from '../models/achievement.model';
 
 export enum Store {
   games = 'games',
   coins = 'coins',
   upgrades = 'upgrades',
+  achievements = 'achievements',
 }
 
 function getManyFromStore<T>(
@@ -48,7 +50,7 @@ export class StorageService {
     const data: T[] = Array.isArray(dataToStore) ? dataToStore : [dataToStore];
     return new Promise<void>((resolve, reject) => {
       // eslint-disable-next-line no-magic-numbers
-      const dbRequest = indexedDB.open('data', 6);
+      const dbRequest = indexedDB.open('data', 7);
       dbRequest.onerror = (): void => {
         reject(Error('IndexedDB database error'));
       };
@@ -135,6 +137,27 @@ export class StorageService {
     });
   }
 
+  async getAchievements(): Promise<AchievementState[]> {
+    const entries = await getManyFromStore<{ id: string; states: AchievementState[] }>(
+      Store.achievements,
+      (item) => item.id === 'achievements',
+    );
+    const entry = entries.at(0);
+
+    if (entry) {
+      return entry.states;
+    }
+
+    return [];
+  }
+
+  setAchievements(states: AchievementState[]): Promise<void> {
+    return this.toStore(Store.achievements, {
+      id: 'achievements',
+      states,
+    });
+  }
+
   private migrateDatabase(database: IDBDatabase): void {
     if (!database.objectStoreNames.contains(Store.games)) {
       database.createObjectStore(Store.games, { keyPath: 'id' });
@@ -146,6 +169,10 @@ export class StorageService {
 
     if (!database.objectStoreNames.contains(Store.upgrades)) {
       database.createObjectStore(Store.upgrades, { keyPath: 'id' });
+    }
+
+    if (!database.objectStoreNames.contains(Store.achievements)) {
+      database.createObjectStore(Store.achievements, { keyPath: 'id' });
     }
   }
 }

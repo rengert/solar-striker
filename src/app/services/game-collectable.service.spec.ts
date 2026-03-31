@@ -3,6 +3,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameCollectableService } from './game-collectable.service';
+import { AchievementService } from './achievement.service';
 import { MAX_SHOT_POWER, OFF_SCREEN_BUFFER, SHIELD_DURATION_MS } from '../game-constants';
 
 const MOCK_SCREEN_HEIGHT = 600;
@@ -95,6 +96,12 @@ describe('GameCollectableService - collectPowerUp', () => {
         {
           provide: ApplicationService,
           useValue: buildApplicationServiceMock(),
+        },
+        {
+          provide: AchievementService,
+          useValue: {
+            checkMilestone: jasmine.createSpy('checkMilestone'),
+          },
         },
       ],
     });
@@ -339,6 +346,12 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
         {
           provide: ApplicationService,
           useValue: buildApplicationServiceMock(),
+        },
+        {
+          provide: AchievementService,
+          useValue: {
+            checkMilestone: jasmine.createSpy('checkMilestone'),
+          },
         },
       ],
     });

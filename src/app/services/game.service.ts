@@ -5,6 +5,7 @@ import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
+import { AchievementsPopup } from '../popups/achievements-popup';
 import { CreditsPopup } from '../popups/credits-popup';
 import { HangarPopup } from '../popups/hangar-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
@@ -13,6 +14,7 @@ import { PausePopup } from '../popups/pause-popup';
 import { SettingsPopup } from '../popups/settings-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { handleMouseMove } from '../utils/mouse.util';
+import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
@@ -62,6 +64,7 @@ export class GameService {
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
   readonly shipUpgrades = inject(ShipUpgradeService);
+  readonly achievementService = inject(AchievementService);
   private readonly translation = inject(TranslationService);
   private rewardedMeteors = new WeakSet<ObjectModelType>();
   private readonly updatables: UpdatableService[] = [
@@ -102,6 +105,26 @@ export class GameService {
       void this.storage.setCoins(this.coins());
     });
 
+    // Achievement: track combo milestones
+    effect(() => {
+      const combo = this.combo();
+      this.achievementService.checkMilestone('combo_rookie', combo);
+      this.achievementService.checkMilestone('combo_master', combo);
+    });
+
+    // Achievement: track level milestones
+    effect(() => {
+      const level = this.level();
+      this.achievementService.checkMilestone('level_10', level);
+      this.achievementService.checkMilestone('level_20', level);
+    });
+
+    // Achievement: track session coins (rich_pilot)
+    effect(() => {
+      const sessionCoins = this.sessionCoins();
+      this.achievementService.checkMilestone('rich_pilot', sessionCoins);
+    });
+
     this.object.onDestroyed(ObjectType.enemy, (destroyedEnemy, by) => {
       if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
         this.kills.update((value) => value + 1);
@@ -111,8 +134,16 @@ export class GameService {
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.addCoins(1);
         }
-        if ((destroyedEnemy as AnimatedGameSprite).isBoss) {
+        const isBoss = (destroyedEnemy as AnimatedGameSprite).isBoss;
+        if (isBoss) {
           this.addCoins(GAME_CONFIG.boss.coinsReward);
+        }
+        // Achievement: track cumulative kills and boss
+        this.achievementService.addCumulative('first_kill', 1);
+        this.achievementService.addCumulative('sharp_shooter', 1);
+        this.achievementService.addCumulative('veteran', 1);
+        if (isBoss) {
+          this.achievementService.checkMilestone('boss_hunter', 1);
         }
       }
     });
@@ -183,8 +214,18 @@ export class GameService {
     this.gameScreen.init();
 
     await this.shipUpgrades.init();
+    await this.achievementService.init();
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
+
+    // Wire achievement unlock notification
+    this.achievementService.onUnlocked = (def): void => {
+      const titleKey = `achievement.${def.id}.title` as Parameters<typeof this.translation.getTranslation>[0];
+      const title = this.translation.getTranslation(titleKey);
+      const rewardLine = this.translation.getTranslation('achievement.reward', { reward: String(def.reward) });
+      this.gameScreen.showAchievementBanner(def.icon, title, rewardLine);
+      this.addCoins(def.reward);
+    };
 
     this.setup();
 
@@ -247,6 +288,11 @@ export class GameService {
   async openSettings(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(SettingsPopup);
+  }
+
+  async openAchievements(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(AchievementsPopup);
   }
 
   async endGame(requester: AppScreen): Promise<void> {

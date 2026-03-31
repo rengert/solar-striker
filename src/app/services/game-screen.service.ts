@@ -32,6 +32,20 @@ const LOW_HEALTH_THRESHOLD = 30; // percent
 const PULSE_DURATION = 0.6;
 const PULSE_SCALE = 1.15;
 const MIN_HEALTH_DELTA = 0.05;
+// Achievement banner constants
+const ACHIEVEMENT_BANNER_WIDTH = 220;
+const ACHIEVEMENT_BANNER_HEIGHT = 44;
+const ACHIEVEMENT_BANNER_PADDING = 8;
+const ACHIEVEMENT_BANNER_RADIUS = 8;
+const ACHIEVEMENT_BANNER_FONT_SIZE = 11;
+const ACHIEVEMENT_BANNER_TITLE_SIZE = 13;
+const ACHIEVEMENT_BANNER_BG_COLOR = 0x1a1a2e;
+const ACHIEVEMENT_BANNER_BORDER_COLOR = 0xffd700;
+const ACHIEVEMENT_BANNER_BORDER_WIDTH = 2;
+const ACHIEVEMENT_BANNER_SHOW_MS = 3000;
+const ACHIEVEMENT_BANNER_SLIDE_DURATION = 0.4;
+const ACHIEVEMENT_BANNER_FADE_DURATION = 0.3;
+const ACHIEVEMENT_BANNER_SUBTITLE_SPACER = 4;
 
 @Injectable()
 export class GameScreenService extends UpdatableService implements OnDestroy {
@@ -265,6 +279,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     try {
       gsap.killTweensOf(this.lifesLabel.scale);
     } catch {}
+    // eslint-disable-next-line no-magic-numbers
     gsap.to(this.lifesLabel.scale, { y: PULSE_SCALE, duration: PULSE_DURATION / 2, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   }
 
@@ -360,5 +375,72 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
         },
       });
     }, BOSS_WARNING_DISPLAY_MS);
+  }
+
+  /** Shows a brief achievement-unlocked banner in the bottom-right corner. */
+  showAchievementBanner(icon: string, titleLine: string, rewardLine: string): void {
+    const banner = new Container();
+
+    // Background panel
+    const bg = new Graphics();
+    bg.roundRect(0, 0, ACHIEVEMENT_BANNER_WIDTH, ACHIEVEMENT_BANNER_HEIGHT, ACHIEVEMENT_BANNER_RADIUS);
+    bg.fill({ color: ACHIEVEMENT_BANNER_BG_COLOR });
+    bg.stroke({ color: ACHIEVEMENT_BANNER_BORDER_COLOR, width: ACHIEVEMENT_BANNER_BORDER_WIDTH });
+    banner.addChild(bg);
+
+    // Icon + title text
+    const titleText = new Text({
+      text: `${icon} ${titleLine}`,
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: ACHIEVEMENT_BANNER_TITLE_SIZE,
+        fontWeight: 'bold',
+        fill: ACHIEVEMENT_BANNER_BORDER_COLOR,
+      }),
+    });
+    titleText.x = ACHIEVEMENT_BANNER_PADDING;
+    titleText.y = ACHIEVEMENT_BANNER_PADDING;
+    banner.addChild(titleText);
+
+    // Reward sub-text
+    const rewardText = new Text({
+      text: rewardLine,
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: ACHIEVEMENT_BANNER_FONT_SIZE,
+        fill: 0xcccccc,
+      }),
+    });
+    rewardText.x = ACHIEVEMENT_BANNER_PADDING;
+    rewardText.y = ACHIEVEMENT_BANNER_PADDING + ACHIEVEMENT_BANNER_TITLE_SIZE + ACHIEVEMENT_BANNER_SUBTITLE_SPACER;
+    banner.addChild(rewardText);
+
+    // Position: slide in from right, bottom area
+    const screenWidth = this.application.screen.width;
+    const screenHeight = this.application.screen.height;
+    banner.x = screenWidth;
+    banner.y = screenHeight - ACHIEVEMENT_BANNER_HEIGHT - ACHIEVEMENT_BANNER_PADDING * DOUBLE;
+    this.addToStage(banner);
+
+    // Slide in
+    void gsap.to(banner, {
+      x: screenWidth - ACHIEVEMENT_BANNER_WIDTH - ACHIEVEMENT_BANNER_PADDING,
+      duration: ACHIEVEMENT_BANNER_SLIDE_DURATION,
+      ease: 'back.out',
+      onComplete: () => {
+        // Hold, then fade out
+        setTimeout(() => {
+          void gsap.to(banner, {
+            alpha: 0,
+            duration: ACHIEVEMENT_BANNER_FADE_DURATION,
+            ease: 'power1.out',
+            onComplete: () => {
+              banner.parent?.removeChild(banner);
+              banner.destroy({ children: true });
+            },
+          });
+        }, ACHIEVEMENT_BANNER_SHOW_MS);
+      },
+    });
   }
 }

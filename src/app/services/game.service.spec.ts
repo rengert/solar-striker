@@ -14,6 +14,7 @@ import { GameShotService } from './game-shot.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
 import { StorageService } from './storage.service';
 import { TranslationService } from './translation.service';
+import { AchievementService } from './achievement.service';
 import { GAME_CONFIG } from '../game-constants';
 
 function createMockObject(
@@ -68,6 +69,16 @@ describe('GameService', () => {
         { provide: GameShotService, useValue: {} },
         { provide: ShipUpgradeService, useValue: {} },
         { provide: TranslationService, useValue: {} },
+        {
+          provide: AchievementService,
+          useValue: {
+            init: jasmine.createSpy('init').and.returnValue(Promise.resolve()),
+            onUnlocked: undefined,
+            checkMilestone: jasmine.createSpy('checkMilestone'),
+            addCumulative: jasmine.createSpy('addCumulative'),
+            getAll: jasmine.createSpy('getAll').and.returnValue([]),
+          },
+        },
         {
           provide: StorageService,
           useValue: {
