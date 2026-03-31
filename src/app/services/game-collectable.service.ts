@@ -7,6 +7,7 @@ import { PowerUpSprite } from '../models/pixijs/power-up-sprite';
 import { Ship } from '../models/pixijs/ship';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
+import { AchievementService } from './achievement.service';
 
 interface Dictionary<T> {
   [key: string]: T;
@@ -25,6 +26,7 @@ const CENTER_DIVISOR = 2;
 @Injectable()
 export class GameCollectableService extends UpdatableService {
   private readonly object = inject(ObjectService);
+  private readonly achievementService = inject(AchievementService);
 
   private readonly animations: Dictionary<Texture[]> = {};
 
@@ -65,6 +67,7 @@ export class GameCollectableService extends UpdatableService {
 
     if (powerUp.config.powerUp.nuke === true) {
       this.applyNuke(by);
+      this.achievementService.checkMilestone('nuke_deployed', 1);
     }
   }
 
