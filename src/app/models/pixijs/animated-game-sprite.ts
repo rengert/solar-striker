@@ -10,6 +10,7 @@ const TWO_PI = Math.PI * 2;
 const MULTI_EXPLOSION_OFFSET_FRACTION = 0.4;
 const HALF_DIVISOR = 2;
 export const MULTI_EXPLOSION_INTERVAL_MS = 150;
+export const SPEED_SCALE = 0.2;
 
 interface ChainExplosionCenter {
   readonly x: number;
@@ -158,8 +159,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
         this.loopData = undefined;
       }
     } else {
-      // eslint-disable-next-line no-magic-numbers
-      this.y += ticker.deltaMS * this.speed * 0.2;
+      this.y += ticker.deltaMS * this.speed * SPEED_SCALE;
 
       if (this.targetX && this.x !== this.targetX) {
         // eslint-disable-next-line no-magic-numbers

@@ -1,11 +1,10 @@
 import { FrameObject, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
-import { AnimatedGameSprite } from './animated-game-sprite';
+import { AnimatedGameSprite, SPEED_SCALE } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 
 const ACCEL_DURATION_MS = 500;
-// Matches the speed scale factor used in AnimatedGameSprite.update() for y-movement
-const SPEED_SCALE = 0.2;
+const HALF_DIVISOR = 2;
 
 export class Rocket extends AnimatedGameSprite {
   #elapsed = 0;
@@ -20,14 +19,22 @@ export class Rocket extends AnimatedGameSprite {
   }
 
   override update(ticker: Ticker): void {
-    this.#elapsed += ticker.deltaMS;
+    const previousElapsed = this.#elapsed;
+    this.#elapsed = previousElapsed + ticker.deltaMS;
+
     super.update(ticker);
     if (this.destroyed) {
       return;
     }
-    const accelFactor = Math.min(this.#elapsed / ACCEL_DURATION_MS, 1);
-    if (accelFactor < 1) {
-      this.y += ticker.deltaMS * this.speed * SPEED_SCALE * (accelFactor - 1);
+
+    const rampStart = Math.min(previousElapsed, ACCEL_DURATION_MS);
+    const rampEnd = Math.min(this.#elapsed, ACCEL_DURATION_MS);
+
+    if (rampEnd > rampStart) {
+      const deficitIntegral =
+        (rampEnd - rampStart) -
+        (rampEnd * rampEnd - rampStart * rampStart) / (HALF_DIVISOR * ACCEL_DURATION_MS);
+      this.y -= this.speed * SPEED_SCALE * deficitIntegral;
     }
   }
 }

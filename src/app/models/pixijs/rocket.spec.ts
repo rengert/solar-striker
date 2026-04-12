@@ -1,11 +1,11 @@
 import { Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
+import { SPEED_SCALE } from './animated-game-sprite';
 import { Rocket } from './rocket';
 
 const ACCEL_DURATION_MS = 500;
 const DELTA_MS = 16;
 const ROCKET_SPEED = -10;
-const SPEED_SCALE = 0.2;
 const FLOAT_PRECISION = 5;
 const HALF_DIVISOR = 2;
 
@@ -58,13 +58,15 @@ describe('Rocket - acceleration', () => {
   });
 
   it('should move proportionally to elapsed time within the acceleration phase', () => {
-    // At 50 % of accel window, accelFactor ≈ 0.5 so movement ≈ 50 % of full speed
+    // At 50 % of the accel window the integral gives roughly 25 % of full-speed movement;
+    // the important guarantee is that it stays well below a full-speed tick of the same duration.
     const halfDuration = ACCEL_DURATION_MS / HALF_DIVISOR;
     const rocket = createRocket();
+    const startY = rocket.y;
 
     // Single tick equal to exactly half the accel duration
     rocket.update(createTicker(halfDuration));
-    const halfMove = Math.abs(rocket.y);
+    const halfMove = Math.abs(rocket.y - startY);
 
     const fullRocket = createRocket();
     fullRocket.update(createTicker(ACCEL_DURATION_MS + DELTA_MS)); // exhaust accel
@@ -72,7 +74,7 @@ describe('Rocket - acceleration', () => {
     fullRocket.update(createTicker(halfDuration));
     const fullMove = Math.abs(fullRocket.y - beforeY);
 
-    // halfMove should be well below fullMove (accelFactor at halfway is 0.5)
+    // halfMove should be well below fullMove
     expect(halfMove).toBeLessThan(fullMove);
   });
 });
