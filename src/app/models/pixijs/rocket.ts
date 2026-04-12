@@ -4,6 +4,7 @@ import { AnimatedGameSprite } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 
 const ACCEL_DURATION_MS = 500;
+// Matches the speed scale factor used in AnimatedGameSprite.update() for y-movement
 const SPEED_SCALE = 0.2;
 
 export class Rocket extends AnimatedGameSprite {
