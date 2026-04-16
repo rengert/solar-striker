@@ -35,7 +35,7 @@ export class ObjectService extends UpdatableService {
 
     for (let i = 0; i < objects.length; i++) {
       const object = objects[i];
-      if (object.destroyed || object.destroying || object.type !== ObjectType.meteor) {
+      if (object.destroyed || object.destroying) {
         continue;
       }
       object.update(ticker);

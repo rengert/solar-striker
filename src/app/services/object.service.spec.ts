@@ -14,6 +14,7 @@ function createMockObject(
     reference: undefined,
     energy: 1,
     power: 1,
+    update: jasmine.createSpy('update'),
     ...overrides,
   } as unknown as ObjectModelType;
 }
