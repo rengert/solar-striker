@@ -1,23 +1,29 @@
-import { ButtonContainer } from '@pixi/ui';
+import { ButtonContainer, ScrollBox } from '@pixi/ui';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 import { ShipUpgradeDefinition, ShipUpgradeType } from '../models/ship-upgrade.model';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 570;
+const POPUP_HEIGHT = 430;
 const HALF = 0.5;
-const ROW_START_Y = -50;
-const ROW_VERTICAL_SPACING = 90;
+const SCROLL_BOX_WIDTH = 240;
+const SCROLL_BOX_HEIGHT = 290;
+const SCROLL_BOX_X = -(SCROLL_BOX_WIDTH * HALF);
+const SCROLL_BOX_Y = -65;
+const ROW_CENTER_X = SCROLL_BOX_WIDTH * HALF;
 const ROW_TITLE_X = -110;
-const DESCRIPTION_Y = 12;
-const LEVEL_LABEL_Y = 32;
-const COST_LABEL_Y = 50;
+const ROW_TITLE_Y = 10;
+const DESCRIPTION_Y = 22;
+const LEVEL_LABEL_Y = 42;
+const COST_LABEL_Y = 60;
+const DESCRIPTION_WORD_WRAP_WIDTH = 110;
 const BUTTON_X = 0;
-const BUTTON_Y = 60;
+const BUTTON_Y = 70;
 const BUTTON_WIDTH = 120;
 const BUTTON_HEIGHT = 30;
-const BACK_BUTTON_GAP = 20;
+const BACK_BUTTON_PADDING = 20;
+const BACK_BUTTON_Y = SCROLL_BOX_Y + SCROLL_BOX_HEIGHT + BACK_BUTTON_PADDING;
 
 interface UpgradeRow {
   definition: ShipUpgradeDefinition;
@@ -37,28 +43,36 @@ export class HangarPopup extends Popup {
 
     this.y = -150;
 
-    this.gameService.shipUpgrades.definitions.forEach((definition, index) => {
-      const row = this.createUpgradeRow(definition, index);
+    const scrollBox = new ScrollBox({
+      width: SCROLL_BOX_WIDTH,
+      height: SCROLL_BOX_HEIGHT,
+      disableDynamicRendering: true,
+      globalScroll: false,
+      vertPadding: 5,
+    });
+    scrollBox.x = SCROLL_BOX_X;
+    scrollBox.y = SCROLL_BOX_Y;
+    this.addToContent(scrollBox);
+
+    this.gameService.shipUpgrades.definitions.forEach((definition) => {
+      const row = this.createUpgradeRow(definition, scrollBox);
       this.upgradeRows.set(definition.type, row);
     });
 
-    const lastRowY =
-      ROW_START_Y +
-      (this.gameService.shipUpgrades.definitions.length - 1) * ROW_VERTICAL_SPACING;
-    const backButtonY = lastRowY + BUTTON_Y + BUTTON_HEIGHT + BACK_BUTTON_GAP;
     const button = this.addButton(
       this.translation.getTranslation('common.back'),
       () => this.gameService.openNavigation(this),
       0,
     );
-    button.button.y = backButtonY;
+    button.button.y = BACK_BUTTON_Y;
     this.updateView();
   }
 
-  private createUpgradeRow(definition: ShipUpgradeDefinition, index: number): UpgradeRow {
+  private createUpgradeRow(definition: ShipUpgradeDefinition, scrollBox: ScrollBox): UpgradeRow {
+    const itemWrapper = new Container();
     const rowContainer = new Container();
-    rowContainer.y = ROW_START_Y + index * ROW_VERTICAL_SPACING;
-    this.addToContent(rowContainer);
+    rowContainer.x = ROW_CENTER_X;
+    itemWrapper.addChild(rowContainer);
 
     const title = new Text({
       text: this.translation.getTranslation(definition.titleKey),
@@ -70,7 +84,7 @@ export class HangarPopup extends Popup {
     });
     title.anchor.set(0, HALF);
     title.x = ROW_TITLE_X;
-    title.y = 0;
+    title.y = ROW_TITLE_Y;
     rowContainer.addChild(title);
 
     const description = new Text({
@@ -80,7 +94,7 @@ export class HangarPopup extends Popup {
         fontSize: 10,
         fill: 0x3c2f1e,
         wordWrap: true,
-        wordWrapWidth: 200,
+        wordWrapWidth: DESCRIPTION_WORD_WRAP_WIDTH,
       },
     });
     description.anchor.set(0, 0);
@@ -135,6 +149,8 @@ export class HangarPopup extends Popup {
 
     button.onPress.connect(() => void this.handleUpgrade(definition.type));
     rowContainer.addChild(button);
+
+    scrollBox.addItem(itemWrapper);
 
     return {
       definition,
