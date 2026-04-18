@@ -5,10 +5,10 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 454;
+const POPUP_HEIGHT = 570;
 const HALF = 0.5;
 const ROW_START_Y = -50;
-const ROW_VERTICAL_SPACING = 105;
+const ROW_VERTICAL_SPACING = 90;
 const ROW_TITLE_X = -110;
 const DESCRIPTION_Y = 12;
 const LEVEL_LABEL_Y = 32;
@@ -17,7 +17,7 @@ const BUTTON_X = 0;
 const BUTTON_Y = 60;
 const BUTTON_WIDTH = 120;
 const BUTTON_HEIGHT = 30;
-const BACK_BUTTON_OFFSET = 2;
+const BACK_BUTTON_GAP = 20;
 
 interface UpgradeRow {
   definition: ShipUpgradeDefinition;
@@ -35,20 +35,23 @@ export class HangarPopup extends Popup {
   ) {
     super(translation.getTranslation('hangar.title'), POPUP_HEIGHT);
 
-    this.y = -100;
+    this.y = -150;
 
     this.gameService.shipUpgrades.definitions.forEach((definition, index) => {
       const row = this.createUpgradeRow(definition, index);
       this.upgradeRows.set(definition.type, row);
     });
 
-    const backButtonIndex = this.gameService.shipUpgrades.definitions.length + BACK_BUTTON_OFFSET;
+    const lastRowY =
+      ROW_START_Y +
+      (this.gameService.shipUpgrades.definitions.length - 1) * ROW_VERTICAL_SPACING;
+    const backButtonY = lastRowY + BUTTON_Y + BUTTON_HEIGHT + BACK_BUTTON_GAP;
     const button = this.addButton(
       this.translation.getTranslation('common.back'),
       () => this.gameService.openNavigation(this),
-      backButtonIndex,
+      0,
     );
-    button.button.y = button.button.y + BUTTON_HEIGHT;
+    button.button.y = backButtonY;
     this.updateView();
   }
 
