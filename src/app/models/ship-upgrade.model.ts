@@ -73,7 +73,7 @@ export const SHIP_UPGRADE_DEFINITIONS: ShipUpgradeDefinition[] = [
     costMultiplier: 1.6,
     maxLevel: 8,
     bonusPerLevel: {
-      shotSpeed: 0.3,
+      shotSpeed: 0.2,
       energy: 1,
     },
     appliesTo: ShipType.ship,
