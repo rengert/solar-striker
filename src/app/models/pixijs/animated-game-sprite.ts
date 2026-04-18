@@ -57,6 +57,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
     super(textures);
 
     this.speed = speed;
+    this.autoUpdate = false;
   }
 
   protected _energy: number | undefined;
