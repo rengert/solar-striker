@@ -5,6 +5,7 @@ import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
+import { PlayerShipService } from './player-ship.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
 import { UpdatableService } from './updatable.service';
 
@@ -18,6 +19,7 @@ export class GameShipService extends UpdatableService {
   private readonly explosionService = inject(ExplosionService);
   private readonly gameShot = inject(GameShotService);
   private readonly shipUpgrades = inject(ShipUpgradeService);
+  private readonly playerShip = inject(PlayerShipService);
 
   get instance(): Ship {
     if (!this.#ship) {
@@ -65,6 +67,7 @@ export class GameShipService extends UpdatableService {
       return;
     }
 
+    this.playerShip.applyToShip(this.#ship);
     this.shipUpgrades.applyToShip(this.#ship);
   }
 }

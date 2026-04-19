@@ -1,5 +1,4 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { GAME_CONFIG } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
 import {
   DEFAULT_SHIP_UPGRADE_LEVELS,
@@ -69,13 +68,12 @@ export class ShipUpgradeService {
   }
 
   applyToShip(ship: Ship): void {
-    const definition = GAME_CONFIG.ships[ship.shipType];
     const bonus = this.getBonusSummary(ship.shipType);
 
-    ship.maxEnergy = definition.energy + bonus.energy;
-    ship.energy = Math.min(ship.energy + bonus.energy, ship.maxEnergy);
-    ship.shotPower = Math.max(ship.shotPower, 1 + bonus.shotPower);
-    ship.shotSpeed = Math.max(ship.shotSpeed, definition.shotSpeed + bonus.shotSpeed);
+    ship.maxEnergy = ship.baseMaxEnergy + bonus.energy;
+    ship.energy = Math.min(ship.energy, ship.maxEnergy);
+    ship.shotPower = ship.baseShotPower + bonus.shotPower;
+    ship.shotSpeed = ship.baseShotSpeed + bonus.shotSpeed;
   }
 
   private getBonusSummary(shipType: Ship['shipType']): ShipUpgradeBonusSummary {

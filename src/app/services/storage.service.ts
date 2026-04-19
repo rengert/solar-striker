@@ -1,5 +1,11 @@
 import { Injectable } from '@angular/core';
 import { AchievementState } from '../models/achievement.model';
+import { PlayerShipClass } from '../models/player-ship-class.model';
+
+export interface ShipClassSelectionState {
+  selected: PlayerShipClass;
+  unlocked: PlayerShipClass[];
+}
 
 export enum Store {
   games = 'games',
@@ -155,6 +161,23 @@ export class StorageService {
     return this.toStore(Store.achievements, {
       id: 'achievements',
       states,
+    });
+  }
+
+  async getShipClassSelection(): Promise<ShipClassSelectionState | null> {
+    const entries = await getManyFromStore<{ id: string; state: ShipClassSelectionState }>(
+      Store.upgrades,
+      (item) => item.id === 'ship-class-selection',
+    );
+    const entry = entries.at(0);
+
+    return entry?.state ?? null;
+  }
+
+  setShipClassSelection(state: ShipClassSelectionState): Promise<void> {
+    return this.toStore(Store.upgrades, {
+      id: 'ship-class-selection',
+      state,
     });
   }
 

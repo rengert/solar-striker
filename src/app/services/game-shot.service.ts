@@ -1,7 +1,7 @@
 /* eslint-disable no-magic-numbers */
 import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture } from 'pixi.js';
-import { GAME_CONFIG, OFF_SCREEN_BUFFER } from '../game-constants';
+import { OFF_SCREEN_BUFFER } from '../game-constants';
 import { Rocket } from '../models/pixijs/rocket';
 import { Ship } from '../models/pixijs/ship';
 import { ExplosionService } from './explosion.service';
@@ -33,9 +33,7 @@ export class GameShotService extends UpdatableService {
 
   shot(power: number, ship: Ship, up: boolean): void {
     const { x, y } = ship;
-    const speed = up
-      ? -GAME_CONFIG.ships[ship.shipType].rocketSpeed
-      : GAME_CONFIG.ships[ship.shipType].rocketSpeed;
+    const speed = up ? -ship.rocketSpeed : ship.rocketSpeed;
     const offsets = SHOT_OFFSETS[power - 1];
     for (let i = 1; i <= power; i++) {
       const shot = new Rocket(this.explosionService, speed, this.laserAnimation!);
