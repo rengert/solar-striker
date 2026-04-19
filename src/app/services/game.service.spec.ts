@@ -11,11 +11,13 @@ import { GameMeteorService } from './game-meteor.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
+import { PlayerShipService } from './player-ship.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
 import { StorageService } from './storage.service';
 import { TranslationService } from './translation.service';
 import { AchievementService } from './achievement.service';
 import { GAME_CONFIG } from '../game-constants';
+import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
 
 function createMockObject(
   type: ObjectType,
@@ -68,6 +70,20 @@ describe('GameService', () => {
         },
         { provide: GameShotService, useValue: {} },
         { provide: ShipUpgradeService, useValue: {} },
+        {
+          provide: PlayerShipService,
+          useValue: {
+            init: jasmine.createSpy('init').and.returnValue(Promise.resolve()),
+            definitions: PLAYER_SHIP_DEFINITIONS,
+            getSelectedClass: jasmine.createSpy('getSelectedClass').and.returnValue(DEFAULT_PLAYER_SHIP_CLASS),
+            isUnlocked: jasmine.createSpy('isUnlocked').and.returnValue(true),
+            getDefinition: jasmine.createSpy('getDefinition').and.returnValue(PLAYER_SHIP_DEFINITIONS[0]),
+            getSelectedDefinition: jasmine.createSpy('getSelectedDefinition').and.returnValue(PLAYER_SHIP_DEFINITIONS[0]),
+            selectClass: jasmine.createSpy('selectClass').and.returnValue(Promise.resolve()),
+            unlock: jasmine.createSpy('unlock').and.returnValue(Promise.resolve()),
+            applyToShip: jasmine.createSpy('applyToShip'),
+          },
+        },
         { provide: TranslationService, useValue: {} },
         {
           provide: AchievementService,

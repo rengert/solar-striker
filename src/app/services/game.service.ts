@@ -4,6 +4,7 @@ import { GAME_CONFIG } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
+import { PlayerShipClass } from '../models/player-ship-class.model';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
 import { AchievementsPopup } from '../popups/achievements-popup';
 import { CreditsPopup } from '../popups/credits-popup';
@@ -24,6 +25,7 @@ import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
+import { PlayerShipService } from './player-ship.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
 import { TranslationService } from './translation.service';
 import { StorageService } from './storage.service';
@@ -64,6 +66,7 @@ export class GameService {
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
   readonly shipUpgrades = inject(ShipUpgradeService);
+  readonly playerShipService = inject(PlayerShipService);
   readonly achievementService = inject(AchievementService);
   private readonly translation = inject(TranslationService);
   private rewardedMeteors = new WeakSet<ObjectModelType>();
@@ -214,6 +217,7 @@ export class GameService {
     this.gameScreen.init();
 
     await this.shipUpgrades.init();
+    await this.playerShipService.init();
     await this.achievementService.init();
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
@@ -429,6 +433,27 @@ export class GameService {
     if (this.started()) {
       this.gameScreen.coins = this.coins();
     }
+
+    return true;
+  }
+
+  async handleShipClassPurchase(cls: PlayerShipClass): Promise<boolean> {
+    const definition = this.playerShipService.getDefinition(cls);
+
+    if (this.playerShipService.isUnlocked(cls)) {
+      await this.playerShipService.selectClass(cls);
+      this.ship.applyUpgrades();
+      return true;
+    }
+
+    if (this.coins() < definition.cost) {
+      return false;
+    }
+
+    this.applyCoinCost(definition.cost);
+    await this.playerShipService.unlock(cls);
+    await this.playerShipService.selectClass(cls);
+    this.ship.applyUpgrades();
 
     return true;
   }

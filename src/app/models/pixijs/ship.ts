@@ -14,10 +14,18 @@ const COLOR_CHANNEL_MASK = 0xff;
 export class Ship extends AnimatedGameSprite {
   shotPower = 1;
   shotSpeed: number;
+  rocketSpeed: number;
   lastShot = 0;
   autoFire = false;
   maxEnergy: number;
   shieldTicks = 0;
+
+  /** Base stat used by ShipUpgradeService to add upgrade bonuses idempotently. */
+  baseMaxEnergy: number;
+  /** Base stat used by ShipUpgradeService to add upgrade bonuses idempotently. */
+  baseShotSpeed: number;
+  /** Base stat used by ShipUpgradeService to add upgrade bonuses idempotently. */
+  baseShotPower: number;
 
   private elapsed = 0;
   private rotationTarget = 0;
@@ -33,8 +41,13 @@ export class Ship extends AnimatedGameSprite {
     super(shipType as unknown as ObjectType, explosion, speed, textures);
 
     this.maxEnergy = GAME_CONFIG.ships[this.shipType].energy;
+    this.baseMaxEnergy = this.maxEnergy;
     this.energy = this.maxEnergy;
     this.shotSpeed = GAME_CONFIG.ships[this.shipType].shotSpeed;
+    this.baseShotSpeed = this.shotSpeed;
+    this.shotPower = 1;
+    this.baseShotPower = 1;
+    this.rocketSpeed = GAME_CONFIG.ships[this.shipType].rocketSpeed;
   }
 
   override get isShielded(): boolean {
