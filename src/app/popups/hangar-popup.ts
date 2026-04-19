@@ -192,7 +192,7 @@ export class HangarPopup extends Popup {
 
   private createShipSelectionSection(): void {
     const sectionTitle = new Text({
-      text: '— Schiff wählen —',
+      text: this.translation.getTranslation('hangar.shipSelection'),
       style: {
         fontFamily: 'DefaultFont',
         fontSize: 11,

@@ -70,8 +70,11 @@ export class ShipUpgradeService {
   applyToShip(ship: Ship): void {
     const bonus = this.getBonusSummary(ship.shipType);
 
-    ship.maxEnergy = ship.baseMaxEnergy + bonus.energy;
-    ship.energy = Math.min(ship.energy, ship.maxEnergy);
+    const newMaxEnergy = ship.baseMaxEnergy + bonus.energy;
+    const energyGain = Math.max(0, newMaxEnergy - ship.maxEnergy);
+
+    ship.maxEnergy = newMaxEnergy;
+    ship.energy = Math.min(ship.energy + energyGain, ship.maxEnergy);
     ship.shotPower = ship.baseShotPower + bonus.shotPower;
     ship.shotSpeed = ship.baseShotSpeed + bonus.shotSpeed;
   }
