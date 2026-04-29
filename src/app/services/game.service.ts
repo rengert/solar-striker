@@ -36,6 +36,11 @@ const METEOR_COIN_ENERGY_STEP = 20;
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
 
+const KILLS_PER_WAVE = 25;
+const WAVE_BONUS_COINS = 5;
+const STREAK_INTERVAL_MS = 15_000;
+const STREAK_BONUS_COINS = 3;
+
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
 }
@@ -56,6 +61,11 @@ export class GameService {
   readonly highestCombo = signal(1);
 
   private comboTimer?: number;
+
+  private lastWave = 1;
+  private lastShipEnergy = 0;
+  private streakElapsedMs = 0;
+  private nextStreakMilestoneMs = STREAK_INTERVAL_MS;
 
   private readonly collectables = inject(GameCollectableService);
   private readonly landscape = inject(GameLandscapeService);
@@ -147,6 +157,14 @@ export class GameService {
         this.achievementService.addCumulative('veteran', 1);
         if (isBoss) {
           this.achievementService.checkMilestone('boss_hunter', 1);
+        }
+
+        // Wave milestone: announce new wave and award bonus coins
+        const wave = Math.floor(newKills / KILLS_PER_WAVE) + 1;
+        if (wave > this.lastWave) {
+          this.lastWave = wave;
+          this.addCoins(WAVE_BONUS_COINS);
+          this.gameScreen.showWaveAnnouncement(wave);
         }
       }
     });
@@ -254,6 +272,11 @@ export class GameService {
     this.#paused.set(false);
     this.started.set(true);
     this.gameScreen.pauseButtonVisible = true;
+    // Reset wave and streak tracking for the new game session
+    this.lastWave = 1;
+    this.lastShipEnergy = this.ship.instance.energy;
+    this.streakElapsedMs = 0;
+    this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
   }
 
   async openCredits(requester: AppScreen): Promise<void> {
@@ -321,6 +344,24 @@ export class GameService {
       }
 
       this.updatables.forEach((updatable) => updatable.update(delta, this.level()));
+
+      // Track damage for screen shake and survival streak
+      const currentEnergy = this.ship.instance.energy;
+      if (currentEnergy < this.lastShipEnergy && currentEnergy > 0) {
+        // Player took damage but is still alive: shake screen and reset streak
+        this.streakElapsedMs = 0;
+        this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
+        this.gameScreen.applyScreenShake();
+      } else if (currentEnergy > 0) {
+        // Player is alive and unharmed this frame: accumulate streak time
+        this.streakElapsedMs += delta.deltaMS;
+        if (this.streakElapsedMs >= this.nextStreakMilestoneMs) {
+          this.nextStreakMilestoneMs += STREAK_INTERVAL_MS;
+          this.addCoins(STREAK_BONUS_COINS);
+          this.gameScreen.showFloatingText(`🛡 +${STREAK_BONUS_COINS}`);
+        }
+      }
+      this.lastShipEnergy = currentEnergy;
 
       if (this.ship.instance.energy === 0) {
         void this.storage.setHighscore(this.kills(), this.level());
