@@ -52,6 +52,10 @@ const WAVE_ANNOUNCEMENT_STROKE_WIDTH = 4;
 const WAVE_ANNOUNCEMENT_DISPLAY_MS = 2000;
 const WAVE_ANNOUNCEMENT_FADE_S = 0.5;
 const WAVE_ANNOUNCEMENT_Y_OFFSET = 60;
+// eslint-disable-next-line no-magic-numbers
+const WAVE_ANNOUNCEMENT_FILL_COLOR = 0xffdd00;
+// eslint-disable-next-line no-magic-numbers
+const WAVE_ANNOUNCEMENT_STROKE_COLOR = 0x000000;
 // Screen shake constants
 const SHAKE_AMPLITUDE = 6;
 const SHAKE_STEP_DURATION_S = 0.05;
@@ -397,11 +401,9 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
         fontFamily: 'Arial',
         fontSize: WAVE_ANNOUNCEMENT_FONT_SIZE,
         fontWeight: 'bold',
-        // eslint-disable-next-line no-magic-numbers
-        fill: 0xffdd00,
+        fill: WAVE_ANNOUNCEMENT_FILL_COLOR,
         stroke: {
-          // eslint-disable-next-line no-magic-numbers
-          color: 0x000000,
+          color: WAVE_ANNOUNCEMENT_STROKE_COLOR,
           width: WAVE_ANNOUNCEMENT_STROKE_WIDTH,
         },
         align: 'center',
