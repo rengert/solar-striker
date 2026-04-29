@@ -46,6 +46,16 @@ const ACHIEVEMENT_BANNER_SHOW_MS = 3000;
 const ACHIEVEMENT_BANNER_SLIDE_DURATION = 0.4;
 const ACHIEVEMENT_BANNER_FADE_DURATION = 0.3;
 const ACHIEVEMENT_BANNER_SUBTITLE_SPACER = 4;
+// Wave announcement constants
+const WAVE_ANNOUNCEMENT_FONT_SIZE = 30;
+const WAVE_ANNOUNCEMENT_STROKE_WIDTH = 4;
+const WAVE_ANNOUNCEMENT_DISPLAY_MS = 2000;
+const WAVE_ANNOUNCEMENT_FADE_S = 0.5;
+const WAVE_ANNOUNCEMENT_Y_OFFSET = 60;
+// Screen shake constants
+const SHAKE_AMPLITUDE = 6;
+const SHAKE_STEP_DURATION_S = 0.05;
+const SHAKE_REPEAT_COUNT = 5;
 
 @Injectable()
 export class GameScreenService extends UpdatableService implements OnDestroy {
@@ -309,6 +319,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       gsap.killTweensOf(this.floatingContainer);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      gsap.killTweensOf(this.application.stage);
     } catch {}
   }
 
@@ -375,6 +387,65 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
         },
       });
     }, BOSS_WARNING_DISPLAY_MS);
+  }
+
+  /** Displays a golden "⚡ WAVE X ⚡" announcement and awards a coin bonus per wave. */
+  showWaveAnnouncement(wave: number): void {
+    const text = new Text({
+      text: `⚡ WAVE ${wave} ⚡`,
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: WAVE_ANNOUNCEMENT_FONT_SIZE,
+        fontWeight: 'bold',
+        // eslint-disable-next-line no-magic-numbers
+        fill: 0xffdd00,
+        stroke: {
+          // eslint-disable-next-line no-magic-numbers
+          color: 0x000000,
+          width: WAVE_ANNOUNCEMENT_STROKE_WIDTH,
+        },
+        align: 'center',
+      }),
+    });
+    // eslint-disable-next-line no-magic-numbers
+    text.anchor.set(0.5);
+    text.x = this.application.screen.width / SCREEN_CENTER_DIVIDER;
+    text.y = this.application.screen.height / SCREEN_CENTER_DIVIDER - WAVE_ANNOUNCEMENT_Y_OFFSET;
+    this.addToStage(text);
+
+    setTimeout(() => {
+      void gsap.to(text, {
+        alpha: 0,
+        duration: WAVE_ANNOUNCEMENT_FADE_S,
+        onComplete: () => {
+          text.parent?.removeChild(text);
+          text.destroy();
+        },
+      });
+    }, WAVE_ANNOUNCEMENT_DISPLAY_MS);
+  }
+
+  /** Briefly shakes the game stage to provide tactile damage feedback. */
+  applyScreenShake(): void {
+    const stage = this.application.stage;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      gsap.killTweensOf(stage);
+    } catch {}
+    void gsap.fromTo(
+      stage,
+      { x: -SHAKE_AMPLITUDE },
+      {
+        x: SHAKE_AMPLITUDE,
+        duration: SHAKE_STEP_DURATION_S,
+        yoyo: true,
+        repeat: SHAKE_REPEAT_COUNT,
+        ease: 'power1.inOut',
+        onComplete: () => {
+          stage.x = 0;
+        },
+      },
+    );
   }
 
   /** Shows a brief achievement-unlocked banner in the bottom-right corner. */
