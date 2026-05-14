@@ -62,7 +62,16 @@ describe('GameService', () => {
         { provide: GameMeteorService, useValue: {} },
         {
           provide: GameScreenService,
-          useValue: { coins: 0, kills: 0, level: 0, pauseButtonVisible: false, onPause: undefined },
+          useValue: {
+            coins: 0,
+            kills: 0,
+            level: 0,
+            pauseButtonVisible: false,
+            onPause: undefined,
+            showWaveAnnouncement: jasmine.createSpy('showWaveAnnouncement'),
+            applyScreenShake: jasmine.createSpy('applyScreenShake'),
+            showFloatingText: jasmine.createSpy('showFloatingText'),
+          },
         },
         {
           provide: GameShipService,
@@ -318,6 +327,74 @@ describe('GameService', () => {
       objectService.triggerCallbacks(meteor, playerRocket);
 
       expect(service.sessionCoins()).toBe(1);
+    });
+  });
+
+  describe('wave milestone logic', () => {
+    const KILLS_PER_WAVE = 25;
+    const WAVE_BONUS_COINS = 5;
+    let gameScreenMock: { showWaveAnnouncement: jasmine.Spy };
+    let playerShip: ReturnType<typeof createMockObject>;
+    let playerRocket: ReturnType<typeof createMockObject>;
+
+    beforeEach(() => {
+      // Wave logic is guarded by this.started()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).started.set(true);
+      gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
+      playerShip = createMockObject(ObjectType.ship);
+      playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+    });
+
+    it('should not fire a wave announcement before reaching 25 kills', () => {
+      for (let i = 0; i < KILLS_PER_WAVE - 1; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      expect(gameScreenMock.showWaveAnnouncement).not.toHaveBeenCalled();
+    });
+
+    it('should fire wave announcement at exactly 25 kills (wave 2)', () => {
+      for (let i = 0; i < KILLS_PER_WAVE; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledOnceWith(2);
+    });
+
+    it('should award WAVE_BONUS_COINS flat coins at the wave milestone', () => {
+      // Trigger 24 kills first (no wave boundary crossed, combo accumulates)
+      for (let i = 0; i < KILLS_PER_WAVE - 1; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      const coinsBefore = service.sessionCoins();
+      // Kill 25 crosses the wave boundary; kill 25 is not a killsPerCoin multiple so only wave bonus fires
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      const coinsDelta = service.sessionCoins() - coinsBefore;
+      // Bonus must be exactly WAVE_BONUS_COINS (flat, not multiplied by combo)
+      expect(coinsDelta).toBe(WAVE_BONUS_COINS);
+    });
+
+    it('should not refire the wave announcement for kills within the same wave', () => {
+      for (let i = 0; i < KILLS_PER_WAVE + 1; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledTimes(1);
+    });
+
+    it('should fire a second wave announcement at 50 kills (wave 3)', () => {
+      for (let i = 0; i < KILLS_PER_WAVE * 2; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledTimes(2);
+      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledWith(3);
+    });
+
+    it('should not fire wave announcement when game has not started', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).started.set(false);
+      for (let i = 0; i < KILLS_PER_WAVE; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      expect(gameScreenMock.showWaveAnnouncement).not.toHaveBeenCalled();
     });
   });
 });

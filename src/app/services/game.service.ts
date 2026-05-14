@@ -160,11 +160,13 @@ export class GameService {
         }
 
         // Wave milestone: announce new wave and award flat bonus coins
-        const wave = Math.floor(newKills / KILLS_PER_WAVE) + 1;
-        if (wave > this.lastWave) {
-          this.lastWave = wave;
-          this.addFlatCoins(WAVE_BONUS_COINS);
-          this.gameScreen.showWaveAnnouncement(wave);
+        if (this.started()) {
+          const wave = Math.floor(newKills / KILLS_PER_WAVE) + 1;
+          if (wave > this.lastWave) {
+            this.lastWave = wave;
+            this.addBonusCoins(WAVE_BONUS_COINS);
+            this.gameScreen.showWaveAnnouncement(wave);
+          }
         }
       }
     });
@@ -215,16 +217,13 @@ export class GameService {
   }
 
   private addCoins(baseCoins: number): void {
-    // multiply awarded coins by current combo
+    // multiply awarded coins by current combo then delegate to shared path
     const multiplier = Math.max(1, Math.floor(this.combo()));
-    const amount = Math.max(0, Math.floor(baseCoins * multiplier));
-    if (amount === 0) {
-      return;
-    }
-    this.sessionCoins.update((value) => value + amount);
+    this.addBonusCoins(baseCoins * multiplier);
   }
 
-  private addFlatCoins(amount: number): void {
+  /** Awards coins that bypass the combo multiplier (flat bonuses like wave/streak rewards). */
+  private addBonusCoins(amount: number): void {
     const clamped = Math.max(0, Math.floor(amount));
     if (clamped === 0) {
       return;
@@ -355,18 +354,22 @@ export class GameService {
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;
-      if (currentEnergy < this.lastShipEnergy && currentEnergy > 0) {
-        // Player took damage but is still alive: shake screen and reset streak
+      if (currentEnergy < this.lastShipEnergy) {
+        // Player took damage: shake screen and reset streak
         this.streakElapsedMs = 0;
         this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
         this.gameScreen.applyScreenShake();
       } else if (currentEnergy > 0) {
         // Player is alive and unharmed this frame: accumulate streak time
         this.streakElapsedMs += delta.deltaMS;
-        if (this.streakElapsedMs >= this.nextStreakMilestoneMs) {
+        while (this.streakElapsedMs >= this.nextStreakMilestoneMs) {
           this.nextStreakMilestoneMs += STREAK_INTERVAL_MS;
-          this.addFlatCoins(STREAK_BONUS_COINS);
-          this.gameScreen.showFloatingText(`🛡 +${STREAK_BONUS_COINS}`);
+          this.addBonusCoins(STREAK_BONUS_COINS);
+          this.gameScreen.showFloatingText(
+            `🛡 +${STREAK_BONUS_COINS}`,
+            this.ship.instance.x,
+            this.ship.instance.y,
+          );
         }
       }
       this.lastShipEnergy = currentEnergy;
