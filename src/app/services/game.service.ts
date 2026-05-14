@@ -159,11 +159,11 @@ export class GameService {
           this.achievementService.checkMilestone('boss_hunter', 1);
         }
 
-        // Wave milestone: announce new wave and award bonus coins
+        // Wave milestone: announce new wave and award flat bonus coins
         const wave = Math.floor(newKills / KILLS_PER_WAVE) + 1;
         if (wave > this.lastWave) {
           this.lastWave = wave;
-          this.addCoins(WAVE_BONUS_COINS);
+          this.addFlatCoins(WAVE_BONUS_COINS);
           this.gameScreen.showWaveAnnouncement(wave);
         }
       }
@@ -222,6 +222,14 @@ export class GameService {
       return;
     }
     this.sessionCoins.update((value) => value + amount);
+  }
+
+  private addFlatCoins(amount: number): void {
+    const clamped = Math.max(0, Math.floor(amount));
+    if (clamped === 0) {
+      return;
+    }
+    this.sessionCoins.update((value) => value + clamped);
   }
 
   async init(): Promise<void> {
@@ -357,7 +365,7 @@ export class GameService {
         this.streakElapsedMs += delta.deltaMS;
         if (this.streakElapsedMs >= this.nextStreakMilestoneMs) {
           this.nextStreakMilestoneMs += STREAK_INTERVAL_MS;
-          this.addCoins(STREAK_BONUS_COINS);
+          this.addFlatCoins(STREAK_BONUS_COINS);
           this.gameScreen.showFloatingText(`🛡 +${STREAK_BONUS_COINS}`);
         }
       }
