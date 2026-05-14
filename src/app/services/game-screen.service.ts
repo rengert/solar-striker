@@ -393,7 +393,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     }, BOSS_WARNING_DISPLAY_MS);
   }
 
-  /** Displays a golden "⚡ WAVE X ⚡" announcement and awards a coin bonus per wave. */
+  /** Displays a golden "⚡ WAVE X ⚡" announcement banner on screen. */
   showWaveAnnouncement(wave: number): void {
     const text = new Text({
       text: `⚡ WAVE ${wave} ⚡`,
