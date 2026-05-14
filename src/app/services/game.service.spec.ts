@@ -46,7 +46,7 @@ describe('GameService', () => {
         {
           provide: ApplicationService,
           useValue: {
-            stage: { addChild: jasmine.createSpy('addChild') },
+            stage: { addChild: jasmine.createSpy('addChild'), on: jasmine.createSpy('on') },
             ticker: {
               add: jasmine.createSpy('add'),
               remove: jasmine.createSpy('remove'),
@@ -56,10 +56,10 @@ describe('GameService', () => {
             screen: { width: 800, height: 600 },
           },
         },
-        { provide: GameCollectableService, useValue: {} },
-        { provide: GameEnemyService, useValue: {} },
-        { provide: GameLandscapeService, useValue: {} },
-        { provide: GameMeteorService, useValue: {} },
+        { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
+        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update') } },
+        { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update') } },
+        { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update') } },
         {
           provide: GameScreenService,
           useValue: {
@@ -71,13 +71,19 @@ describe('GameService', () => {
             showWaveAnnouncement: jasmine.createSpy('showWaveAnnouncement'),
             applyScreenShake: jasmine.createSpy('applyScreenShake'),
             showFloatingText: jasmine.createSpy('showFloatingText'),
+            update: jasmine.createSpy('update'),
           },
         },
         {
           provide: GameShipService,
-          useValue: { instance: { autoFire: false }, applyUpgrades: jasmine.createSpy('applyUpgrades') },
+          useValue: {
+            instance: { autoFire: false, energy: 10, x: 100, y: 200 },
+            applyUpgrades: jasmine.createSpy('applyUpgrades'),
+            spawn: jasmine.createSpy('spawn'),
+            update: jasmine.createSpy('update'),
+          },
         },
-        { provide: GameShotService, useValue: {} },
+        { provide: GameShotService, useValue: { update: jasmine.createSpy('update') } },
         { provide: ShipUpgradeService, useValue: {} },
         {
           provide: PlayerShipService,
@@ -109,6 +115,7 @@ describe('GameService', () => {
           useValue: {
             getCoins: jasmine.createSpy('getCoins').and.returnValue(Promise.resolve(0)),
             setCoins: jasmine.createSpy('setCoins').and.returnValue(Promise.resolve()),
+            setHighscore: jasmine.createSpy('setHighscore').and.returnValue(Promise.resolve()),
           },
         },
       ],
@@ -395,6 +402,104 @@ describe('GameService', () => {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
       expect(gameScreenMock.showWaveAnnouncement).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('damage tracking and survival streak', () => {
+    const STREAK_INTERVAL_MS = 15_000;
+    const STREAK_BONUS_COINS = 3;
+    let tickerCallback: (delta: { deltaMS: number }) => void;
+    let gameScreenMock: { applyScreenShake: jasmine.Spy; showFloatingText: jasmine.Spy };
+    let shipInstance: { autoFire: boolean; energy: number; x: number; y: number };
+
+    beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).started.set(true);
+      shipInstance = TestBed.inject(GameShipService).instance as typeof shipInstance;
+      shipInstance.energy = 10;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).lastShipEnergy = 10;
+      // Prevent YouAreDeadPopup construction (translation not fully mocked)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      spyOn(service as any, 'presentPopup').and.returnValue(Promise.resolve());
+      // Register the ticker callback by calling setup()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).setup();
+      const tickerMock = TestBed.inject(ApplicationService).ticker as unknown as { add: jasmine.Spy };
+      tickerCallback = tickerMock.add.calls.mostRecent().args[0] as typeof tickerCallback;
+      gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
+    });
+
+    it('should call applyScreenShake when ship energy decreases', () => {
+      shipInstance.energy = 8;
+      tickerCallback({ deltaMS: 16 });
+      expect(gameScreenMock.applyScreenShake).toHaveBeenCalled();
+    });
+
+    it('should call applyScreenShake even on the killing blow (energy → 0)', () => {
+      shipInstance.energy = 0;
+      tickerCallback({ deltaMS: 16 });
+      expect(gameScreenMock.applyScreenShake).toHaveBeenCalled();
+    });
+
+    it('should not call applyScreenShake when energy is unchanged', () => {
+      tickerCallback({ deltaMS: 16 });
+      expect(gameScreenMock.applyScreenShake).not.toHaveBeenCalled();
+    });
+
+    it('should not call applyScreenShake when energy increases (healing)', () => {
+      shipInstance.energy = 15;
+      tickerCallback({ deltaMS: 16 });
+      expect(gameScreenMock.applyScreenShake).not.toHaveBeenCalled();
+    });
+
+    it('should award STREAK_BONUS_COINS after STREAK_INTERVAL_MS of undamaged time', () => {
+      const coinsBefore = service.sessionCoins();
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS });
+      expect(service.sessionCoins()).toBe(coinsBefore + STREAK_BONUS_COINS);
+      expect(gameScreenMock.showFloatingText).toHaveBeenCalledWith(
+        `🛡 +${STREAK_BONUS_COINS}`,
+        shipInstance.x,
+        shipInstance.y,
+      );
+    });
+
+    it('should not award streak coins before STREAK_INTERVAL_MS elapses', () => {
+      const coinsBefore = service.sessionCoins();
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS - 1 });
+      expect(service.sessionCoins()).toBe(coinsBefore);
+      expect(gameScreenMock.showFloatingText).not.toHaveBeenCalled();
+    });
+
+    it('should reset the streak timer on damage and not award until a new full interval', () => {
+      // partially advance streak
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS - 1 });
+      // take damage — this resets streak
+      shipInstance.energy = 8;
+      tickerCallback({ deltaMS: 16 });
+      // energy stays at 8 (no more damage), but streak must restart from scratch
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).lastShipEnergy = 8;
+      // advance almost a full interval — should NOT award yet
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS - 1 });
+      expect(gameScreenMock.showFloatingText).not.toHaveBeenCalled();
+    });
+
+    it('should only award one streak bonus per tick even if delta is very large', () => {
+      const coinsBefore = service.sessionCoins();
+      // simulate a giant delta (3× the interval — e.g. tab was suspended)
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS * 3 });
+      // only one bonus should be awarded (cap per tick)
+      expect(service.sessionCoins()).toBe(coinsBefore + STREAK_BONUS_COINS);
+      expect(gameScreenMock.showFloatingText).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not accumulate streak while ship energy is 0', () => {
+      shipInstance.energy = 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).lastShipEnergy = 0;
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS + 1 });
+      expect(gameScreenMock.showFloatingText).not.toHaveBeenCalled();
     });
   });
 });

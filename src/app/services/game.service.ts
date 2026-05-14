@@ -362,8 +362,10 @@ export class GameService {
       } else if (currentEnergy > 0) {
         // Player is alive and unharmed this frame: accumulate streak time
         this.streakElapsedMs += delta.deltaMS;
-        while (this.streakElapsedMs >= this.nextStreakMilestoneMs) {
-          this.nextStreakMilestoneMs += STREAK_INTERVAL_MS;
+        if (this.streakElapsedMs >= this.nextStreakMilestoneMs) {
+          // Reset elapsed time so a tab-suspend or lag spike cannot award multiple bonuses
+          this.streakElapsedMs = 0;
+          this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
           this.addBonusCoins(STREAK_BONUS_COINS);
           this.gameScreen.showFloatingText(
             `🛡 +${STREAK_BONUS_COINS}`,

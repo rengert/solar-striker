@@ -99,8 +99,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   private lifesLabel: Graphics | undefined;
   private pauseButton?: Text;
 
-  /** Pending setTimeout handles that must be cleared on destroy. */
-  private readonly pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
+  /** Pending announcement timeouts and their associated Text nodes, cleared on destroy. */
+  private readonly pendingAnnouncements: Array<{ handle: ReturnType<typeof setTimeout>; text: Text }> = [];
 
   onPause?: () => void;
 
@@ -314,11 +314,13 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // clear all pending announcement timeouts
-    for (const handle of this.pendingTimeouts) {
+    // cancel pending announcement timers and clean up any visible text nodes
+    for (const { handle, text } of this.pendingAnnouncements) {
       clearTimeout(handle);
+      text.parent?.removeChild(text);
+      text.destroy();
     }
-    this.pendingTimeouts.length = 0;
+    this.pendingAnnouncements.length = 0;
     try {
       // kill any running tweens to avoid running after destroy
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -425,9 +427,9 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.addToStage(text);
 
     const handle = setTimeout(() => {
-      const idx = this.pendingTimeouts.indexOf(handle);
+      const idx = this.pendingAnnouncements.findIndex((a) => a.handle === handle);
       if (idx !== -1) {
-        this.pendingTimeouts.splice(idx, 1);
+        this.pendingAnnouncements.splice(idx, 1);
       }
       void gsap.to(text, {
         alpha: 0,
@@ -438,7 +440,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
         },
       });
     }, WAVE_ANNOUNCEMENT_DISPLAY_MS);
-    this.pendingTimeouts.push(handle);
+    this.pendingAnnouncements.push({ handle, text });
   }
 
   /** Briefly shakes the game stage to provide tactile damage feedback. */
