@@ -99,6 +99,9 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   private lifesLabel: Graphics | undefined;
   private pauseButton?: Text;
 
+  /** Pending setTimeout handles that must be cleared on destroy. */
+  private readonly pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
+
   onPause?: () => void;
 
   set kills(value: number) {
@@ -311,6 +314,11 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // clear all pending announcement timeouts
+    for (const handle of this.pendingTimeouts) {
+      clearTimeout(handle);
+    }
+    this.pendingTimeouts.length = 0;
     try {
       // kill any running tweens to avoid running after destroy
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -324,7 +332,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       gsap.killTweensOf(this.floatingContainer);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      gsap.killTweensOf(this.application.stage);
+      gsap.killTweensOf(this.application.stage, 'x');
+      this.application.stage.x = 0;
     } catch {}
   }
 
@@ -415,7 +424,11 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     text.y = this.application.screen.height / SCREEN_CENTER_DIVIDER - WAVE_ANNOUNCEMENT_Y_OFFSET;
     this.addToStage(text);
 
-    setTimeout(() => {
+    const handle = setTimeout(() => {
+      const idx = this.pendingTimeouts.indexOf(handle);
+      if (idx !== -1) {
+        this.pendingTimeouts.splice(idx, 1);
+      }
       void gsap.to(text, {
         alpha: 0,
         duration: WAVE_ANNOUNCEMENT_FADE_S,
@@ -425,15 +438,18 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
         },
       });
     }, WAVE_ANNOUNCEMENT_DISPLAY_MS);
+    this.pendingTimeouts.push(handle);
   }
 
   /** Briefly shakes the game stage to provide tactile damage feedback. */
   applyScreenShake(): void {
     const stage = this.application.stage;
     try {
+      // kill only the x-position tween so other stage tweens are unaffected
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      gsap.killTweensOf(stage);
+      gsap.killTweensOf(stage, 'x');
     } catch {}
+    stage.x = 0;
     void gsap.fromTo(
       stage,
       { x: -SHAKE_AMPLITUDE },
