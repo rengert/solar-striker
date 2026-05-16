@@ -60,6 +60,7 @@ const WAVE_ANNOUNCEMENT_STROKE_COLOR = 0x000000;
 const SHAKE_AMPLITUDE = 6;
 const SHAKE_STEP_DURATION_S = 0.05;
 const SHAKE_REPEAT_COUNT = 5;
+const ITEM_NOT_FOUND_INDEX = -1;
 
 @Injectable()
 export class GameScreenService extends UpdatableService implements OnDestroy {
@@ -428,7 +429,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
 
     const handle = setTimeout(() => {
       const idx = this.pendingAnnouncements.findIndex((a) => a.handle === handle);
-      if (idx !== -1) {
+      if (idx !== ITEM_NOT_FOUND_INDEX) {
         this.pendingAnnouncements.splice(idx, 1);
       }
       void gsap.to(text, {
