@@ -8,6 +8,7 @@ import { Ship } from '../models/pixijs/ship';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 import { AchievementService } from './achievement.service';
+import { GameShotService } from './game-shot.service';
 
 interface Dictionary<T> {
   [key: string]: T;
@@ -22,11 +23,16 @@ const NUKE_TEXT_FADE_S = 0.4;
 const NUKE_FLASH_COLOR = 0xffffff;
 const NUKE_TEXT_COLOR = 0xff6600;
 const CENTER_DIVISOR = 2;
+const ORBITAL_STRIKE_FONT_SIZE = 40;
+const ORBITAL_STRIKE_STROKE_WIDTH = 5;
+const ORBITAL_STRIKE_FLASH_COLOR = 0x00ffff;
+const ORBITAL_STRIKE_TEXT_COLOR = 0x0088ff;
 
 @Injectable()
 export class GameCollectableService extends UpdatableService {
   private readonly object = inject(ObjectService);
   private readonly achievementService = inject(AchievementService);
+  private readonly shotService = inject(GameShotService);
 
   private readonly animations: Dictionary<Texture[]> = {};
 
@@ -69,6 +75,10 @@ export class GameCollectableService extends UpdatableService {
       this.applyNuke(by);
       this.achievementService.checkMilestone('nuke_deployed', 1);
     }
+
+    if (powerUp.config.powerUp.orbitalStrike === true) {
+      this.applyOrbitalStrike(ship);
+    }
   }
 
   private applyNuke(ship: ObjectModelType): void {
@@ -104,6 +114,57 @@ export class GameCollectableService extends UpdatableService {
         stroke: {
           color: NUKE_FLASH_COLOR,
           width: NUKE_STROKE_WIDTH,
+        },
+        align: 'center',
+      }),
+    });
+    text.anchor.set(THE_MIDDLE);
+    text.x = this.application.screen.width / CENTER_DIVISOR;
+    text.y = this.application.screen.height / CENTER_DIVISOR;
+    this.application.stage.addChild(text);
+
+    setTimeout(() => {
+      void gsap.to(text, {
+        alpha: 0,
+        duration: NUKE_TEXT_FADE_S,
+        onComplete: () => {
+          text.parent?.removeChild(text);
+          text.destroy();
+        },
+      });
+    }, NUKE_TEXT_DISPLAY_MS);
+  }
+
+  private applyOrbitalStrike(ship: Ship): void {
+    this.shotService.fireOrbitalStrike(ship);
+
+    const flash = new Graphics();
+    // eslint-disable-next-line no-magic-numbers
+    flash.fill(ORBITAL_STRIKE_FLASH_COLOR);
+    flash.rect(0, 0, this.application.screen.width, this.application.screen.height);
+    flash.fill();
+    // eslint-disable-next-line no-magic-numbers
+    flash.alpha = 0.4;
+    this.application.stage.addChild(flash);
+    void gsap.to(flash, {
+      alpha: 0,
+      duration: NUKE_FLASH_DURATION_S,
+      onComplete: () => {
+        flash.parent?.removeChild(flash);
+        flash.destroy();
+      },
+    });
+
+    const text = new Text({
+      text: '🌀 ORBITAL STRIKE! 🌀',
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: ORBITAL_STRIKE_FONT_SIZE,
+        fontWeight: 'bold',
+        fill: ORBITAL_STRIKE_TEXT_COLOR,
+        stroke: {
+          color: ORBITAL_STRIKE_FLASH_COLOR,
+          width: ORBITAL_STRIKE_STROKE_WIDTH,
         },
         align: 'center',
       }),

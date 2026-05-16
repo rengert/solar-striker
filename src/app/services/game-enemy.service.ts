@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
-import { AnimatedGameSprite, LoopData } from '../models/pixijs/animated-game-sprite';
+import { AnimatedGameSprite, LoopData, OrbitData } from '../models/pixijs/animated-game-sprite';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
@@ -46,6 +46,17 @@ const LARGE_ENEMY_SHOT_SPEED = 0.8;
 const LARGE_ENEMY_XSPEED = 0.08;
 const LARGE_ENEMY_EXPLOSION_COUNT = 3;
 const LARGE_ENEMY_EXPLOSION_SCALE = 2;
+
+const ORBITER_SPAWN_CHANCE = 0.12;
+const ORBITER_ORBIT_RADIUS = 45;
+// eslint-disable-next-line no-magic-numbers
+const ORBITER_ORBIT_DIAMETER = ORBITER_ORBIT_RADIUS * 2;
+// eslint-disable-next-line no-magic-numbers
+const ORBITER_ANGULAR_SPEED = (Math.PI * 2) / 2000;
+const ORBITER_SCALE = 1.2;
+const ORBITER_SHOT_SPEED = 0.5;
+// eslint-disable-next-line no-magic-numbers
+const ORBITER_TINT = 0x88ffff;
 
 const BOSS_LEVEL_INTERVAL =
   GAME_CONFIG.boss.killsInterval * GAME_CONFIG.killLevelFactor;
@@ -111,18 +122,32 @@ export class GameEnemyService extends UpdatableService {
     const enemies = this.object.enemies();
 
     enemies
-      .filter((enemy) => enemy.y > this.application.screen.height + OFF_SCREEN_BUFFER)
+      .filter((enemy) => {
+        if (enemy instanceof AnimatedGameSprite && enemy.orbitData !== undefined) {
+          return enemy.orbitData.centerY > this.application.screen.height + OFF_SCREEN_BUFFER + enemy.orbitData.radius;
+        }
+        return enemy.y > this.application.screen.height + OFF_SCREEN_BUFFER;
+      })
       .forEach((enemy) => {
-        enemy.y = 0;
-        enemy.targetX = undefined;
-        enemy.rotation = 0;
-        if (enemy instanceof Ship) {
-          enemy.energy = enemy.maxEnergy;
+        if (enemy instanceof AnimatedGameSprite && enemy.orbitData !== undefined) {
+          enemy.orbitData.centerX = Math.random() * this.application.screen.width;
+          enemy.orbitData.centerY = -enemy.orbitData.radius;
+          enemy.orbitData.angle = 0;
+          if (enemy instanceof Ship) {
+            enemy.energy = enemy.maxEnergy;
+          }
+        } else {
+          enemy.y = 0;
+          enemy.targetX = undefined;
+          enemy.rotation = 0;
+          if (enemy instanceof Ship) {
+            enemy.energy = enemy.maxEnergy;
+          }
+          if (enemy instanceof AnimatedGameSprite) {
+            enemy.loopData = undefined;
+          }
+          this.movementStates.delete(enemy);
         }
-        if (enemy instanceof AnimatedGameSprite) {
-          enemy.loopData = undefined;
-        }
-        this.movementStates.delete(enemy);
       });
 
     enemies.forEach((enemy) => this.updateMovement(enemy, level));
@@ -141,6 +166,11 @@ export class GameEnemyService extends UpdatableService {
 
   private spawn(level: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
+    const isOrbiter = Math.random() < ORBITER_SPAWN_CHANCE;
+    if (isOrbiter) {
+      this.spawnOrbiter(level, animations);
+      return;
+    }
     const isLarge = Math.random() < LARGE_ENEMY_SPAWN_CHANCE;
     // eslint-disable-next-line no-magic-numbers
     const maxSpeed = 0.5 + 0.03 * level;
@@ -186,9 +216,54 @@ export class GameEnemyService extends UpdatableService {
     this.updateMovement(enemy, level, true);
   }
 
+  private spawnOrbiter(level: number, animations: Record<string, Texture[]>): void {
+    // eslint-disable-next-line no-magic-numbers
+    const speed = 0.4 + 0.02 * level;
+    const orbiter = new Ship(
+      ShipType.enemy,
+      this.shotService,
+      this.explosionService,
+      speed,
+      animations['frame'],
+    );
+    orbiter.autoFire = true;
+    orbiter.animationSpeed = ENEMY_ANIMATION_SPEED;
+    orbiter.play();
+    orbiter.anchor.set(THE_MIDDLE);
+    orbiter.scale.set(ORBITER_SCALE);
+    // eslint-disable-next-line no-magic-numbers
+    orbiter.tint = ORBITER_TINT;
+    orbiter.shotSpeed = ORBITER_SHOT_SPEED;
+    const levelEnergy = ENEMY_BASE_ENERGY + Math.floor((level - 1) / ENEMY_ENERGY_LEVEL_STEP);
+    orbiter.maxEnergy = levelEnergy;
+    orbiter.energy = levelEnergy;
+
+    const centerX = ORBITER_ORBIT_RADIUS + Math.random() * (this.application.screen.width - ORBITER_ORBIT_DIAMETER);
+    // eslint-disable-next-line no-magic-numbers
+    const direction = (Math.random() < 0.5 ? 1 : -1) as 1 | -1;    const orbitData: OrbitData = {
+      centerX,
+      centerY: -ORBITER_ORBIT_RADIUS,
+      radius: ORBITER_ORBIT_RADIUS,
+      direction,
+      angularSpeed: ORBITER_ANGULAR_SPEED,
+      angle: 0,
+    };
+    orbiter.orbitData = orbitData;
+    orbiter.x = orbitData.centerX + ORBITER_ORBIT_RADIUS;
+    orbiter.y = orbitData.centerY;
+    orbiter.enableEnergyDisplay();
+    this.object.add(orbiter);
+    this.application.stage.addChild(orbiter);
+  }
+
   private updateMovement(enemy: ObjectModelType, level: number, force = false): void {
     if (enemy instanceof AnimatedGameSprite && enemy.isBoss) {
       this.updateBossMovement(enemy);
+      return;
+    }
+
+    // Orbiters self-navigate via orbitData - no additional movement logic needed
+    if (enemy instanceof AnimatedGameSprite && enemy.orbitData !== undefined) {
       return;
     }
 

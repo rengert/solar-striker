@@ -141,5 +141,30 @@ export const GAME_CONFIG: GameConfig = {
         nuke: true,
       },
     },
+    {
+      type: PowerUp.orb,
+      assetUrl: 'assets/game/powerups/pill/pill.json',
+      animationName: 'pill',
+      // eslint-disable-next-line no-magic-numbers
+      tint: 0xaa00ff,
+      powerUp: {
+        speed: 0,
+        shot: 0,
+        energy: 3,
+      },
+    },
+    {
+      type: PowerUp.orbitalStrike,
+      assetUrl: 'assets/game/powerups/bolt/bolt.json',
+      animationName: 'bolt',
+      // eslint-disable-next-line no-magic-numbers
+      tint: 0x00ffff,
+      powerUp: {
+        speed: 0,
+        shot: 0,
+        energy: 0,
+        orbitalStrike: true,
+      },
+    },
   ],
 };
