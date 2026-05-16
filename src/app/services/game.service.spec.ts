@@ -19,6 +19,9 @@ import { AchievementService } from './achievement.service';
 import { GAME_CONFIG } from '../game-constants';
 import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
 
+const WAVE_TWO = 2;
+const WAVE_THREE = 3;
+
 function createMockObject(
   type: ObjectType,
   overrides: Record<string, unknown> = {},
@@ -364,7 +367,7 @@ describe('GameService', () => {
       for (let i = 0; i < KILLS_PER_WAVE; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
-      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledOnceWith(2);
+      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledOnceWith(WAVE_TWO);
     });
 
     it('should award WAVE_BONUS_COINS flat coins at the wave milestone', () => {
@@ -388,11 +391,11 @@ describe('GameService', () => {
     });
 
     it('should fire a second wave announcement at 50 kills (wave 3)', () => {
-      for (let i = 0; i < KILLS_PER_WAVE * 2; i++) {
+      for (let i = 0; i < KILLS_PER_WAVE * WAVE_TWO; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
-      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledTimes(2);
-      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledWith(3);
+      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledTimes(WAVE_TWO);
+      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledWith(WAVE_THREE);
     });
 
     it('should not fire wave announcement when game has not started', () => {
@@ -488,7 +491,7 @@ describe('GameService', () => {
     it('should only award one streak bonus per tick even if delta is very large', () => {
       const coinsBefore = service.sessionCoins();
       // simulate a giant delta (3× the interval — e.g. tab was suspended)
-      tickerCallback({ deltaMS: STREAK_INTERVAL_MS * 3 });
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS * WAVE_THREE });
       // only one bonus should be awarded (cap per tick)
       expect(service.sessionCoins()).toBe(coinsBefore + STREAK_BONUS_COINS);
       expect(gameScreenMock.showFloatingText).toHaveBeenCalledTimes(1);
