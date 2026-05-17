@@ -11,5 +11,6 @@ export interface PowerUpConfig {
     energy: number;
     shield?: number;
     nuke?: boolean;
+    orbitalStrike?: boolean;
   };
 }

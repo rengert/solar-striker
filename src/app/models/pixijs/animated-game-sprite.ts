@@ -29,6 +29,16 @@ export interface LoopData {
   progress: number;
 }
 
+export interface OrbitData {
+  centerX: number;
+  centerY: number;
+  readonly radius: number;
+  // eslint-disable-next-line no-magic-numbers
+  readonly direction: 1 | -1;
+  readonly angularSpeed: number;
+  angle: number;
+}
+
 export class AnimatedGameSprite extends AnimatedSprite {
   power = 1;
   isBoss = false;
@@ -39,6 +49,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   targetX?: number;
   xSpeed: number = 1;
   loopData: LoopData | undefined;
+  orbitData: OrbitData | undefined;
 
   get isShielded(): boolean {
     return false;
@@ -150,7 +161,12 @@ export class AnimatedGameSprite extends AnimatedSprite {
     }
     super.update(ticker);
 
-    if (this.loopData) {
+    if (this.orbitData) {
+      this.orbitData.centerY += ticker.deltaMS * this.speed * SPEED_SCALE;
+      this.orbitData.angle += ticker.deltaMS * this.orbitData.angularSpeed * this.orbitData.direction;
+      this.x = this.orbitData.centerX + this.orbitData.radius * Math.cos(this.orbitData.angle);
+      this.y = this.orbitData.centerY + this.orbitData.radius * Math.sin(this.orbitData.angle);
+    } else if (this.loopData) {
       this.loopData.progress += ticker.deltaMS * this.loopData.speed;
       this.x =
         this.loopData.startX +
