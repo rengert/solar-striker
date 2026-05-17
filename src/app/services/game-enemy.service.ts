@@ -58,8 +58,6 @@ const ORBITER_SHOT_SPEED = 0.5;
 // eslint-disable-next-line no-magic-numbers
 const ORBITER_TINT = 0x88ffff;
 
-const BOSS_LEVEL_INTERVAL =
-  GAME_CONFIG.boss.killsInterval * GAME_CONFIG.killLevelFactor;
 const BOSS_ENERGY_BASE = 30;
 const BOSS_ENERGY_LEVEL_STEP = 5;
 const BOSS_SCALE = 3;
@@ -71,7 +69,6 @@ const BOSS_XSPEED = 0.035;
 const BOSS_TINT = 0xff3333;
 const BOSS_SWEEP_MARGIN = 30;
 const BOSS_SWEEP_INTERVAL_MS = 3000;
-const BOSS_MINIMUM_LEVEL = 2;
 const BOSS_SCREEN_CENTER_DIVIDER = 2;
 const BOSS_EXPLOSION_COUNT = 5;
 const BOSS_EXPLOSION_SCALE = 3;
@@ -89,9 +86,11 @@ export class GameEnemyService extends UpdatableService {
   private readonly shotService = inject(GameShotService);
   private readonly gameScreen = inject(GameScreenService);
 
+  /** Set to true by GameService when the stage boss is active; prevents normal enemy spawning. */
+  bossFightActive = false;
+
   private elapsed = 0;
   private lastEnemySpawn: number | null = null;
-  private lastBossLevel = 0;
   private boss: Ship | null = null;
 
   private enemySprite!: Spritesheet;
@@ -106,17 +105,6 @@ export class GameEnemyService extends UpdatableService {
 
     if (this.boss?.destroying || this.boss?.destroyed) {
       this.boss = null;
-    }
-
-    const bossLevelThreshold = Math.floor(level / BOSS_LEVEL_INTERVAL) * BOSS_LEVEL_INTERVAL;
-    if (
-      bossLevelThreshold >= BOSS_MINIMUM_LEVEL &&
-      bossLevelThreshold !== this.lastBossLevel &&
-      !this.boss
-    ) {
-      this.lastBossLevel = bossLevelThreshold;
-      this.spawnBoss(bossLevelThreshold);
-      this.gameScreen.showBossWarning();
     }
 
     const enemies = this.object.enemies();
@@ -154,6 +142,7 @@ export class GameEnemyService extends UpdatableService {
 
     const check = Math.floor(this.elapsed);
     if (
+      !this.bossFightActive &&
       this.object.enemies().length < GAME_CONFIG.enemy.maxCount &&
       // eslint-disable-next-line no-magic-numbers
       check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + 0.1 * (level - 1))) === 0 &&
@@ -162,6 +151,12 @@ export class GameEnemyService extends UpdatableService {
       this.lastEnemySpawn = check;
       this.spawn(level);
     }
+  }
+
+  /** Called by GameService when the player has defeated enough enemies to trigger the stage boss. */
+  spawnStageBoss(stage: number): void {
+    this.spawnBoss(stage);
+    this.gameScreen.showBossWarning();
   }
 
   private spawn(level: number): void {
@@ -310,9 +305,9 @@ export class GameEnemyService extends UpdatableService {
     }
   }
 
-  private spawnBoss(level: number): void {
+  private spawnBoss(stage: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
-    const bossEnergy = BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (level - 1);
+    const bossEnergy = BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (stage - 1);
 
     const boss = new Ship(
       ShipType.enemy,

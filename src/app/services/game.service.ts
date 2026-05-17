@@ -1,6 +1,6 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
-import { GAME_CONFIG } from '../game-constants';
+import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -13,6 +13,7 @@ import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { PausePopup } from '../popups/pause-popup';
 import { SettingsPopup } from '../popups/settings-popup';
+import { VictoryPopup } from '../popups/victory-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { handleMouseMove } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
@@ -36,8 +37,7 @@ const METEOR_COIN_ENERGY_STEP = 20;
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
 
-const KILLS_PER_WAVE = 25;
-const WAVE_BONUS_COINS = 5;
+const STAGE_BONUS_COINS = 10;
 const STREAK_INTERVAL_MS = 15_000;
 const STREAK_BONUS_COINS = 3;
 
@@ -59,10 +59,11 @@ export class GameService {
   readonly coins = computed(() => this.storedCoins() + this.sessionCoins());
   readonly combo = signal(1);
   readonly highestCombo = signal(1);
+  readonly stage = signal(1);
 
   private comboTimer?: number;
 
-  private lastWave = 1;
+  private stageKills = 0;
   private lastShipEnergy = 0;
   private streakElapsedMs = 0;
   private nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -90,9 +91,6 @@ export class GameService {
     this.object,
     this.gameScreen,
   ];
-  private readonly level = computed(
-    () => Math.floor(this.kills() * GAME_CONFIG.killLevelFactor) + 1,
-  );
 
   private currentPopup?: AppScreen;
 
@@ -112,7 +110,7 @@ export class GameService {
       }
 
       this.gameScreen.kills = this.kills();
-      this.gameScreen.level = this.level();
+      this.gameScreen.level = this.stage();
       this.gameScreen.combo = this.combo();
       this.gameScreen.highestCombo = this.highestCombo();
       void this.storage.setCoins(this.coins());
@@ -127,7 +125,7 @@ export class GameService {
 
     // Achievement: track level milestones
     effect(() => {
-      const level = this.level();
+      const level = this.stage();
       this.achievementService.checkMilestone('level_10', level);
       this.achievementService.checkMilestone('level_20', level);
     });
@@ -150,6 +148,14 @@ export class GameService {
         const isBoss = (destroyedEnemy as AnimatedGameSprite).isBoss;
         if (isBoss) {
           this.addCoins(GAME_CONFIG.boss.coinsReward);
+          this.onBossDefeated();
+        } else if (this.started()) {
+          // Track kills within the current stage; trigger boss when threshold is reached
+          this.stageKills++;
+          if (!this.enemy.bossFightActive && this.stageKills >= GAME_CONFIG.killsPerStage) {
+            this.enemy.bossFightActive = true;
+            this.enemy.spawnStageBoss(this.stage());
+          }
         }
         // Achievement: track cumulative kills and boss
         this.achievementService.addCumulative('first_kill', 1);
@@ -157,16 +163,6 @@ export class GameService {
         this.achievementService.addCumulative('veteran', 1);
         if (isBoss) {
           this.achievementService.checkMilestone('boss_hunter', 1);
-        }
-
-        // Wave milestone: announce new wave and award flat bonus coins
-        if (this.started()) {
-          const wave = Math.floor(newKills / KILLS_PER_WAVE) + 1;
-          if (wave > this.lastWave) {
-            this.lastWave = wave;
-            this.addBonusCoins(WAVE_BONUS_COINS);
-            this.gameScreen.showWaveAnnouncement(wave);
-          }
         }
       }
     });
@@ -213,6 +209,27 @@ export class GameService {
     if (this.comboTimer) {
       window.clearTimeout(this.comboTimer);
       this.comboTimer = undefined;
+    }
+  }
+
+  private onBossDefeated(): void {
+    const currentStage = this.stage();
+    if (currentStage >= MAX_STAGE) {
+      // Player has conquered all stages — victory!
+      void this.storage.setHighscore(this.kills(), currentStage);
+      void this.presentPopup(VictoryPopup);
+      this.ship.instance.autoFire = false;
+      this.started.set(false);
+      this.gameScreen.pauseButtonVisible = false;
+    } else {
+      // Advance to the next stage
+      this.stage.update((s) => s + 1);
+      this.stageKills = 0;
+      this.enemy.bossFightActive = false;
+      if (this.started()) {
+        this.addBonusCoins(STAGE_BONUS_COINS);
+        this.gameScreen.showStageAnnouncement(this.stage());
+      }
     }
   }
 
@@ -279,8 +296,10 @@ export class GameService {
     this.#paused.set(false);
     this.started.set(true);
     this.gameScreen.pauseButtonVisible = true;
-    // Reset wave and streak tracking for the new game session
-    this.lastWave = 1;
+    // Reset stage and streak tracking for the new game session
+    this.stage.set(1);
+    this.stageKills = 0;
+    this.enemy.bossFightActive = false;
     this.lastShipEnergy = this.ship.instance.energy;
     this.streakElapsedMs = 0;
     this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -350,7 +369,7 @@ export class GameService {
         return;
       }
 
-      this.updatables.forEach((updatable) => updatable.update(delta, this.level()));
+      this.updatables.forEach((updatable) => updatable.update(delta, this.stage()));
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;
@@ -377,7 +396,7 @@ export class GameService {
       this.lastShipEnergy = currentEnergy;
 
       if (this.ship.instance.energy === 0) {
-        void this.storage.setHighscore(this.kills(), this.level());
+        void this.storage.setHighscore(this.kills(), this.stage());
         void this.presentPopup(YouAreDeadPopup);
         this.ship.instance.autoFire = false;
         this.started.set(false);
