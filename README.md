@@ -22,6 +22,7 @@ SolarStriker ist ein vertikal scrollender Arcade-Shooter im Retro-Stil, inspirie
 - **Angular + PixiJS:** Angular verwaltet UI-Logik und Screens, PixiJS rendert das eigentliche Spielgeschehen auf einer Canvas.
 - **Touch- & Maussteuerung:** Das Schiff folgt dem Zeiger, Schüsse werden per gedrücktem Pointer ausgelöst – ideal für Desktop und mobile Geräte.
 - **Sammelbare Upgrades:** Coins und Power-ups steigern die Fähigkeiten des Schiffs. Persistente Upgrades werden lokal gespeichert.
+- **Level-Fortschritt speichern:** Erreichte Level werden lokal als Checkpoint gesichert und lassen sich später direkt fortsetzen.
 - **Highscore-Verwaltung:** Spielstände werden in IndexedDB abgelegt und können jederzeit im Highscore-Bildschirm eingesehen werden.
 - **Capacitor-Integration:** Dank Capacitor lässt sich der Build nahtlos als iOS-App verpacken.
 
@@ -92,7 +93,7 @@ Wesentliche Spielfunktionen wie Gegner-Spawning, Meteoriten, Upgrades, Popups un
 - **Schießen:** Pointer gedrückt halten oder auf dem Touchscreen gedrückt lassen, um Dauerfeuer zu aktivieren.
 - **Navigation:** Über Popups erreichst du Hangar, Highscore, Credits oder den Spielstart.
 
-Besiege Gegner und Meteoriten, sammle Coins ein und investiere sie in dauerhafte Upgrades, um mit jedem Durchlauf weiter zu kommen.
+Besiege Gegner und Meteoriten, sammle Coins ein und investiere sie in dauerhafte Upgrades, um mit jedem Durchlauf weiter zu kommen. Level-Checkpoints erlauben es, eine Kampagne später auf dem zuletzt erreichten Level fortzusetzen.
 
 ## Weiterführende Hinweise
 

@@ -235,7 +235,7 @@ export class GameService {
     if (currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
       void this.storage.setHighscore(this.kills(), currentStage);
-      void this.clearSavedStage();
+      void this.resetSavedStage();
       void this.presentPopup(VictoryPopup);
       this.ship.instance.autoFire = false;
       this.started.set(false);
@@ -246,7 +246,7 @@ export class GameService {
       this.stage.set(nextStage);
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
-      void this.persistStageCheckpoint(nextStage);
+      void this.saveStageCheckpoint(nextStage);
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
         this.gameScreen.showStageAnnouncement(nextStage);
@@ -334,7 +334,7 @@ export class GameService {
     this.lastShipEnergy = this.ship.instance.energy;
     this.streakElapsedMs = 0;
     this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
-    await this.persistStageCheckpoint(this.stage());
+    await this.saveStageCheckpoint(this.stage());
 
     if (this.stage() > 1) {
       this.gameScreen.showStageAnnouncement(this.stage());
@@ -583,13 +583,13 @@ export class GameService {
     this.sessionCoins.set(Math.max(0, sessionCoins - remainingCost));
   }
 
-  private async persistStageCheckpoint(stage: number): Promise<void> {
+  private async saveStageCheckpoint(stage: number): Promise<void> {
     const normalizedStage = Math.min(MAX_STAGE, Math.max(1, Math.floor(stage)));
     this.savedStage.set(normalizedStage);
     await this.storage.setLevelCheckpoint(normalizedStage);
   }
 
-  private async clearSavedStage(): Promise<void> {
+  private async resetSavedStage(): Promise<void> {
     this.savedStage.set(null);
     await this.storage.clearLevelCheckpoint();
   }
