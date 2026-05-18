@@ -40,6 +40,10 @@ const MAX_COMBO = 5;
 const STAGE_BONUS_COINS = 10;
 const STREAK_INTERVAL_MS = 15_000;
 const STREAK_BONUS_COINS = 3;
+const STAGE_KILL_BASE = 24;
+const STAGE_KILL_GROWTH_INTERVAL = 10;
+const STAGE_KILL_GROWTH_AMOUNT = 2;
+const STAGE_KILL_CAP = 42;
 
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
@@ -60,6 +64,7 @@ export class GameService {
   readonly combo = signal(1);
   readonly highestCombo = signal(1);
   readonly stage = signal(1);
+  readonly savedStage = signal<number | null>(null);
 
   private comboTimer?: number;
 
@@ -152,7 +157,7 @@ export class GameService {
         } else if (this.started()) {
           // Track kills within the current stage; trigger boss when threshold is reached
           this.stageKills++;
-          if (!this.enemy.bossFightActive && this.stageKills >= GAME_CONFIG.killsPerStage) {
+          if (!this.enemy.bossFightActive && this.stageKills >= this.getKillsRequiredForStage(this.stage())) {
             this.enemy.bossFightActive = true;
             this.enemy.spawnStageBoss(this.stage());
           }
@@ -181,6 +186,19 @@ export class GameService {
       this.rewardedMeteors.add(meteor);
       this.addCoins(coins);
     });
+  }
+
+  get canContinue(): boolean {
+    return this.savedStage() !== null;
+  }
+
+  getKillsRequiredForStage(stage: number): number {
+    const normalizedStage = Math.max(1, Math.floor(stage));
+    const scaledKills =
+      STAGE_KILL_BASE +
+      Math.floor((normalizedStage - 1) / STAGE_KILL_GROWTH_INTERVAL) * STAGE_KILL_GROWTH_AMOUNT;
+
+    return Math.min(STAGE_KILL_CAP, scaledKills);
   }
 
   private increaseCombo(): void {
@@ -217,18 +235,21 @@ export class GameService {
     if (currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
       void this.storage.setHighscore(this.kills(), currentStage);
+      void this.clearSavedStage();
       void this.presentPopup(VictoryPopup);
       this.ship.instance.autoFire = false;
       this.started.set(false);
       this.gameScreen.pauseButtonVisible = false;
     } else {
       // Advance to the next stage
-      this.stage.update((s) => s + 1);
+      const nextStage = currentStage + 1;
+      this.stage.set(nextStage);
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
+      void this.persistStageCheckpoint(nextStage);
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
-        this.gameScreen.showStageAnnouncement(this.stage());
+        this.gameScreen.showStageAnnouncement(nextStage);
       }
     }
   }
@@ -262,7 +283,9 @@ export class GameService {
     await this.playerShipService.init();
     await this.achievementService.init();
     const storedCoins = await this.storage.getCoins();
+    const savedStage = await this.storage.getLevelCheckpoint();
     this.storedCoins.set(storedCoins);
+    this.savedStage.set(savedStage);
 
     // Wire achievement unlock notification
     this.achievementService.onUnlocked = (def): void => {
@@ -285,6 +308,14 @@ export class GameService {
   }
 
   async start(requester: AppScreen): Promise<void> {
+    await this.startSession(requester, 1);
+  }
+
+  async continueFromCheckpoint(requester: AppScreen): Promise<void> {
+    await this.startSession(requester, this.savedStage() ?? 1);
+  }
+
+  private async startSession(requester: AppScreen, startStage: number): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
@@ -297,12 +328,17 @@ export class GameService {
     this.started.set(true);
     this.gameScreen.pauseButtonVisible = true;
     // Reset stage and streak tracking for the new game session
-    this.stage.set(1);
+    this.stage.set(Math.min(MAX_STAGE, Math.max(1, Math.floor(startStage))));
     this.stageKills = 0;
     this.enemy.bossFightActive = false;
     this.lastShipEnergy = this.ship.instance.energy;
     this.streakElapsedMs = 0;
     this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
+    await this.persistStageCheckpoint(this.stage());
+
+    if (this.stage() > 1) {
+      this.gameScreen.showStageAnnouncement(this.stage());
+    }
   }
 
   async openCredits(requester: AppScreen): Promise<void> {
@@ -545,5 +581,16 @@ export class GameService {
 
     const sessionCoins = this.sessionCoins();
     this.sessionCoins.set(Math.max(0, sessionCoins - remainingCost));
+  }
+
+  private async persistStageCheckpoint(stage: number): Promise<void> {
+    const normalizedStage = Math.min(MAX_STAGE, Math.max(1, Math.floor(stage)));
+    this.savedStage.set(normalizedStage);
+    await this.storage.setLevelCheckpoint(normalizedStage);
+  }
+
+  private async clearSavedStage(): Promise<void> {
+    this.savedStage.set(null);
+    await this.storage.clearLevelCheckpoint();
   }
 }

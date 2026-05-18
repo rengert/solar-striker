@@ -7,6 +7,10 @@ export interface ShipClassSelectionState {
   unlocked: PlayerShipClass[];
 }
 
+export interface LevelCheckpointState {
+  currentStage: number;
+}
+
 export enum Store {
   games = 'games',
   coins = 'coins',
@@ -178,6 +182,55 @@ export class StorageService {
     return this.toStore(Store.upgrades, {
       id: 'ship-class-selection',
       state,
+    });
+  }
+
+  async getLevelCheckpoint(): Promise<number | null> {
+    const entries = await getManyFromStore<{ id: string; state: LevelCheckpointState }>(
+      Store.upgrades,
+      (item) => item.id === 'level-checkpoint',
+    );
+    const checkpoint = entries.at(0)?.state.currentStage;
+
+    if (typeof checkpoint !== 'number' || !Number.isFinite(checkpoint)) {
+      return null;
+    }
+
+    return Math.max(1, Math.floor(checkpoint));
+  }
+
+  setLevelCheckpoint(currentStage: number): Promise<void> {
+    return this.toStore(Store.upgrades, {
+      id: 'level-checkpoint',
+      state: {
+        currentStage: Math.max(1, Math.floor(currentStage)),
+      } satisfies LevelCheckpointState,
+    });
+  }
+
+  clearLevelCheckpoint(): Promise<void> {
+    return this.deleteFromStore(Store.upgrades, 'level-checkpoint');
+  }
+
+  private deleteFromStore(storeName: Store, id: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // eslint-disable-next-line no-magic-numbers
+      const dbRequest = indexedDB.open('data', 7);
+      dbRequest.onerror = (): void => {
+        reject(Error('IndexedDB database error'));
+      };
+      dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent): void => {
+        const database = (event.currentTarget as IDBOpenDBRequest).result;
+        this.migrateDatabase(database);
+      };
+      dbRequest.onsuccess = (event: Event): void => {
+        const database = (event.currentTarget as IDBOpenDBRequest).result;
+        const objectStore = database.transaction([storeName], 'readwrite').objectStore(storeName);
+        const deleteRequest = objectStore.delete(id);
+
+        deleteRequest.onerror = (): void => reject(Error('IndexedDB delete error'));
+        deleteRequest.onsuccess = (): void => resolve();
+      };
     });
   }
 

@@ -7,7 +7,10 @@ import { ExplosionService } from './explosion.service';
 import { ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 
-const METEOR_ENERGY_STEP = 5;
+const METEOR_BASE_SPEED = 0.24;
+const METEOR_SPEED_STEP = 0.05;
+const METEOR_BASE_ENERGY = 10;
+const METEOR_ENERGY_STEP = 2;
 
 @Injectable()
 export class GameMeteorService extends UpdatableService {
@@ -43,8 +46,7 @@ export class GameMeteorService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     const index = Math.floor(Math.random() * 4) + 1;
     const meteor = new GameSprite(ObjectType.meteor, this.explosionService, {
-      // eslint-disable-next-line no-magic-numbers
-      speed: 0.12 + 0.12 * level,
+      speed: METEOR_BASE_SPEED + METEOR_SPEED_STEP * Math.max(0, level - 1),
       texture: Texture.from(`meteor${index}`),
       hasEnergy: true,
     });
@@ -56,9 +58,7 @@ export class GameMeteorService extends UpdatableService {
     meteor.width += Math.random() * 20;
     // eslint-disable-next-line no-magic-numbers
     meteor.height += Math.random() * 20;
-    const baseEnergy = 10;
-    // Increase energy by METEOR_ENERGY_STEP for each additional level while keeping a minimum of 10
-    meteor.energy = Math.max(baseEnergy, baseEnergy + METEOR_ENERGY_STEP * (level - 1));
+    meteor.energy = METEOR_BASE_ENERGY + METEOR_ENERGY_STEP * Math.max(0, level - 1);
     this.object.add(meteor);
     this.application.stage.addChild(meteor);
   }
