@@ -7,6 +7,7 @@ export const LARGE_POP_UP_HEIGHT = 420;
 export const SHIELD_DURATION_MS = 5000;
 export const OFF_SCREEN_BUFFER = 50;
 export const MAX_SHOT_POWER = 5;
+export const MAX_STAGE = 100;
 
 interface Config {
   powerUpConfig: PowerUpConfig[];
@@ -29,18 +30,17 @@ interface GameConfig extends Config {
     }
   >;
   boss: {
-    killsInterval: number;
     coinsReward: number;
   };
-  killLevelFactor: number;
   collectableFactor: number;
   killsPerCoin: number;
+  killsPerStage: number;
 }
 
 export const GAME_CONFIG: GameConfig = {
-  killLevelFactor: 0.12,
   collectableFactor: 0.3,
   killsPerCoin: 10,
+  killsPerStage: 20,
   enemy: {
     autoSpawnSpeed: 0.5, // per second
     maxCount: 20,
@@ -49,7 +49,6 @@ export const GAME_CONFIG: GameConfig = {
     autoSpawnSpeed: 0.2, // per second
   },
   boss: {
-    killsInterval: 50,
     coinsReward: 10,
   },
   ships: {

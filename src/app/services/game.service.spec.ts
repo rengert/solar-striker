@@ -16,11 +16,11 @@ import { ShipUpgradeService } from './ship-upgrade.service';
 import { StorageService } from './storage.service';
 import { TranslationService } from './translation.service';
 import { AchievementService } from './achievement.service';
-import { GAME_CONFIG } from '../game-constants';
+import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
 
-const WAVE_TWO = 2;
-const WAVE_THREE = 3;
+const STAGE_TWO = 2;
+const STAGE_THREE = 3;
 
 function createMockObject(
   type: ObjectType,
@@ -60,7 +60,7 @@ describe('GameService', () => {
           },
         },
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
-        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update') } },
+        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss') } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update') } },
         { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update') } },
         {
@@ -71,7 +71,8 @@ describe('GameService', () => {
             level: 0,
             pauseButtonVisible: false,
             onPause: undefined,
-            showWaveAnnouncement: jasmine.createSpy('showWaveAnnouncement'),
+            showStageAnnouncement: jasmine.createSpy('showStageAnnouncement'),
+            showBossWarning: jasmine.createSpy('showBossWarning'),
             applyScreenShake: jasmine.createSpy('applyScreenShake'),
             showFloatingText: jasmine.createSpy('showFloatingText'),
             update: jasmine.createSpy('update'),
@@ -340,71 +341,134 @@ describe('GameService', () => {
     });
   });
 
-  describe('wave milestone logic', () => {
-    const KILLS_PER_WAVE = 25;
-    const WAVE_BONUS_COINS = 5;
-    let gameScreenMock: { showWaveAnnouncement: jasmine.Spy };
+  describe('stage progression logic', () => {
+    let gameScreenMock: { showStageAnnouncement: jasmine.Spy };
+    let enemyMock: { bossFightActive: boolean; spawnStageBoss: jasmine.Spy };
     let playerShip: ReturnType<typeof createMockObject>;
     let playerRocket: ReturnType<typeof createMockObject>;
 
     beforeEach(() => {
-      // Wave logic is guarded by this.started()
+      // Stage logic is guarded by this.started()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (service as any).started.set(true);
       gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
+      enemyMock = TestBed.inject(GameEnemyService) as unknown as typeof enemyMock;
+      // Reset boss fight state for each test
+      enemyMock.bossFightActive = false;
       playerShip = createMockObject(ObjectType.ship);
       playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
     });
 
-    it('should not fire a wave announcement before reaching 25 kills', () => {
-      for (let i = 0; i < KILLS_PER_WAVE - 1; i++) {
+    it('should not spawn a boss before reaching killsPerStage kills', () => {
+      for (let i = 0; i < GAME_CONFIG.killsPerStage - 1; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
-      expect(gameScreenMock.showWaveAnnouncement).not.toHaveBeenCalled();
+      expect(enemyMock.spawnStageBoss).not.toHaveBeenCalled();
+      expect(enemyMock.bossFightActive).toBeFalse();
     });
 
-    it('should fire wave announcement at exactly 25 kills (wave 2)', () => {
-      for (let i = 0; i < KILLS_PER_WAVE; i++) {
+    it('should spawn a boss and set bossFightActive at exactly killsPerStage kills', () => {
+      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
-      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledOnceWith(WAVE_TWO);
+      expect(enemyMock.spawnStageBoss).toHaveBeenCalledOnceWith(1);
+      expect(enemyMock.bossFightActive).toBeTrue();
     });
 
-    it('should award WAVE_BONUS_COINS flat coins at the wave milestone', () => {
-      // Trigger 24 kills first (no wave boundary crossed, combo accumulates)
-      for (let i = 0; i < KILLS_PER_WAVE - 1; i++) {
+    it('should not spawn a second boss during an active boss fight', () => {
+      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
-      const coinsBefore = service.sessionCoins();
-      // Kill 25 crosses the wave boundary; kill 25 is not a killsPerCoin multiple so only wave bonus fires
+      // Kill more enemies while boss fight is active
       objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
-      const coinsDelta = service.sessionCoins() - coinsBefore;
-      // Bonus must be exactly WAVE_BONUS_COINS (flat, not multiplied by combo)
-      expect(coinsDelta).toBe(WAVE_BONUS_COINS);
+      expect(enemyMock.spawnStageBoss).toHaveBeenCalledTimes(1);
     });
 
-    it('should not refire the wave announcement for kills within the same wave', () => {
-      for (let i = 0; i < KILLS_PER_WAVE + 1; i++) {
+    it('should advance stage when boss is killed', () => {
+      const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
+      objectService.triggerCallbacks(bossEnemy, playerRocket);
+
+      expect(service.stage()).toBe(STAGE_TWO);
+    });
+
+    it('should reset stageKills and clear bossFightActive when boss is killed', () => {
+      // Trigger boss
+      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
-      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledTimes(1);
+      // Kill boss
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(enemyMock.bossFightActive).toBeFalse();
+      expect(service.stage()).toBe(STAGE_TWO);
     });
 
-    it('should fire a second wave announcement at 50 kills (wave 3)', () => {
-      for (let i = 0; i < KILLS_PER_WAVE * WAVE_TWO; i++) {
-        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+    it('should show a stage announcement when boss is killed and game is started', () => {
+      const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
+      objectService.triggerCallbacks(bossEnemy, playerRocket);
+
+      expect(gameScreenMock.showStageAnnouncement).toHaveBeenCalledOnceWith(STAGE_TWO);
+    });
+
+    it('should award stage bonus coins when boss is killed and game is started', () => {
+      const coinsBefore = service.sessionCoins();
+      const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
+      objectService.triggerCallbacks(bossEnemy, playerRocket);
+
+      // Boss coins reward + stage bonus coins
+      const STAGE_BONUS_COINS = 10;
+      expect(service.sessionCoins()).toBe(coinsBefore + GAME_CONFIG.boss.coinsReward + STAGE_BONUS_COINS);
+    });
+
+    it('should trigger victory after the final stage boss is defeated', () => {
+      const presentPopupSpy = spyOn(
+        service as unknown as { presentPopup: () => Promise<void> },
+        'presentPopup',
+      ).and.returnValue(Promise.resolve());
+      // Set service to max stage
+      service.stage.set(MAX_STAGE);
+      const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
+      objectService.triggerCallbacks(bossEnemy, playerRocket);
+
+      expect(presentPopupSpy).toHaveBeenCalledTimes(1);
+      expect(service.stage()).toBe(MAX_STAGE); // stage should not advance beyond max
+    });
+
+    it('should fire second stage announcement at next boss kill (stage 3)', () => {
+      // Complete stage 1
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+      expect(service.stage()).toBe(STAGE_TWO);
+
+      // Reset boss fight state (as GameEnemyService would)
+      enemyMock.bossFightActive = false;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).stageKills = 0;
+
+      // Complete stage 2
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+      expect(service.stage()).toBe(STAGE_THREE);
+      expect(gameScreenMock.showStageAnnouncement).toHaveBeenCalledTimes(STAGE_TWO);
+      expect(gameScreenMock.showStageAnnouncement).toHaveBeenCalledWith(STAGE_THREE);
+    });
+
+    it('should not spawn a boss for non-player kills', () => {
+      const enemyShip = createMockObject(ObjectType.enemy);
+      const enemyRocket = createMockObject(ObjectType.rocket, { reference: enemyShip });
+
+      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), enemyRocket);
       }
-      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledTimes(WAVE_TWO);
-      expect(gameScreenMock.showWaveAnnouncement).toHaveBeenCalledWith(WAVE_THREE);
+
+      expect(enemyMock.spawnStageBoss).not.toHaveBeenCalled();
     });
 
-    it('should not fire wave announcement when game has not started', () => {
+    it('should not trigger stage logic when game has not started', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (service as any).started.set(false);
-      for (let i = 0; i < KILLS_PER_WAVE; i++) {
+      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
-      expect(gameScreenMock.showWaveAnnouncement).not.toHaveBeenCalled();
+      expect(enemyMock.spawnStageBoss).not.toHaveBeenCalled();
     });
   });
 
@@ -491,7 +555,7 @@ describe('GameService', () => {
     it('should only award one streak bonus per tick even if delta is very large', () => {
       const coinsBefore = service.sessionCoins();
       // simulate a giant delta (3× the interval — e.g. tab was suspended)
-      tickerCallback({ deltaMS: STREAK_INTERVAL_MS * WAVE_THREE });
+      tickerCallback({ deltaMS: STREAK_INTERVAL_MS * STAGE_THREE });
       // only one bonus should be awarded (cap per tick)
       expect(service.sessionCoins()).toBe(coinsBefore + STREAK_BONUS_COINS);
       expect(gameScreenMock.showFloatingText).toHaveBeenCalledTimes(1);

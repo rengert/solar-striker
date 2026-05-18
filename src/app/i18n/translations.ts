@@ -62,6 +62,12 @@ const baseTranslation = {
   'youAreDead.sessionCoins': 'Münzen in dieser Session',
   'game.pause': 'Pause',
   'game.resume': 'Weiter spielen',
+  // Victory
+  'victory.title': 'Glückwunsch!',
+  'victory.subtitle': 'Du hast alle 100 Level geschafft!',
+  'victory.message': 'Du bist ein wahrer Raumheld.\nDer Kosmos gehört dir!',
+  'victory.points': 'Punkte',
+  'victory.sessionCoins': 'Münzen in dieser Session',
   // Achievements UI
   'achievements.title': 'Errungenschaften',
   'achievements.unlocked': 'Errungenschaft freigeschaltet!',
@@ -154,6 +160,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'youAreDead.sessionCoins': 'Coins in this session',
     'game.pause': 'Pause',
     'game.resume': 'Resume',
+    // Victory
+    'victory.title': 'Congratulations!',
+    'victory.subtitle': 'You completed all 100 levels!',
+    'victory.message': 'You are a true space hero.\nThe cosmos is yours!',
+    'victory.points': 'Points',
+    'victory.sessionCoins': 'Coins in this session',
     'achievements.title': 'Achievements',
     'achievements.unlocked': 'Achievement unlocked!',
     'achievements.progress': '{{current}} / {{total}}',
@@ -236,6 +248,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'youAreDead.sessionCoins': 'Pièces de cette session',
     'game.pause': 'Pause',
     'game.resume': 'Reprendre',
+    // Victory
+    'victory.title': 'Félicitations !',
+    'victory.subtitle': 'Vous avez terminé les 100 niveaux !',
+    'victory.message': 'Vous êtes un véritable héros de l\'espace.\nLe cosmos vous appartient !',
+    'victory.points': 'Points',
+    'victory.sessionCoins': 'Pièces de cette session',
     'navigation.achievements': 'Succès',
     'achievements.title': 'Succès',
     'achievements.unlocked': 'Succès débloqué !',

@@ -46,16 +46,16 @@ const ACHIEVEMENT_BANNER_SHOW_MS = 3000;
 const ACHIEVEMENT_BANNER_SLIDE_DURATION = 0.4;
 const ACHIEVEMENT_BANNER_FADE_DURATION = 0.3;
 const ACHIEVEMENT_BANNER_SUBTITLE_SPACER = 4;
-// Wave announcement constants
-const WAVE_ANNOUNCEMENT_FONT_SIZE = 30;
-const WAVE_ANNOUNCEMENT_STROKE_WIDTH = 4;
-const WAVE_ANNOUNCEMENT_DISPLAY_MS = 2000;
-const WAVE_ANNOUNCEMENT_FADE_S = 0.5;
-const WAVE_ANNOUNCEMENT_Y_OFFSET = 60;
+// Stage announcement constants
+const STAGE_ANNOUNCEMENT_FONT_SIZE = 30;
+const STAGE_ANNOUNCEMENT_STROKE_WIDTH = 4;
+const STAGE_ANNOUNCEMENT_DISPLAY_MS = 2000;
+const STAGE_ANNOUNCEMENT_FADE_S = 0.5;
+const STAGE_ANNOUNCEMENT_Y_OFFSET = 60;
 // eslint-disable-next-line no-magic-numbers
-const WAVE_ANNOUNCEMENT_FILL_COLOR = 0xffdd00;
+const STAGE_ANNOUNCEMENT_FILL_COLOR = 0xffdd00;
 // eslint-disable-next-line no-magic-numbers
-const WAVE_ANNOUNCEMENT_STROKE_COLOR = 0x000000;
+const STAGE_ANNOUNCEMENT_STROKE_COLOR = 0x000000;
 // Screen shake constants
 const SHAKE_AMPLITUDE = 6;
 const SHAKE_STEP_DURATION_S = 0.05;
@@ -405,18 +405,18 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     }, BOSS_WARNING_DISPLAY_MS);
   }
 
-  /** Displays a golden "⚡ WAVE X ⚡" announcement banner on screen. */
-  showWaveAnnouncement(wave: number): void {
+  /** Displays a golden "★ STAGE X ★" announcement banner on screen. */
+  showStageAnnouncement(stage: number): void {
     const text = new Text({
-      text: `⚡ WAVE ${wave} ⚡`,
+      text: `★ STAGE ${stage} ★`,
       style: new TextStyle({
         fontFamily: 'Arial',
-        fontSize: WAVE_ANNOUNCEMENT_FONT_SIZE,
+        fontSize: STAGE_ANNOUNCEMENT_FONT_SIZE,
         fontWeight: 'bold',
-        fill: WAVE_ANNOUNCEMENT_FILL_COLOR,
+        fill: STAGE_ANNOUNCEMENT_FILL_COLOR,
         stroke: {
-          color: WAVE_ANNOUNCEMENT_STROKE_COLOR,
-          width: WAVE_ANNOUNCEMENT_STROKE_WIDTH,
+          color: STAGE_ANNOUNCEMENT_STROKE_COLOR,
+          width: STAGE_ANNOUNCEMENT_STROKE_WIDTH,
         },
         align: 'center',
       }),
@@ -424,7 +424,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     // eslint-disable-next-line no-magic-numbers
     text.anchor.set(0.5);
     text.x = this.application.screen.width / SCREEN_CENTER_DIVIDER;
-    text.y = this.application.screen.height / SCREEN_CENTER_DIVIDER - WAVE_ANNOUNCEMENT_Y_OFFSET;
+    text.y = this.application.screen.height / SCREEN_CENTER_DIVIDER - STAGE_ANNOUNCEMENT_Y_OFFSET;
     this.addToStage(text);
 
     const handle = setTimeout(() => {
@@ -434,13 +434,13 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       }
       void gsap.to(text, {
         alpha: 0,
-        duration: WAVE_ANNOUNCEMENT_FADE_S,
+        duration: STAGE_ANNOUNCEMENT_FADE_S,
         onComplete: () => {
           text.parent?.removeChild(text);
           text.destroy();
         },
       });
-    }, WAVE_ANNOUNCEMENT_DISPLAY_MS);
+    }, STAGE_ANNOUNCEMENT_DISPLAY_MS);
     this.pendingAnnouncements.push({ handle, text });
   }
 
