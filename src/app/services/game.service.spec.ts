@@ -69,7 +69,7 @@ describe('GameService', () => {
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
         { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss') } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update') } },
-        { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update') } },
+        { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update'), splitMeteors: { has: () => false } } },
         {
           provide: GameScreenService,
           useValue: {

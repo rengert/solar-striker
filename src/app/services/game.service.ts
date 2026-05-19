@@ -177,6 +177,11 @@ export class GameService {
         return;
       }
 
+      // Meteor split into fragments — coins will be awarded per fragment instead
+      if (this.meteor.splitMeteors.has(meteor)) {
+        return;
+      }
+
       const coins = calculateMeteorCoins(meteor);
 
       if (coins <= 0 || this.rewardedMeteors.has(meteor)) {
