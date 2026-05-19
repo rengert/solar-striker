@@ -21,6 +21,13 @@ import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/pl
 
 const STAGE_TWO = 2;
 const STAGE_THREE = 3;
+const COMBO_REWARD_AT_MAX = 5;
+const BOSS_COMBO_MULTIPLIER = 2;
+const BASE_STAGE_KILL_TARGET = 24;
+const STAGE_KILL_PLATEAU_END = 10;
+const STAGE_KILL_GROWTH_TRIGGER = 11;
+const STAGE_KILL_GROWN_TARGET = 26;
+const SAVED_STAGE_SEVEN = 7;
 
 function createMockObject(
   type: ObjectType,
@@ -120,6 +127,9 @@ describe('GameService', () => {
             getCoins: jasmine.createSpy('getCoins').and.returnValue(Promise.resolve(0)),
             setCoins: jasmine.createSpy('setCoins').and.returnValue(Promise.resolve()),
             setHighscore: jasmine.createSpy('setHighscore').and.returnValue(Promise.resolve()),
+            getLevelCheckpoint: jasmine.createSpy('getLevelCheckpoint').and.returnValue(Promise.resolve(null)),
+            setLevelCheckpoint: jasmine.createSpy('setLevelCheckpoint').and.returnValue(Promise.resolve()),
+            clearLevelCheckpoint: jasmine.createSpy('clearLevelCheckpoint').and.returnValue(Promise.resolve()),
           },
         },
       ],
@@ -139,7 +149,7 @@ describe('GameService', () => {
       }
 
       expect(service.kills()).toBe(GAME_CONFIG.killsPerCoin);
-      expect(service.sessionCoins()).toBe(1);
+      expect(service.sessionCoins()).toBe(COMBO_REWARD_AT_MAX);
     });
 
     it('should award bonus coins when a boss enemy is killed by the player', () => {
@@ -150,7 +160,7 @@ describe('GameService', () => {
       objectService.triggerCallbacks(bossEnemy, playerRocket);
 
       expect(service.kills()).toBe(1);
-      expect(service.sessionCoins()).toBe(GAME_CONFIG.boss.coinsReward);
+      expect(service.sessionCoins()).toBe(GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER);
     });
 
     it('should NOT award boss bonus coins when a boss is killed by an enemy', () => {
@@ -177,7 +187,7 @@ describe('GameService', () => {
       // eslint-disable-next-line no-magic-numbers
       expect(service.kills()).toBe(GAME_CONFIG.killsPerCoin * 2);
       // eslint-disable-next-line no-magic-numbers
-      expect(service.sessionCoins()).toBe(2);
+      expect(service.sessionCoins()).toBe(COMBO_REWARD_AT_MAX * BOSS_COMBO_MULTIPLIER);
     });
 
     it('should NOT award a coin before reaching the killsPerCoin threshold', () => {
@@ -359,8 +369,14 @@ describe('GameService', () => {
       playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
     });
 
+    function triggerStageBoss(stage: number, by: ObjectModelType): void {
+      for (let i = 0; i < service.getKillsRequiredForStage(stage); i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), by);
+      }
+    }
+
     it('should not spawn a boss before reaching killsPerStage kills', () => {
-      for (let i = 0; i < GAME_CONFIG.killsPerStage - 1; i++) {
+      for (let i = 0; i < service.getKillsRequiredForStage(1) - 1; i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
       expect(enemyMock.spawnStageBoss).not.toHaveBeenCalled();
@@ -368,17 +384,13 @@ describe('GameService', () => {
     });
 
     it('should spawn a boss and set bossFightActive at exactly killsPerStage kills', () => {
-      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
-        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
-      }
+      triggerStageBoss(1, playerRocket);
       expect(enemyMock.spawnStageBoss).toHaveBeenCalledOnceWith(1);
       expect(enemyMock.bossFightActive).toBeTrue();
     });
 
     it('should not spawn a second boss during an active boss fight', () => {
-      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
-        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
-      }
+      triggerStageBoss(1, playerRocket);
       // Kill more enemies while boss fight is active
       objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       expect(enemyMock.spawnStageBoss).toHaveBeenCalledTimes(1);
@@ -393,9 +405,7 @@ describe('GameService', () => {
 
     it('should reset stageKills and clear bossFightActive when boss is killed', () => {
       // Trigger boss
-      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
-        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
-      }
+      triggerStageBoss(1, playerRocket);
       // Kill boss
       objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
 
@@ -417,7 +427,9 @@ describe('GameService', () => {
 
       // Boss coins reward + stage bonus coins
       const STAGE_BONUS_COINS = 10;
-      expect(service.sessionCoins()).toBe(coinsBefore + GAME_CONFIG.boss.coinsReward + STAGE_BONUS_COINS);
+      expect(service.sessionCoins()).toBe(
+        coinsBefore + GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER + STAGE_BONUS_COINS,
+      );
     });
 
     it('should trigger victory after the final stage boss is defeated', () => {
@@ -455,7 +467,7 @@ describe('GameService', () => {
       const enemyShip = createMockObject(ObjectType.enemy);
       const enemyRocket = createMockObject(ObjectType.rocket, { reference: enemyShip });
 
-      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
+      for (let i = 0; i < service.getKillsRequiredForStage(1); i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), enemyRocket);
       }
 
@@ -465,10 +477,46 @@ describe('GameService', () => {
     it('should not trigger stage logic when game has not started', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (service as any).started.set(false);
-      for (let i = 0; i < GAME_CONFIG.killsPerStage; i++) {
+      for (let i = 0; i < service.getKillsRequiredForStage(1); i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       }
       expect(enemyMock.spawnStageBoss).not.toHaveBeenCalled();
+    });
+
+    it('should grow the kill target for later stages', () => {
+      expect(service.getKillsRequiredForStage(1)).toBe(BASE_STAGE_KILL_TARGET);
+      expect(service.getKillsRequiredForStage(STAGE_KILL_PLATEAU_END)).toBe(BASE_STAGE_KILL_TARGET);
+      expect(service.getKillsRequiredForStage(STAGE_KILL_GROWTH_TRIGGER)).toBe(STAGE_KILL_GROWN_TARGET);
+    });
+
+    it('should persist the next checkpoint when a boss is defeated', () => {
+      const storage = TestBed.inject(StorageService) as unknown as { setLevelCheckpoint: jasmine.Spy };
+      const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
+
+      objectService.triggerCallbacks(bossEnemy, playerRocket);
+
+      expect(storage.setLevelCheckpoint).toHaveBeenCalledWith(STAGE_TWO);
+    });
+  });
+
+  describe('saved level continuation', () => {
+    it('should save stage 1 when a new game starts', async () => {
+      const storage = TestBed.inject(StorageService) as unknown as { setLevelCheckpoint: jasmine.Spy };
+
+      await service.start({} as AppScreen);
+
+      expect(service.stage()).toBe(1);
+      expect(storage.setLevelCheckpoint).toHaveBeenCalledWith(1);
+    });
+
+    it('should continue from the saved checkpoint', async () => {
+      const storage = TestBed.inject(StorageService) as unknown as { setLevelCheckpoint: jasmine.Spy };
+      service.savedStage.set(SAVED_STAGE_SEVEN);
+
+      await service.continueFromCheckpoint({} as AppScreen);
+
+      expect(service.stage()).toBe(SAVED_STAGE_SEVEN);
+      expect(storage.setLevelCheckpoint).toHaveBeenCalledWith(SAVED_STAGE_SEVEN);
     });
   });
 
