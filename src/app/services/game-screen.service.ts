@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { Container, FederatedPointerEvent, Graphics, Text, TextStyle } from 'pixi.js';
+import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle } from 'pixi.js';
 import { gsap } from 'gsap';
 import { fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
@@ -253,8 +253,21 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.pauseButton.y = HEADER_TOP_PADDING;
     this.pauseButton.visible = false;
     this.pauseButton.eventMode = 'static';
+    const pauseButtonBounds = this.pauseButton.getLocalBounds();
+    this.pauseButton.hitArea = new Rectangle(0, 0, pauseButtonBounds.width, pauseButtonBounds.height);
     this.pauseButton.cursor = 'pointer';
     this.pauseButton.on('pointerdown', (event: FederatedPointerEvent): void => {
+      if (!this.pauseButton) {
+        return;
+      }
+      const bounds = this.pauseButton.getBounds();
+      const isWithinButtonBounds = event.global.x >= bounds.minX &&
+        event.global.x <= bounds.maxX &&
+        event.global.y >= bounds.minY &&
+        event.global.y <= bounds.maxY;
+      if (!this.pauseButton.visible || !isWithinButtonBounds) {
+        return;
+      }
       event.stopPropagation();
       this.onPause?.();
     });
