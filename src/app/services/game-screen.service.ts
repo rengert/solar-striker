@@ -11,6 +11,7 @@ const HEADER_SIDE_PADDING = 8;
 const DOUBLE = 2;
 const TRIPPLE = 3;
 const PAUSE_BUTTON_FONT_SIZE = 20;
+const PAUSE_BUTTON_HIT_AREA_SIZE = 44;
 const BOSS_WARNING_FONT_SIZE = 28;
 const BOSS_WARNING_STROKE_WIDTH = 4;
 const BOSS_WARNING_DISPLAY_MS = 2800;
@@ -253,19 +254,10 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.pauseButton.y = HEADER_TOP_PADDING;
     this.pauseButton.visible = false;
     this.pauseButton.eventMode = 'static';
-    const pauseButtonBounds = this.pauseButton.getLocalBounds();
-    this.pauseButton.hitArea = new Rectangle(0, 0, pauseButtonBounds.width, pauseButtonBounds.height);
+    this.pauseButton.hitArea = new Rectangle(0, 0, PAUSE_BUTTON_HIT_AREA_SIZE, PAUSE_BUTTON_HIT_AREA_SIZE);
     this.pauseButton.cursor = 'pointer';
     this.pauseButton.on('pointerdown', (event: FederatedPointerEvent): void => {
-      if (!this.pauseButton) {
-        return;
-      }
-      const bounds = this.pauseButton.getBounds();
-      const isWithinButtonBounds = event.global.x >= bounds.minX &&
-        event.global.x <= bounds.maxX &&
-        event.global.y >= bounds.minY &&
-        event.global.y <= bounds.maxY;
-      if (!this.pauseButton.visible || !isWithinButtonBounds) {
+      if (!this.pauseButton?.visible) {
         return;
       }
       event.stopPropagation();
