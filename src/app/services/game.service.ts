@@ -8,6 +8,7 @@ import { PlayerShipClass } from '../models/player-ship-class.model';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
 import { AchievementsPopup } from '../popups/achievements-popup';
 import { CreditsPopup } from '../popups/credits-popup';
+import { DailyChallengesPopup } from '../popups/daily-challenges-popup';
 import { HangarPopup } from '../popups/hangar-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
@@ -18,6 +19,7 @@ import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
 import { handleMouseMove } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
+import { DailyChallengeService } from './daily-challenge.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -84,6 +86,7 @@ export class GameService {
   readonly shipUpgrades = inject(ShipUpgradeService);
   readonly playerShipService = inject(PlayerShipService);
   readonly achievementService = inject(AchievementService);
+  readonly dailyChallengeService = inject(DailyChallengeService);
   private readonly translation = inject(TranslationService);
   private rewardedMeteors = new WeakSet<ObjectModelType>();
   private readonly updatables: UpdatableService[] = [
@@ -126,6 +129,7 @@ export class GameService {
       const combo = this.combo();
       this.achievementService.checkMilestone('combo_rookie', combo);
       this.achievementService.checkMilestone('combo_master', combo);
+      this.dailyChallengeService.checkCombo(combo);
     });
 
     // Achievement: track level milestones
@@ -133,6 +137,7 @@ export class GameService {
       const level = this.stage();
       this.achievementService.checkMilestone('level_10', level);
       this.achievementService.checkMilestone('level_20', level);
+      this.dailyChallengeService.checkLevel(level);
     });
 
     // Achievement: track session coins (rich_pilot)
@@ -166,8 +171,11 @@ export class GameService {
         this.achievementService.addCumulative('first_kill', 1);
         this.achievementService.addCumulative('sharp_shooter', 1);
         this.achievementService.addCumulative('veteran', 1);
+        // Daily challenge: track kills and boss
+        this.dailyChallengeService.addKills(1);
         if (isBoss) {
           this.achievementService.checkMilestone('boss_hunter', 1);
+          this.dailyChallengeService.addBoss();
         }
       }
     });
@@ -272,6 +280,7 @@ export class GameService {
       return;
     }
     this.sessionCoins.update((value) => value + clamped);
+    this.dailyChallengeService.addCoins(clamped);
   }
 
   async init(): Promise<void> {
@@ -287,6 +296,7 @@ export class GameService {
     await this.shipUpgrades.init();
     await this.playerShipService.init();
     await this.achievementService.init();
+    await this.dailyChallengeService.init();
     const storedCoins = await this.storage.getCoins();
     const savedStage = await this.storage.getLevelCheckpoint();
     this.storedCoins.set(storedCoins);
@@ -298,7 +308,15 @@ export class GameService {
       const title = this.translation.getTranslation(titleKey);
       const rewardLine = this.translation.getTranslation('achievement.reward', { reward: String(def.reward) });
       this.gameScreen.showAchievementBanner(def.icon, title, rewardLine);
-      this.addCoins(def.reward);
+      this.addBonusCoins(def.reward);
+    };
+
+    // Wire daily challenge completion notification
+    this.dailyChallengeService.onCompleted = (challenge): void => {
+      const title = this.translation.getTranslation('daily.completed');
+      const rewardLine = this.translation.getTranslation('daily.reward', { reward: String(challenge.reward) });
+      this.gameScreen.showAchievementBanner(challenge.icon, title, rewardLine);
+      this.addBonusCoins(challenge.reward);
     };
 
     this.setup();
@@ -387,6 +405,11 @@ export class GameService {
   async openAchievements(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(AchievementsPopup);
+  }
+
+  async openDailyChallenges(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(DailyChallengesPopup);
   }
 
   async endGame(requester: AppScreen): Promise<void> {

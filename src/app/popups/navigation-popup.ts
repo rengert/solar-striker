@@ -3,7 +3,7 @@ import { TranslationService } from '../services/translation.service';
 import { version } from '../version';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 460;
+const POPUP_HEIGHT = 502;
 // eslint-disable-next-line no-magic-numbers
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const DAILY_SURPRISE_ICONS = ['✨', '🚀', '☄️'] as const;
@@ -71,6 +71,13 @@ export class NavigationPopup extends Popup {
       this.addButton(
         translation.getTranslation('navigation.achievements'),
         () => gameService.openAchievements(this),
+        0,
+      ),
+    );
+    buttons.push(
+      this.addButton(
+        translation.getTranslation('navigation.daily'),
+        () => gameService.openDailyChallenges(this),
         0,
       ),
     );
