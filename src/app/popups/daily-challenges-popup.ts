@@ -13,7 +13,7 @@ const CHALLENGE_STATUS_X = 95;
 const CHALLENGE_TITLE_SIZE = 11;
 const CHALLENGE_STATUS_SIZE = 9;
 const STATUS_LINE_OFFSET = 18;
-const BACK_BUTTON_INDEX = 5;
+const BACK_BUTTON_INDEX = 4;
 
 interface ChallengeRowContext {
   entry: DailyChallengeEntry;

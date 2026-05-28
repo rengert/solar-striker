@@ -1,11 +1,62 @@
 import { TestBed } from '@angular/core/testing';
 import { DAILY_CHALLENGE_POOL, getDailyChallenges, getDayIndex, getTodayDateKey } from '../models/daily-challenge.model';
 import { StorageService } from './storage.service';
-import { DailyChallengeService } from './daily-challenge.service';
+import { DailyChallengeEntry, DailyChallengeService } from './daily-challenge.service';
 
 const EXPECTED_CHALLENGES_PER_DAY = 3;
 const SAMPLE_DAY_INDEX = 42;
 const SAMPLE_INITIAL_PROGRESS = 10;
+
+function getAnyCumulativeChallenge(entries: DailyChallengeEntry[]): DailyChallengeEntry | undefined {
+  return entries.find((entry) => entry.def.type === 'kills' || entry.def.type === 'coins' || entry.def.type === 'boss');
+}
+
+function addCumulativeProgress(service: DailyChallengeService, entry: DailyChallengeEntry, amount: number): void {
+  switch (entry.def.type) {
+    case 'kills':
+      service.addKills(amount);
+      break;
+    case 'coins':
+      service.addCoins(amount);
+      break;
+    case 'boss':
+      for (let i = 0; i < amount; i++) {
+        service.addBoss();
+      }
+      break;
+    default:
+      fail(`Unsupported cumulative challenge type: ${entry.def.type}`);
+  }
+}
+
+function getAnyMaxChallenge(entries: DailyChallengeEntry[]): DailyChallengeEntry | undefined {
+  return entries.find((entry) => entry.def.type === 'combo' || entry.def.type === 'level');
+}
+
+function updateMaxProgress(service: DailyChallengeService, entry: DailyChallengeEntry, value: number): void {
+  switch (entry.def.type) {
+    case 'combo':
+      service.checkCombo(value);
+      break;
+    case 'level':
+      service.checkLevel(value);
+      break;
+    default:
+      fail(`Unsupported max challenge type: ${entry.def.type}`);
+  }
+}
+
+function getAnyUniqueTypeChallenge(entries: DailyChallengeEntry[]): DailyChallengeEntry | undefined {
+  return entries.find((entry) => entries.filter((candidate) => candidate.def.type === entry.def.type).length === 1);
+}
+
+function advanceChallengeToThreshold(service: DailyChallengeService, entry: DailyChallengeEntry): void {
+  if (entry.def.type === 'kills' || entry.def.type === 'coins' || entry.def.type === 'boss') {
+    addCumulativeProgress(service, entry, entry.def.threshold);
+    return;
+  }
+  updateMaxProgress(service, entry, entry.def.threshold);
+}
 
 describe('daily-challenge model helpers', () => {
   it('getTodayDateKey returns a YYYY-MM-DD string', () => {
@@ -28,6 +79,18 @@ describe('daily-challenge model helpers', () => {
     const challenges = getDailyChallenges(SAMPLE_DAY_INDEX);
     const ids = new Set(challenges.map((c) => c.id));
     expect(ids.size).toBe(EXPECTED_CHALLENGES_PER_DAY);
+  });
+
+  it('getDailyChallenges provides 12 unique daily sets before repeating', () => {
+    const uniqueSets = new Set<string>();
+    for (let i = 0; i < DAILY_CHALLENGE_POOL.length; i++) {
+      const normalizedSet = getDailyChallenges(i)
+        .map((challenge) => challenge.id)
+        .sort()
+        .join(',');
+      uniqueSets.add(normalizedSet);
+    }
+    expect(uniqueSets.size).toBe(DAILY_CHALLENGE_POOL.length);
   });
 });
 
@@ -66,42 +129,42 @@ describe('DailyChallengeService', () => {
     });
   });
 
-  it('should increment kills-type challenge progress', () => {
-    const killsEntry = service.getToday().find((e) => e.def.type === 'kills');
-    if (!killsEntry) {
-      pending('No kills challenge today');
+  it('should increment cumulative-type challenge progress', () => {
+    const cumulativeEntry = getAnyCumulativeChallenge(service.getToday());
+    if (!cumulativeEntry) {
+      fail('Expected at least one cumulative challenge in today selection');
       return;
     }
-    const killsToAdd = 5;
-    service.addKills(killsToAdd);
-    const updated = service.getToday().find((e) => e.def.id === killsEntry.def.id);
-    expect(updated?.progress).toBe(killsToAdd);
+    const progressToAdd = 2;
+    addCumulativeProgress(service, cumulativeEntry, progressToAdd);
+    const updated = service.getToday().find((e) => e.def.id === cumulativeEntry.def.id);
+    expect(updated?.progress).toBe(progressToAdd);
   });
 
-  it('should track highest combo (not accumulate)', () => {
-    const comboEntry = service.getToday().find((e) => e.def.type === 'combo');
-    if (!comboEntry) {
-      pending('No combo challenge today');
+  it('should track highest max-type progress (not accumulate)', () => {
+    const maxEntry = getAnyMaxChallenge(service.getToday());
+    if (!maxEntry) {
+      fail('Expected at least one max challenge in today selection');
       return;
     }
-    const lowCombo = 2;
-    const highCombo = 4;
-    const midCombo = 3;
-    service.checkCombo(lowCombo);
-    service.checkCombo(highCombo);
-    service.checkCombo(midCombo);
-    const updated = service.getToday().find((e) => e.def.id === comboEntry.def.id);
-    expect(updated?.progress).toBe(highCombo);
+    const lowValue = 2;
+    const highValue = 4;
+    const midValue = 3;
+    updateMaxProgress(service, maxEntry, lowValue);
+    updateMaxProgress(service, maxEntry, highValue);
+    updateMaxProgress(service, maxEntry, midValue);
+    const updated = service.getToday().find((e) => e.def.id === maxEntry.def.id);
+    expect(updated?.progress).toBe(highValue);
   });
 
   it('should mark challenge as completed when threshold is reached', () => {
-    const killsEntry = service.getToday().find((e) => e.def.type === 'kills');
-    if (!killsEntry) {
-      pending('No kills challenge today');
+    const uniqueTypeEntry = getAnyUniqueTypeChallenge(service.getToday());
+    if (!uniqueTypeEntry) {
+      fail('Expected at least one unique-type challenge in today selection');
       return;
     }
-    service.addKills(killsEntry.def.threshold);
-    const updated = service.getToday().find((e) => e.def.id === killsEntry.def.id);
+    advanceChallengeToThreshold(service, uniqueTypeEntry);
+    const updated = service.getToday().find((e) => e.def.id === uniqueTypeEntry.def.id);
     expect(updated?.completed).toBe(true);
   });
 
@@ -109,51 +172,51 @@ describe('DailyChallengeService', () => {
     const completedSpy = jasmine.createSpy('onCompleted');
     service.onCompleted = completedSpy;
 
-    const killsEntry = service.getToday().find((e) => e.def.type === 'kills');
-    if (!killsEntry) {
-      pending('No kills challenge today');
+    const uniqueTypeEntry = getAnyUniqueTypeChallenge(service.getToday());
+    if (!uniqueTypeEntry) {
+      fail('Expected at least one unique-type challenge in today selection');
       return;
     }
-    service.addKills(killsEntry.def.threshold);
+    advanceChallengeToThreshold(service, uniqueTypeEntry);
     expect(completedSpy).toHaveBeenCalledTimes(1);
-    expect(completedSpy).toHaveBeenCalledWith(killsEntry.def);
+    expect(completedSpy).toHaveBeenCalledWith(uniqueTypeEntry.def);
   });
 
   it('should NOT call onCompleted twice for the same challenge', () => {
     const completedSpy = jasmine.createSpy('onCompleted');
     service.onCompleted = completedSpy;
 
-    const killsEntry = service.getToday().find((e) => e.def.type === 'kills');
-    if (!killsEntry) {
-      pending('No kills challenge today');
+    const uniqueTypeEntry = getAnyUniqueTypeChallenge(service.getToday());
+    if (!uniqueTypeEntry) {
+      fail('Expected at least one unique-type challenge in today selection');
       return;
     }
-    service.addKills(killsEntry.def.threshold);
-    service.addKills(killsEntry.def.threshold);
+    advanceChallengeToThreshold(service, uniqueTypeEntry);
+    advanceChallengeToThreshold(service, uniqueTypeEntry);
     expect(completedSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should persist state to storage when progress changes', () => {
-    const killsEntry = service.getToday().find((e) => e.def.type === 'kills');
-    if (!killsEntry) {
-      pending('No kills challenge today');
+    const cumulativeEntry = getAnyCumulativeChallenge(service.getToday());
+    if (!cumulativeEntry) {
+      fail('Expected at least one cumulative challenge in today selection');
       return;
     }
-    service.addKills(1);
+    addCumulativeProgress(service, cumulativeEntry, 1);
     expect(storageServiceSpy.setDailyChallenges).toHaveBeenCalled();
   });
 
   it('should load saved state from storage when date matches today', async () => {
     const today = getTodayDateKey();
-    const killsEntry = service.getToday().find((e) => e.def.type === 'kills');
-    if (!killsEntry) {
-      pending('No kills challenge today');
+    const cumulativeEntry = getAnyCumulativeChallenge(service.getToday());
+    if (!cumulativeEntry) {
+      fail('Expected at least one cumulative challenge in today selection');
       return;
     }
     storageServiceSpy.getDailyChallenges.and.returnValue(
       Promise.resolve({
         date: today,
-        progress: { [killsEntry.def.id]: SAMPLE_INITIAL_PROGRESS },
+        progress: { [cumulativeEntry.def.id]: SAMPLE_INITIAL_PROGRESS },
         completed: {},
       }),
     );
@@ -161,7 +224,7 @@ describe('DailyChallengeService', () => {
     const freshService = TestBed.inject(DailyChallengeService);
     await freshService.init();
 
-    const entry = freshService.getToday().find((e) => e.def.id === killsEntry.def.id);
+    const entry = freshService.getToday().find((e) => e.def.id === cumulativeEntry.def.id);
     expect(entry?.progress).toBe(SAMPLE_INITIAL_PROGRESS);
   });
 
@@ -170,7 +233,8 @@ describe('DailyChallengeService', () => {
     const staleProgress = 999;
     storageServiceSpy.getDailyChallenges.and.returnValue(
       Promise.resolve({
-        date: '1970-01-01',
+        // fixed old date to ensure stored state is stale
+        date: '1970-01-02',
         progress: { [staleId]: staleProgress },
         completed: { [staleId]: true },
       }),

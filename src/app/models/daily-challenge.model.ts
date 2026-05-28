@@ -37,7 +37,6 @@ export const DAILY_CHALLENGE_POOL: DailyChallengeDefinition[] = [
 ];
 
 const CHALLENGES_PER_DAY = 3;
-const POOL_STEP = Math.floor(DAILY_CHALLENGE_POOL.length / CHALLENGES_PER_DAY);
 // eslint-disable-next-line no-magic-numbers
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const ISO_DATE_LENGTH = 10;
@@ -46,7 +45,7 @@ export function getDailyChallenges(dayIndex: number): DailyChallengeDefinition[]
   const size = DAILY_CHALLENGE_POOL.length;
   const result: DailyChallengeDefinition[] = [];
   for (let i = 0; i < CHALLENGES_PER_DAY; i++) {
-    result.push(DAILY_CHALLENGE_POOL[(dayIndex + i * POOL_STEP) % size]);
+    result.push(DAILY_CHALLENGE_POOL[(dayIndex + i) % size]);
   }
   return result;
 }
