@@ -30,6 +30,7 @@
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@pixi/ui": "^2.3.2",
     "@types/offscreencanvas": "^2019.7.3",
+    "@xmldom/xmldom": "0.9.10",
     "dayjs": "^1.11.19",
     "gsap": "^3.14.2",
     "pixi.js": "^8.16.0",
