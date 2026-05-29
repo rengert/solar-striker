@@ -39,7 +39,7 @@ export const DAILY_CHALLENGE_POOL: DailyChallengeDefinition[] = [
 const CHALLENGES_PER_DAY = 3;
 // eslint-disable-next-line no-magic-numbers
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const ISO_DATE_LENGTH = 10;
+const DATE_COMPONENT_PAD_LENGTH = 2;
 
 export function getDailyChallenges(dayIndex: number): DailyChallengeDefinition[] {
   const size = DAILY_CHALLENGE_POOL.length;
@@ -51,7 +51,10 @@ export function getDailyChallenges(dayIndex: number): DailyChallengeDefinition[]
 }
 
 export function getTodayDateKey(now: Date = new Date()): string {
-  return now.toISOString().slice(0, ISO_DATE_LENGTH);
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(DATE_COMPONENT_PAD_LENGTH, '0');
+  const d = String(now.getDate()).padStart(DATE_COMPONENT_PAD_LENGTH, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export function getDayIndex(dateKey?: string): number {

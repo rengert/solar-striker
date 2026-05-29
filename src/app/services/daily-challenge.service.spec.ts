@@ -6,6 +6,11 @@ import { DailyChallengeEntry, DailyChallengeService } from './daily-challenge.se
 const EXPECTED_CHALLENGES_PER_DAY = 3;
 const SAMPLE_DAY_INDEX = 42;
 const SAMPLE_INITIAL_PROGRESS = 10;
+// Fixed local date (year=2026, month=May(4), day=25, hour=12) for timezone-agnostic date key test
+const SAMPLE_DATE_YEAR = 2026;
+const SAMPLE_DATE_MONTH = 4;
+const SAMPLE_DATE_DAY = 25;
+const SAMPLE_DATE_HOUR = 12;
 
 function getAnyCumulativeChallenge(entries: DailyChallengeEntry[]): DailyChallengeEntry | undefined {
   return entries.find((entry) => entry.def.type === 'kills' || entry.def.type === 'coins' || entry.def.type === 'boss');
@@ -60,7 +65,7 @@ function advanceChallengeToThreshold(service: DailyChallengeService, entry: Dail
 
 describe('daily-challenge model helpers', () => {
   it('getTodayDateKey returns a YYYY-MM-DD string', () => {
-    const key = getTodayDateKey(new Date('2026-05-25T12:00:00Z'));
+    const key = getTodayDateKey(new Date(SAMPLE_DATE_YEAR, SAMPLE_DATE_MONTH, SAMPLE_DATE_DAY, SAMPLE_DATE_HOUR, 0, 0));
     expect(key).toBe('2026-05-25');
   });
 

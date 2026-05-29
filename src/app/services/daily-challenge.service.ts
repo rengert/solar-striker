@@ -41,6 +41,7 @@ export class DailyChallengeService {
   }
 
   getToday(): DailyChallengeEntry[] {
+    this.ensureFreshDay();
     return this.today.map((def) => ({
       def,
       progress: this.state.progress[def.id] ?? 0,
@@ -74,6 +75,7 @@ export class DailyChallengeService {
   }
 
   private addProgressForType(type: DailyChallengeType, amount: number): void {
+    this.ensureFreshDay();
     let changed = false;
     for (const def of this.today) {
       if (def.type === type && !(this.state.completed[def.id] ?? false)) {
@@ -89,6 +91,7 @@ export class DailyChallengeService {
   }
 
   private updateMaxForType(type: DailyChallengeType, value: number): void {
+    this.ensureFreshDay();
     let changed = false;
     for (const def of this.today) {
       if (def.type === type && !(this.state.completed[def.id] ?? false)) {
@@ -111,5 +114,16 @@ export class DailyChallengeService {
       this.state.completed[def.id] = true;
       this.onCompleted?.(def);
     }
+  }
+
+  private ensureFreshDay(): void {
+    const key = getTodayDateKey();
+    if (key === this.todayKey) {
+      return;
+    }
+    this.todayKey = key;
+    this.today = getDailyChallenges(getDayIndex(key));
+    this.state = { date: key, progress: {}, completed: {} };
+    void this.storage.setDailyChallenges(this.state);
   }
 }
