@@ -16,6 +16,7 @@ import { ShipUpgradeService } from './ship-upgrade.service';
 import { StorageService } from './storage.service';
 import { TranslationService } from './translation.service';
 import { AchievementService } from './achievement.service';
+import { DailyChallengeService } from './daily-challenge.service';
 import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
 
@@ -69,7 +70,7 @@ describe('GameService', () => {
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
         { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss') } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update') } },
-        { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update'), splitMeteors: { has: () => false } } },
+        { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update'), splitMeteors: { has: (): boolean => false } } },
         {
           provide: GameScreenService,
           useValue: {
@@ -122,6 +123,19 @@ describe('GameService', () => {
           },
         },
         {
+          provide: DailyChallengeService,
+          useValue: {
+            init: jasmine.createSpy('init').and.returnValue(Promise.resolve()),
+            onCompleted: undefined,
+            addKills: jasmine.createSpy('addKills'),
+            checkCombo: jasmine.createSpy('checkCombo'),
+            checkLevel: jasmine.createSpy('checkLevel'),
+            addCoins: jasmine.createSpy('addCoins'),
+            addBoss: jasmine.createSpy('addBoss'),
+            getToday: jasmine.createSpy('getToday').and.returnValue([]),
+          },
+        },
+        {
           provide: StorageService,
           useValue: {
             getCoins: jasmine.createSpy('getCoins').and.returnValue(Promise.resolve(0)),
@@ -130,6 +144,8 @@ describe('GameService', () => {
             getLevelCheckpoint: jasmine.createSpy('getLevelCheckpoint').and.returnValue(Promise.resolve(null)),
             setLevelCheckpoint: jasmine.createSpy('setLevelCheckpoint').and.returnValue(Promise.resolve()),
             clearLevelCheckpoint: jasmine.createSpy('clearLevelCheckpoint').and.returnValue(Promise.resolve()),
+            getDailyChallenges: jasmine.createSpy('getDailyChallenges').and.returnValue(Promise.resolve(null)),
+            setDailyChallenges: jasmine.createSpy('setDailyChallenges').and.returnValue(Promise.resolve()),
           },
         },
       ],

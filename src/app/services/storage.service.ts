@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AchievementState } from '../models/achievement.model';
+import { DailyChallengeState } from '../models/daily-challenge.model';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 
 export interface ShipClassSelectionState {
@@ -16,6 +17,7 @@ export enum Store {
   coins = 'coins',
   upgrades = 'upgrades',
   achievements = 'achievements',
+  daily = 'daily',
 }
 
 function getManyFromStore<T>(
@@ -60,7 +62,7 @@ export class StorageService {
     const data: T[] = Array.isArray(dataToStore) ? dataToStore : [dataToStore];
     return new Promise<void>((resolve, reject) => {
       // eslint-disable-next-line no-magic-numbers
-      const dbRequest = indexedDB.open('data', 7);
+      const dbRequest = indexedDB.open('data', 8);
       dbRequest.onerror = (): void => {
         reject(Error('IndexedDB database error'));
       };
@@ -168,6 +170,21 @@ export class StorageService {
     });
   }
 
+  async getDailyChallenges(): Promise<DailyChallengeState | null> {
+    const entries = await getManyFromStore<{ id: string; state: DailyChallengeState }>(
+      Store.daily,
+      (item) => item.id === 'daily-challenges',
+    );
+    return entries.at(0)?.state ?? null;
+  }
+
+  setDailyChallenges(state: DailyChallengeState): Promise<void> {
+    return this.toStore(Store.daily, {
+      id: 'daily-challenges',
+      state,
+    });
+  }
+
   async getShipClassSelection(): Promise<ShipClassSelectionState | null> {
     const entries = await getManyFromStore<{ id: string; state: ShipClassSelectionState }>(
       Store.upgrades,
@@ -215,7 +232,7 @@ export class StorageService {
   private deleteFromStore(storeName: Store, id: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       // eslint-disable-next-line no-magic-numbers
-      const dbRequest = indexedDB.open('data', 7);
+      const dbRequest = indexedDB.open('data', 8);
       dbRequest.onerror = (): void => {
         reject(Error('IndexedDB database error'));
       };
@@ -249,6 +266,10 @@ export class StorageService {
 
     if (!database.objectStoreNames.contains(Store.achievements)) {
       database.createObjectStore(Store.achievements, { keyPath: 'id' });
+    }
+
+    if (!database.objectStoreNames.contains(Store.daily)) {
+      database.createObjectStore(Store.daily, { keyPath: 'id' });
     }
   }
 }
