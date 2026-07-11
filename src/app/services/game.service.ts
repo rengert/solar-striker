@@ -33,6 +33,7 @@ import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
+const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
 
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
@@ -304,9 +305,18 @@ export class GameService {
     this.setup();
 
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.started() && !this.#paused()) {
-        void this.pause();
+      if (!document.hidden || !this.started() || this.#paused()) {
+        return;
       }
+      // Debounce: some mobile browsers briefly flag the page as hidden
+      // mid-gesture (e.g. an edge swipe while steering) and revert within
+      // milliseconds. Only pause if the page is still hidden shortly after,
+      // which is true for a real tab switch / app background.
+      setTimeout(() => {
+        if (document.hidden && this.started() && !this.#paused()) {
+          void this.pause();
+        }
+      }, VISIBILITY_HIDDEN_DEBOUNCE_MS);
     });
 
     await this.presentPopup(NavigationPopup);
