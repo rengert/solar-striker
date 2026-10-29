@@ -82,6 +82,7 @@ describe('GameService', () => {
             showStageAnnouncement: jasmine.createSpy('showStageAnnouncement'),
             showBossWarning: jasmine.createSpy('showBossWarning'),
             applyScreenShake: jasmine.createSpy('applyScreenShake'),
+            flashScreen: jasmine.createSpy('flashScreen'),
             showFloatingText: jasmine.createSpy('showFloatingText'),
             update: jasmine.createSpy('update'),
           },
@@ -177,6 +178,29 @@ describe('GameService', () => {
 
       expect(service.kills()).toBe(1);
       expect(service.sessionCoins()).toBe(GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER);
+    });
+
+    it('should shake and flash the screen when a boss is killed by the player', () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { applyScreenShake: jasmine.Spy; flashScreen: jasmine.Spy };
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(gameScreen.applyScreenShake).toHaveBeenCalled();
+      expect(gameScreen.flashScreen).toHaveBeenCalled();
+    });
+
+    it('should only shake the screen when a large enemy is killed by the player', () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { applyScreenShake: jasmine.Spy; flashScreen: jasmine.Spy };
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+
+      // eslint-disable-next-line no-magic-numbers
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, explosionCount: 3 }), playerRocket);
+
+      expect(gameScreen.applyScreenShake).toHaveBeenCalled();
+      expect(gameScreen.flashScreen).not.toHaveBeenCalled();
     });
 
     it('should NOT award boss bonus coins when a boss is killed by an enemy', () => {
@@ -565,6 +589,7 @@ describe('GameService', () => {
       shipInstance.energy = 8;
       tickerCallback({ deltaMS: 16 });
       expect(gameScreenMock.applyScreenShake).toHaveBeenCalled();
+      expect((gameScreenMock as unknown as { flashScreen: jasmine.Spy }).flashScreen).toHaveBeenCalled();
     });
 
     it('should call applyScreenShake even on the killing blow (energy → 0)', () => {
