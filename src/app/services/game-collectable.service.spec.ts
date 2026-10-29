@@ -244,6 +244,9 @@ describe('GameCollectableService - collectPowerUp', () => {
   });
 
   describe('nuke power-up', () => {
+    // nuked enemies would otherwise randomly drop power-ups whose textures are not loaded in tests
+    beforeEach(() => spyOn(Math, 'random').and.returnValue(1));
+
     it('should explode all enemies when a nuke power-up is collected', () => {
       const ship = createMockShip();
       const nuke = createMockPowerUp({ speed: 0, shot: 0, energy: 0, nuke: true });
