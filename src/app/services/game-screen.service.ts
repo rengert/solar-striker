@@ -61,6 +61,8 @@ const STAGE_ANNOUNCEMENT_STROKE_COLOR = 0x000000;
 const SHAKE_AMPLITUDE = 6;
 const SHAKE_STEP_DURATION_S = 0.05;
 const SHAKE_REPEAT_COUNT = 5;
+const SHAKE_DECAY = 0.7;
+const FLASH_DURATION_S = 0.25;
 const ITEM_NOT_FOUND_INDEX = -1;
 
 @Injectable()
@@ -449,29 +451,45 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.pendingAnnouncements.push({ handle, text });
   }
 
-  /** Briefly shakes the game stage to provide tactile damage feedback. */
-  applyScreenShake(): void {
+  /** Briefly shakes the game stage in a random, decaying direction; amplitude in px. */
+  applyScreenShake(amplitude = SHAKE_AMPLITUDE): void {
     const stage = this.application.stage;
     try {
-      // kill only the x-position tween so other stage tweens are unaffected
+      // kill only the position tweens so other stage tweens are unaffected
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      gsap.killTweensOf(stage, 'x');
+      gsap.killTweensOf(stage, 'x,y');
     } catch {}
-    stage.x = 0;
-    void gsap.fromTo(
-      stage,
-      { x: -SHAKE_AMPLITUDE },
-      {
-        x: SHAKE_AMPLITUDE,
-        duration: SHAKE_STEP_DURATION_S,
-        yoyo: true,
-        repeat: SHAKE_REPEAT_COUNT,
-        ease: 'power1.inOut',
-        onComplete: () => {
-          stage.x = 0;
-        },
+    let strength = amplitude;
+    const getOffset = (): number => (Math.random() * DOUBLE - 1) * strength;
+    void gsap.to(stage, {
+      x: getOffset,
+      y: getOffset,
+      duration: SHAKE_STEP_DURATION_S,
+      repeat: SHAKE_REPEAT_COUNT,
+      repeatRefresh: true,
+      ease: 'power1.inOut',
+      onRepeat: () => {
+        strength *= SHAKE_DECAY;
       },
-    );
+      onComplete: () => {
+        stage.position.set(0);
+      },
+    });
+  }
+
+  /** Fades a full-screen color overlay out, e.g. for hits and big explosions. */
+  flashScreen(color: number, alpha: number): void {
+    const flash = new Graphics()
+      .rect(0, 0, this.application.screen.width, this.application.screen.height)
+      .fill(color);
+    flash.alpha = alpha;
+    flash.eventMode = 'none';
+    this.application.stage.addChild(flash);
+    void gsap.to(flash, {
+      alpha: 0,
+      duration: FLASH_DURATION_S,
+      onComplete: () => flash.destroy(),
+    });
   }
 
   /** Shows a brief achievement-unlocked banner in the bottom-right corner. */

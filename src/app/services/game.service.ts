@@ -47,6 +47,12 @@ const STAGE_KILL_BASE = 24;
 const STAGE_KILL_GROWTH_INTERVAL = 10;
 const STAGE_KILL_GROWTH_AMOUNT = 2;
 const STAGE_KILL_CAP = 42;
+const BOSS_SHAKE_AMPLITUDE = 14;
+const LARGE_ENEMY_SHAKE_AMPLITUDE = 4;
+const BOSS_FLASH_COLOR = 0xffffff;
+const BOSS_FLASH_ALPHA = 0.6;
+const DAMAGE_FLASH_COLOR = 0xff2222;
+const DAMAGE_FLASH_ALPHA = 0.25;
 
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
@@ -156,7 +162,13 @@ export class GameService {
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.addCoins(1);
         }
-        const isBoss = (destroyedEnemy as AnimatedGameSprite).isBoss;
+        const { isBoss, explosionCount } = destroyedEnemy as AnimatedGameSprite;
+        if (isBoss) {
+          this.gameScreen.applyScreenShake(BOSS_SHAKE_AMPLITUDE);
+          this.gameScreen.flashScreen(BOSS_FLASH_COLOR, BOSS_FLASH_ALPHA);
+        } else if (explosionCount > 1) {
+          this.gameScreen.applyScreenShake(LARGE_ENEMY_SHAKE_AMPLITUDE);
+        }
         if (isBoss) {
           this.addCoins(GAME_CONFIG.boss.coinsReward);
           this.onBossDefeated();
@@ -452,6 +464,7 @@ export class GameService {
         this.streakElapsedMs = 0;
         this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
         this.gameScreen.applyScreenShake();
+        this.gameScreen.flashScreen(DAMAGE_FLASH_COLOR, DAMAGE_FLASH_ALPHA);
       } else if (currentEnergy > 0) {
         // Player is alive and unharmed this frame: accumulate streak time
         this.streakElapsedMs += delta.deltaMS;
