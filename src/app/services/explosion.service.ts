@@ -3,7 +3,7 @@ import { AnimatedSprite, Assets, Spritesheet, Texture } from 'pixi.js';
 import { ApplicationService } from './application.service';
 import { ParticleService } from './particle.service';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ExplosionService {
   private explosionSprite: Spritesheet | undefined;
 
