@@ -6,11 +6,6 @@ import { AnimatedGameSprite } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 import { ShipType } from './ship-type.enum';
 
-const SHIELD_TINT = 0x00ccff;
-const NO_TINT = 0xffffff;
-const SHIELD_PULSE_SPEED = 0.005;
-const COLOR_CHANNEL_MASK = 0xff;
-
 export class Ship extends AnimatedGameSprite {
   shotPower = 1;
   shotSpeed: number;
@@ -83,22 +78,6 @@ export class Ship extends AnimatedGameSprite {
 
     if (this.shieldTicks > 0) {
       this.shieldTicks = Math.max(0, this.shieldTicks - ticker.deltaMS);
-      // eslint-disable-next-line no-magic-numbers
-      const pulse = (Math.sin(this.elapsed * SHIELD_PULSE_SPEED) + 1) / 2;
-      // eslint-disable-next-line no-magic-numbers
-      const shieldG = (SHIELD_TINT >> 8) & COLOR_CHANNEL_MASK;
-      // eslint-disable-next-line no-magic-numbers
-      const whiteR = (NO_TINT >> 16) & COLOR_CHANNEL_MASK;
-      // eslint-disable-next-line no-magic-numbers
-      const whiteG = (NO_TINT >> 8) & COLOR_CHANNEL_MASK;
-      const whiteB = NO_TINT & COLOR_CHANNEL_MASK;
-      const r = Math.round(pulse * whiteR);
-      const g = Math.round(shieldG + pulse * (whiteG - shieldG));
-      const b = whiteB;
-      // eslint-disable-next-line no-magic-numbers
-      this.tint = (r << 16) | (g << 8) | b;
-    } else {
-      this.tint = NO_TINT;
     }
 
     const deltaX = this.x - previousX;

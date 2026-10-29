@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Ticker } from 'pixi.js';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -39,6 +40,24 @@ describe('ObjectService', () => {
       ],
     });
     service = TestBed.inject(ObjectService);
+  });
+
+  describe('slow motion', () => {
+    const FRAME_MS = 16;
+    it('should slow down non-player objects but not the player ship until it runs out', () => {
+      const enemy = { type: ObjectType.enemy, destroying: false, destroyed: false, update: jasmine.createSpy('update'), hit: (): boolean => false };
+      const ship = { type: ObjectType.ship, destroying: false, destroyed: false, update: jasmine.createSpy('update'), hit: (): boolean => false };
+      service.add(enemy as never);
+      service.add(ship as never);
+      service.slowMotionMs = FRAME_MS;
+
+      service.update({ deltaMS: FRAME_MS, deltaTime: 1 } as Ticker);
+
+      expect((enemy.update.calls.mostRecent().args[0] as Ticker).deltaMS).toBeLessThan(FRAME_MS);
+      expect((ship.update.calls.mostRecent().args[0] as Ticker).deltaMS).toBe(FRAME_MS);
+      expect(service.slowMotionMs).toBe(0);
+      expect(service.getScaledTicker({ deltaMS: FRAME_MS } as Ticker).deltaMS).toBe(FRAME_MS);
+    });
   });
 
   describe('add', () => {

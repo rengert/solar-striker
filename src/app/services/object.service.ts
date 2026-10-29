@@ -8,6 +8,9 @@ import { UpdatableService } from './updatable.service';
 
 export type ObjectModelType = AnimatedGameSprite | GameSprite;
 
+// share of normal speed that enemies, meteors and their shots keep during slow motion
+const SLOW_MOTION_SCALE = 0.4;
+
 type DestroyedCallback = (item: ObjectModelType, by: ObjectModelType) => void;
 
 @Injectable()
@@ -22,6 +25,17 @@ export class ObjectService extends UpdatableService {
 
   private readonly destroyedCallbacks = new Map<ObjectType, DestroyedCallback[]>();
 
+  /** Remaining slow-motion time in ms. */
+  slowMotionMs = 0;
+
+  /** Ticker for everything the player does not own; slower while slow motion is active. */
+  getScaledTicker(ticker: Ticker): Ticker {
+    if (this.slowMotionMs <= 0) {
+      return ticker;
+    }
+    return { deltaMS: ticker.deltaMS * SLOW_MOTION_SCALE, deltaTime: ticker.deltaTime * SLOW_MOTION_SCALE } as Ticker;
+  }
+
   onDestroyed(type: ObjectType, callback: DestroyedCallback): void {
     if (!this.destroyedCallbacks.has(type)) {
       this.destroyedCallbacks.set(type, []);
@@ -32,13 +46,16 @@ export class ObjectService extends UpdatableService {
 
   update(ticker: Ticker): void {
     const objects = this.#objects();
+    const slowed = this.getScaledTicker(ticker);
+    this.slowMotionMs = Math.max(0, this.slowMotionMs - ticker.deltaMS);
 
     for (let i = 0; i < objects.length; i++) {
       const object = objects[i];
       if (object.destroyed || object.destroying) {
         continue;
       }
-      object.update(ticker);
+      const playerOwned = object.type === ObjectType.ship || object.reference?.type === ObjectType.ship;
+      object.update(playerOwned ? ticker : slowed);
     }
 
     for (let i = 0; i < objects.length; i++) {

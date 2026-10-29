@@ -100,7 +100,8 @@ export class GameEnemyService extends UpdatableService {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
   }
 
-  update(ticker: Ticker, level: number): void {
+  update(realTicker: Ticker, level: number): void {
+    const ticker = this.object.getScaledTicker(realTicker);
     this.elapsed += ticker.deltaMS;
 
     if (this.boss?.destroying || this.boss?.destroyed) {

@@ -11,6 +11,7 @@ export enum PowerUp {
   nuke = 'nuke',
   orb = 'orb',
   orbitalStrike = 'orbitalStrike',
+  slowMotion = 'slowMotion',
 }
 
 export class PowerUpSprite extends AnimatedGameSprite {

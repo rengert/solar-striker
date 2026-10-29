@@ -12,5 +12,7 @@ export interface PowerUpConfig {
     shield?: number;
     nuke?: boolean;
     orbitalStrike?: boolean;
+    /** slow-motion duration in ms */
+    slowMotion?: number;
   };
 }
