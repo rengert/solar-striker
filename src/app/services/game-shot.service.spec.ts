@@ -4,6 +4,7 @@ import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameShotService } from './game-shot.service';
 import { ExplosionService } from './explosion.service';
+import { ParticleService } from './particle.service';
 import { OFF_SCREEN_BUFFER } from '../game-constants';
 
 const SCREEN_HEIGHT = 600;
@@ -47,6 +48,10 @@ describe('GameShotService - update (off-screen cleanup)', () => {
         {
           provide: ExplosionService,
           useValue: {},
+        },
+        {
+          provide: ParticleService,
+          useValue: { emit: jasmine.createSpy('emit') },
         },
       ],
     });

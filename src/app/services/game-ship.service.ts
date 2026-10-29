@@ -5,6 +5,7 @@ import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
+import { ParticleService } from './particle.service';
 import { PlayerShipService } from './player-ship.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
 import { UpdatableService } from './updatable.service';
@@ -20,6 +21,7 @@ export class GameShipService extends UpdatableService {
   private readonly gameShot = inject(GameShotService);
   private readonly shipUpgrades = inject(ShipUpgradeService);
   private readonly playerShip = inject(PlayerShipService);
+  private readonly particles = inject(ParticleService);
 
   get instance(): Ship {
     if (!this.#ship) {
@@ -58,9 +60,22 @@ export class GameShipService extends UpdatableService {
     this.applyUpgrades();
   }
 
+  /* eslint-disable no-magic-numbers */
   update(): void {
-    // nothing to do here
+    const ship = this.#ship;
+    if (!ship || ship.destroyed || ship.destroying) {
+      return;
+    }
+    // engine flame: hot core plus a wider orange plume
+    const x = ship.x - Math.sin(ship.rotation) * 14;
+    const y = ship.y + 16;
+    const down = Math.PI / 2 - ship.rotation;
+    this.particles.emit({ x, y, color: 0xfff2b0, angle: down, spread: 0.2, speed: 0.18, life: 160, scale: 0.6, endScale: 0.15 });
+    this.particles.emit({
+      x, y, color: 0xff7a20, count: 2, angle: down, spread: 0.5, speed: 0.16, life: 380, scale: 0.7, endScale: 0.05,
+    });
   }
+  /* eslint-enable no-magic-numbers */
 
   applyUpgrades(): void {
     if (!this.#ship) {

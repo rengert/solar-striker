@@ -1,11 +1,14 @@
-import { Injectable } from '@angular/core';
-import { Texture, Ticker } from 'pixi.js';
+import { inject, Injectable } from '@angular/core';
+import { Sprite, Texture, Ticker } from 'pixi.js';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
+import { createDustTexture, createVignetteTexture } from '../utils/texture.util';
+import { ParticleService } from './particle.service';
 import { UpdatableService } from './updatable.service';
 
 @Injectable()
 export class GameLandscapeService extends UpdatableService {
   private readonly landscapes: BackgroundSprite[] = [];
+  private readonly particles = inject(ParticleService);
 
   setup(): void {
     if (this.landscapes.length) {
@@ -14,6 +17,8 @@ export class GameLandscapeService extends UpdatableService {
 
     this.setupBackground();
     this.setupClouds();
+    this.setupDust();
+    this.application.stage.addChild(this.particles.layer);
   }
 
   update(ticker: Ticker): void {
@@ -58,4 +63,30 @@ export class GameLandscapeService extends UpdatableService {
     this.landscapes.push(cloud2);
     this.application.stage.addChild(cloud2);
   }
+
+  /* eslint-disable no-magic-numbers */
+  private setupDust(): void {
+    const { width, height } = this.application.screen;
+    // two drifting speck layers at different speeds give the desert some parallax depth
+    const layers = [
+      { count: 40, radius: 1, speed: 0.06, alpha: 0.35 },
+      { count: 14, radius: 2, speed: 0.14, alpha: 0.5 },
+    ];
+    for (const layer of layers) {
+      const dust = new BackgroundSprite(createDustTexture(layer.count, layer.radius), {
+        speedTilePositionY: layer.speed,
+        speedTilePositionX: layer.speed / 6,
+        width,
+        height,
+      });
+      dust.alpha = layer.alpha;
+      dust.blendMode = 'add';
+      this.landscapes.push(dust);
+      this.application.stage.addChild(dust);
+    }
+
+    const vignette = new Sprite(createVignetteTexture(width, height));
+    this.application.stage.addChild(vignette);
+  }
+  /* eslint-enable no-magic-numbers */
 }
