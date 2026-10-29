@@ -191,6 +191,18 @@ describe('GameService', () => {
       expect(gameScreen.flashScreen).toHaveBeenCalled();
     });
 
+    it('should only shake the screen when a large enemy is killed by the player', () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { applyScreenShake: jasmine.Spy; flashScreen: jasmine.Spy };
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+
+      // eslint-disable-next-line no-magic-numbers
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, explosionCount: 3 }), playerRocket);
+
+      expect(gameScreen.applyScreenShake).toHaveBeenCalled();
+      expect(gameScreen.flashScreen).not.toHaveBeenCalled();
+    });
+
     it('should NOT award boss bonus coins when a boss is killed by an enemy', () => {
       const enemyShip = createMockObject(ObjectType.enemy);
       const enemyRocket = createMockObject(ObjectType.rocket, { reference: enemyShip });

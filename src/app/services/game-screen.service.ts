@@ -342,8 +342,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       gsap.killTweensOf(this.floatingContainer);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      gsap.killTweensOf(this.application.stage, 'x');
-      this.application.stage.x = 0;
+      gsap.killTweensOf(this.application.stage, 'x,y');
+      this.application.stage.position.set(0);
     } catch {}
   }
 
