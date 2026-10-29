@@ -10,6 +10,7 @@ import { GameShipService } from '../../services/game-ship.service';
 import { GameShotService } from '../../services/game-shot.service';
 import { GameService } from '../../services/game.service';
 import { ObjectService } from '../../services/object.service';
+import { ParticleService } from '../../services/particle.service';
 import { PlayerShipService } from '../../services/player-ship.service';
 import { ShipUpgradeService } from '../../services/ship-upgrade.service';
 
@@ -28,6 +29,7 @@ import { ShipUpgradeService } from '../../services/ship-upgrade.service';
     ShipUpgradeService,
     PlayerShipService,
     ExplosionService,
+    ParticleService,
     GameService,
     ObjectService,
   ],

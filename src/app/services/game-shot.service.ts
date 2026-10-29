@@ -6,7 +6,9 @@ import { OrbitalRocket } from '../models/pixijs/orbital-rocket';
 import { Rocket } from '../models/pixijs/rocket';
 import { Ship } from '../models/pixijs/ship';
 import { ExplosionService } from './explosion.service';
+import { ObjectType } from '../models/pixijs/object-type.enum';
 import { ObjectService } from './object.service';
+import { ParticleService } from './particle.service';
 import { UpdatableService } from './updatable.service';
 
 const SHOT_OFFSETS: [number, number][][] = [
@@ -26,6 +28,7 @@ export class GameShotService extends UpdatableService {
 
   private readonly explosionService = inject(ExplosionService);
   private readonly object = inject(ObjectService);
+  private readonly particles = inject(ParticleService);
 
   async init(): Promise<void> {
     if (!this.laserAnimation) {
@@ -46,6 +49,7 @@ export class GameShotService extends UpdatableService {
       shot.play();
       shot.rotation = up ? 0 : Math.PI;
       shot.anchor.set(0.5);
+      shot.blendMode = 'add';
       const [dx, dy] = offsets[i - 1];
       shot.x = x + dx;
       shot.y = y + dy;
@@ -67,6 +71,7 @@ export class GameShotService extends UpdatableService {
       rocket.play();
       rocket.rotation = angle;
       rocket.anchor.set(0.5);
+      rocket.blendMode = 'add';
       rocket.x = x;
       rocket.y = y;
       this.object.add(rocket);
@@ -75,8 +80,14 @@ export class GameShotService extends UpdatableService {
   }
 
   update(): void {
-    this.object
-      .rockets()
+    const rockets = this.object.rockets();
+    rockets.forEach((rocket) => {
+      const player = rocket.reference?.type === ObjectType.ship;
+      this.particles.emit({
+        x: rocket.x, y: rocket.y, color: player ? 0x33aaff : 0xff4422, life: 260, scale: 0.7, endScale: 0.1,
+      });
+    });
+    rockets
       .filter((rocket) =>
         rocket.y < -OFF_SCREEN_BUFFER ||
         rocket.y > this.application.screen.height + OFF_SCREEN_BUFFER ||
