@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { PixijsComponent } from './components/pixijs/pixijs.component';
 
@@ -6,7 +6,8 @@ import { PixijsComponent } from './components/pixijs/pixijs.component';
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
-  imports: [PixijsComponent]
+  changeDetection: ChangeDetectionStrategy.Eager,
+  imports: [PixijsComponent],
 })
 export class AppComponent implements OnInit {
   ngOnInit(): void {

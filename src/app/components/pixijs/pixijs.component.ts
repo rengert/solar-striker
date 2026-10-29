@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, NgZone } from '@angular/core';
+import { Component, ElementRef, inject, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { ApplicationService } from '../../services/application.service';
 import { ExplosionService } from '../../services/explosion.service';
 import { GameCollectableService } from '../../services/game-collectable.service';
@@ -16,6 +16,7 @@ import { ShipUpgradeService } from '../../services/ship-upgrade.service';
 @Component({
   selector: 'app-pixijs',
   template: '',
+  changeDetection: ChangeDetectionStrategy.Eager,
   providers: [
     ApplicationService,
     GameCollectableService,
