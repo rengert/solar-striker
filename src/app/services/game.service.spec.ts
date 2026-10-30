@@ -182,6 +182,20 @@ describe('GameService', () => {
       expect(service.sessionCoins()).toBe(GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER);
     });
 
+    it('should show a floating score at the kill position and call out a growing combo', () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showFloatingText: jasmine.Spy };
+      const playerShip = createMockObject(ObjectType.ship);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
+      const ENEMY_X = 120;
+      const ENEMY_Y = 80;
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, x: ENEMY_X, y: ENEMY_Y }), playerRocket);
+      expect(gameScreen.showFloatingText.calls.mostRecent().args).toEqual(jasmine.arrayContaining(['+1', ENEMY_X, ENEMY_Y]));
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, x: ENEMY_X, y: ENEMY_Y }), playerRocket);
+      expect(gameScreen.showFloatingText.calls.mostRecent().args[0]).toContain('COMBO');
+    });
+
     it('should shake and flash the screen when a boss is killed by the player', () => {
       const gameScreen = TestBed.inject(GameScreenService) as unknown as { applyScreenShake: jasmine.Spy; flashScreen: jasmine.Spy };
       const playerShip = createMockObject(ObjectType.ship);
