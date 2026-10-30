@@ -1,4 +1,4 @@
-import { AnimatedSprite, FrameObject, Text, Texture, Ticker } from 'pixi.js';
+import { AnimatedSprite, ColorMatrixFilter, FrameObject, Text, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
 import { hit } from '../../utils/sprite.util';
@@ -11,6 +11,12 @@ const MULTI_EXPLOSION_OFFSET_FRACTION = 0.4;
 const HALF_DIVISOR = 2;
 export const MULTI_EXPLOSION_INTERVAL_MS = 150;
 export const SPEED_SCALE = 0.2;
+const HIT_FLASH_MS = 70;
+
+// shared filter that paints a sprite solid white while keeping its alpha
+const hitFlashFilter = new ColorMatrixFilter();
+// eslint-disable-next-line no-magic-numbers
+hitFlashFilter.matrix = [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0];
 
 interface ChainExplosionCenter {
   readonly x: number;
@@ -57,6 +63,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
 
   protected readonly speed: number = 1;
   private _initialEnergy: number | undefined;
+  private hitFlashMs = 0;
   private energyLabel: Text | undefined;
 
   constructor(
@@ -80,6 +87,9 @@ export class AnimatedGameSprite extends AnimatedSprite {
   set energy(value: number) {
     if (this._initialEnergy === undefined) {
       this._initialEnergy = value;
+    } else if (value > 0 && value < (this._energy ?? 0)) {
+      this.hitFlashMs = HIT_FLASH_MS;
+      this.filters = [hitFlashFilter];
     }
     this._energy = value;
     this.updateEnergyLabel();
@@ -160,6 +170,13 @@ export class AnimatedGameSprite extends AnimatedSprite {
       return;
     }
     super.update(ticker);
+
+    if (this.hitFlashMs > 0) {
+      this.hitFlashMs -= ticker.deltaMS;
+      if (this.hitFlashMs <= 0) {
+        this.filters = [];
+      }
+    }
 
     if (this.orbitData) {
       this.orbitData.centerY += ticker.deltaMS * this.speed * SPEED_SCALE;

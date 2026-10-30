@@ -146,3 +146,23 @@ describe('AnimatedGameSprite - explode()', () => {
     }, totalDelayMs);
   });
 });
+
+describe('AnimatedGameSprite - hit flash', () => {
+  it('should flash white when damaged but not when killed, then clear the flash', () => {
+    const sprite = createSprite(null);
+    sprite.energy = 3;
+    expect(sprite.filters).toBeFalsy();
+
+    sprite.energy = 2;
+    expect((sprite.filters as unknown[]).length).toBe(1);
+
+    // eslint-disable-next-line no-magic-numbers
+    sprite.update({ deltaMS: 100, deltaTime: 6 } as never);
+    expect((sprite.filters as unknown[]).length).toBe(0);
+
+    const dying = createSprite(null);
+    dying.energy = 1;
+    dying.energy = 0;
+    expect(dying.filters).toBeFalsy();
+  });
+});
