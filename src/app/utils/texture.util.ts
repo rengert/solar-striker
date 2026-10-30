@@ -58,3 +58,103 @@ export function createVignetteTexture(width: number, height: number): Texture {
     ctx.fillRect(0, 0, width, height);
   });
 }
+
+/** Draws a shape at its spot and at every wrapped copy, so a size×size tile has no seams. */
+function drawWrapped(size: number, draw: (dx: number, dy: number) => void): void {
+  for (const dx of [-size, 0, size]) {
+    for (const dy of [-size, 0, size]) {
+      draw(dx, dy);
+    }
+  }
+}
+
+/** Dark space tile with stars; base for all non-desert themes. */
+export function createStarfieldTexture(size = 512): Texture {
+  return createCanvasTexture(size, size, (ctx) => {
+    ctx.fillStyle = '#05030c';
+    ctx.fillRect(0, 0, size, size);
+    for (let i = 0; i < 160; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.random() * 0.8})`;
+      ctx.fillRect(Math.random() * size, Math.random() * size, Math.random() < 0.9 ? 1 : 2, 1);
+    }
+  });
+}
+
+/** Transparent tile of soft coloured gas clouds, meant to sit above the starfield. */
+export function createNebulaTexture(size = 512): Texture {
+  const colors = ['180,60,255', '255,60,160', '60,120,255', '60,220,255'];
+  return createCanvasTexture(size, size, (ctx) => {
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 14; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const radius = size * (0.12 + Math.random() * 0.25);
+      const color = colors[i % colors.length];
+      drawWrapped(size, (dx, dy) => {
+        const gradient = ctx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, radius);
+        gradient.addColorStop(0, `rgba(${color},0.35)`);
+        gradient.addColorStop(1, `rgba(${color},0)`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(x + dx - radius, y + dy - radius, radius * 2, radius * 2);
+      });
+    }
+  });
+}
+
+/** Transparent tile of shaded, lumpy rocks. */
+export function createAsteroidTexture(size = 512, count = 12): Texture {
+  return createCanvasTexture(size, size, (ctx) => {
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * size;
+      const y = Math.random() * size;
+      const radius = 6 + Math.random() * 22;
+      const corners = 7 + Math.floor(Math.random() * 4);
+      const offsets = Array.from({ length: corners }, () => 0.7 + Math.random() * 0.3);
+      const grey = 70 + Math.floor(Math.random() * 50);
+      drawWrapped(size, (dx, dy) => {
+        const gradient = ctx.createRadialGradient(x + dx - radius / 3, y + dy - radius / 3, 0, x + dx, y + dy, radius);
+        gradient.addColorStop(0, `rgb(${grey + 60},${grey + 50},${grey + 40})`);
+        gradient.addColorStop(1, `rgb(${grey / 3},${grey / 3},${grey / 3})`);
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        offsets.forEach((offset, corner) => {
+          const angle = (corner / corners) * Math.PI * 2;
+          ctx.lineTo(x + dx + Math.cos(angle) * radius * offset, y + dy + Math.sin(angle) * radius * offset);
+        });
+        ctx.fill();
+      });
+    }
+  });
+}
+
+/** Big banded planet with an atmosphere glow. */
+export function createPlanetTexture(diameter: number): Texture {
+  const size = Math.round(diameter * 1.2);
+  return createCanvasTexture(size, size, (ctx) => {
+    const center = size / 2;
+    const radius = diameter / 2;
+    const glow = ctx.createRadialGradient(center, center, radius * 0.95, center, center, size / 2);
+    glow.addColorStop(0, 'rgba(120,200,255,0.6)');
+    glow.addColorStop(1, 'rgba(120,200,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = '#2a4f7a';
+    ctx.fillRect(0, 0, size, size);
+    for (let band = 0; band < 9; band++) {
+      ctx.fillStyle = `rgba(${150 + band * 10},${180 - band * 8},255,0.12)`;
+      ctx.fillRect(0, center - radius + band * (diameter / 9) + Math.random() * 10, size, diameter / 18);
+    }
+    // night side
+    const shade = ctx.createRadialGradient(center - radius * 0.4, center - radius * 0.4, radius * 0.2, center, center, radius * 1.1);
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,10,0.85)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, size, size);
+    ctx.restore();
+  });
+}

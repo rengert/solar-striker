@@ -146,6 +146,8 @@ export class GameService {
     // music runs only while actually playing
     effect(() => (this.started() && !this.#paused() ? this.sound.startMusic() : this.sound.stopMusic()));
 
+    effect(() => this.landscape.setStage(this.stage()));
+
     // Achievement: track level milestones
     effect(() => {
       const level = this.stage();
