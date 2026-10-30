@@ -24,7 +24,7 @@ import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
-import { GameScreenService } from './game-screen.service';
+import { getComboColor, GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
@@ -48,6 +48,8 @@ const STAGE_KILL_BASE = 24;
 const STAGE_KILL_GROWTH_INTERVAL = 10;
 const STAGE_KILL_GROWTH_AMOUNT = 2;
 const STAGE_KILL_CAP = 42;
+const COMBO_POPUP_SCALE_STEP = 0.15;
+const COMBO_CALLOUT_FROM = 3;
 const BOSS_SHAKE_AMPLITUDE = 14;
 const LARGE_ENEMY_SHAKE_AMPLITUDE = 4;
 const BOSS_FLASH_COLOR = 0xffffff;
@@ -164,6 +166,15 @@ export class GameService {
         const newKills = this.kills();
         // increase combo on player kill
         this.increaseCombo();
+        const combo = this.combo();
+        this.gameScreen.showFloatingText(
+          // the first kill already starts a x2 combo, so only call it out once it grows
+          combo >= COMBO_CALLOUT_FROM ? `+1  COMBO x${combo}` : '+1',
+          destroyedEnemy.x,
+          destroyedEnemy.y,
+          getComboColor(combo),
+          1 + (combo - 1) * COMBO_POPUP_SCALE_STEP,
+        );
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.addCoins(1);
         }

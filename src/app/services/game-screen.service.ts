@@ -65,6 +65,14 @@ const SHAKE_DECAY = 0.7;
 const FLASH_DURATION_S = 0.25;
 const ITEM_NOT_FOUND_INDEX = -1;
 
+// combo x1..x5 runs from white over yellow and orange to red
+// eslint-disable-next-line no-magic-numbers
+const COMBO_COLORS = [0xffffff, 0xffee55, 0xffbb33, 0xff7722, 0xff3333];
+
+export function getComboColor(combo: number): number {
+  return COMBO_COLORS[Math.min(Math.max(combo, 1), COMBO_COLORS.length) - 1];
+}
+
 @Injectable()
 export class GameScreenService extends UpdatableService implements OnDestroy {
   readonly #ship = inject(GameShipService);
@@ -97,8 +105,6 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     align: 'center',
   });
 
-  // track last kills value to show deltas
-  private lastKills = 0;
 
   private lifesLabel: Graphics | undefined;
   private pauseButton?: Text;
@@ -109,17 +115,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   onPause?: () => void;
 
   set kills(value: number) {
-    // show delta as floating popup when kills increased
-    const delta = value - this.lastKills;
     // eslint-disable-next-line no-magic-numbers
     this.points!.text = `${icons.points}  ${value.toString().padStart(7, '0')}`;
-    if (delta > 0) {
-      // show near the points label
-      const x = this.points.x - FLOAT_POP_OFFSET_X;
-      const y = this.points.y + FLOAT_POP_OFFSET_Y;
-      this.showFloatingText(`+${delta}`, x, y);
-    }
-    this.lastKills = value;
   }
 
   set level(value: number) {
@@ -134,6 +131,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
 
   set combo(value: number) {
     this.comboLabel.text = `x${value}`;
+    this.comboLabel.tint = getComboColor(value);
     // position combo label left of coin label
     this.comboLabel.x = this.coinLabel.x - this.comboLabel.width - HUD_LABEL_SPACING;
     this.comboLabel.y = this.coinLabel.y;
@@ -350,19 +348,21 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   /**
    * Zeigt ein kleines animiertes Text-Popup an (z.B. "+5") und entfernt es nach der Animation.
    */
-  showFloatingText(text: string, x?: number, y?: number): void {
+  // eslint-disable-next-line max-params
+  showFloatingText(text: string, x?: number, y?: number, color = COMBO_COLORS[0], scale = 1): void {
     const txt = new Text({ text, style: this.floatingTextStyle });
+    txt.tint = color;
     // eslint-disable-next-line no-magic-numbers
     txt.anchor.set(0.5);
     txt.x = x ?? (this.points.x - FLOAT_POP_OFFSET_X);
     txt.y = y ?? (this.points.y + FLOAT_POP_OFFSET_Y);
     // start slightly bigger for a pop effect
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    txt.scale.set(FLOAT_START_SCALE);
+    txt.scale.set(FLOAT_START_SCALE * scale);
     this.floatingContainer.addChild(txt);
 
     // small pop back to normal
-    void gsap.to(txt.scale, { x: 1, y: 1, duration: FLOAT_SCALE_BACK_DURATION });
+    void gsap.to(txt.scale, { x: scale, y: scale, duration: FLOAT_SCALE_BACK_DURATION });
 
     // float up and fade out
     void gsap.to(txt, {
