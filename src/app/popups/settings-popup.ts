@@ -4,12 +4,13 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 300;
+const POPUP_HEIGHT = 350;
 const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
 
 export class SettingsPopup extends Popup {
   private readonly languageButtons = new Map<SupportedLanguage, LabeledButton>();
+  private readonly soundButton: LabeledButton;
   private readonly backButton: LabeledButton;
 
   constructor(
@@ -22,13 +23,21 @@ export class SettingsPopup extends Popup {
       this.createLanguageButton(language, index + BUTTON_INDEX_OFFSET);
     });
 
-    const backButtonIndex = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
+    const soundButtonIndex = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
+    this.soundButton = this.addButton('', () => this.toggleSound(), soundButtonIndex);
+
+    const backButtonIndex = soundButtonIndex + 1;
     this.backButton = this.addButton(
       this.translation.getTranslation('common.back'),
       () => this.gameService.openNavigation(this),
       backButtonIndex,
     );
 
+    this.updateContentLanguage();
+  }
+
+  private toggleSound(): void {
+    this.gameService.sound.muted = !this.gameService.sound.muted;
     this.updateContentLanguage();
   }
 
@@ -57,6 +66,9 @@ export class SettingsPopup extends Popup {
       elements.label.text = this.translation.getTranslation(this.getLanguageKey(language));
     }
 
+    this.soundButton.label.text = this.translation.getTranslation(
+      this.gameService.sound.muted ? 'settings.soundOff' : 'settings.soundOn',
+    );
     this.backButton.label.text = this.translation.getTranslation('common.back');
     this.highlightSelectedLanguage();
   }

@@ -31,6 +31,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { PlayerShipService } from './player-ship.service';
 import { ShipUpgradeService } from './ship-upgrade.service';
 import { TranslationService } from './translation.service';
+import { SoundService } from './sound.service';
 import { StorageService } from './storage.service';
 import { UpdatableService } from './updatable.service';
 
@@ -95,6 +96,7 @@ export class GameService {
   readonly achievementService = inject(AchievementService);
   readonly dailyChallengeService = inject(DailyChallengeService);
   private readonly translation = inject(TranslationService);
+  readonly sound = inject(SoundService);
   private rewardedMeteors = new WeakSet<ObjectModelType>();
   private readonly updatables: UpdatableService[] = [
     this.collectables,
@@ -138,6 +140,9 @@ export class GameService {
       this.achievementService.checkMilestone('combo_master', combo);
       this.dailyChallengeService.checkCombo(combo);
     });
+
+    // music runs only while actually playing
+    effect(() => (this.started() && !this.#paused() ? this.sound.startMusic() : this.sound.stopMusic()));
 
     // Achievement: track level milestones
     effect(() => {
@@ -465,6 +470,7 @@ export class GameService {
         this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
         this.gameScreen.applyScreenShake();
         this.gameScreen.flashScreen(DAMAGE_FLASH_COLOR, DAMAGE_FLASH_ALPHA);
+        this.sound.play('hit');
       } else if (currentEnergy > 0) {
         // Player is alive and unharmed this frame: accumulate streak time
         this.streakElapsedMs += delta.deltaMS;

@@ -9,6 +9,7 @@ import { ExplosionService } from './explosion.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { ObjectService } from './object.service';
 import { ParticleService } from './particle.service';
+import { SoundService } from './sound.service';
 import { UpdatableService } from './updatable.service';
 
 const SHOT_OFFSETS: [number, number][][] = [
@@ -29,6 +30,7 @@ export class GameShotService extends UpdatableService {
   private readonly explosionService = inject(ExplosionService);
   private readonly object = inject(ObjectService);
   private readonly particles = inject(ParticleService);
+  private readonly sound = inject(SoundService);
 
   async init(): Promise<void> {
     if (!this.laserAnimation) {
@@ -42,6 +44,9 @@ export class GameShotService extends UpdatableService {
     const { x, y } = ship;
     const speed = up ? -ship.rocketSpeed : ship.rocketSpeed;
     const offsets = SHOT_OFFSETS[power - 1];
+    if (ship.type === ObjectType.ship) {
+      this.sound.play('laser');
+    }
     for (let i = 1; i <= power; i++) {
       const shot = new Rocket(this.explosionService, speed, this.laserAnimation!);
       shot.reference = ship;

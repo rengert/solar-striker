@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { AnimatedSprite, Assets, Spritesheet, Texture } from 'pixi.js';
 import { ApplicationService } from './application.service';
 import { ParticleService } from './particle.service';
+import { SoundService } from './sound.service';
 
 @Injectable()
 export class ExplosionService {
@@ -9,6 +10,7 @@ export class ExplosionService {
 
   private readonly application = inject(ApplicationService);
   private readonly particles = inject(ParticleService);
+  private readonly sound = inject(SoundService);
 
   async explode(
     x: number,
@@ -17,6 +19,7 @@ export class ExplosionService {
     oncomplete: (explosion: AnimatedSprite) => void = (): void => {},
   ): Promise<void> {
     this.spawnBurst(x, y, scale);
+    this.sound.play(scale > 1 ? 'bigExplosion' : 'explosion');
     // explode
     const explosion = await this.getAnimationSprite();
     // eslint-disable-next-line no-magic-numbers
