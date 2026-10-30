@@ -381,7 +381,7 @@ export class GameEnemyService extends UpdatableService {
       this.bossBarFill = null;
       return;
     }
-    this.bossBarFill!.scale.x = Math.max(0, this.boss.energy / (this.boss.initialEnergy ?? this.boss.maxEnergy));
+    this.bossBarFill!.scale.x = Math.max(0, this.boss.energy / this.boss.maxEnergy);
   }
 
   private updateBossMovement(boss: AnimatedGameSprite): void {
