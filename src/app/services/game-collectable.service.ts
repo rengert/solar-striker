@@ -10,6 +10,7 @@ import { UpdatableService } from './updatable.service';
 import { AchievementService } from './achievement.service';
 import { GameShotService } from './game-shot.service';
 import { ParticleService } from './particle.service';
+import { SoundService } from './sound.service';
 
 interface Dictionary<T> {
   [key: string]: T;
@@ -42,6 +43,7 @@ export class GameCollectableService extends UpdatableService {
   private readonly achievementService = inject(AchievementService);
   private readonly shotService = inject(GameShotService);
   private readonly particles = inject(ParticleService);
+  private readonly sound = inject(SoundService);
 
   private readonly animations: Dictionary<Texture[]> = {};
 
@@ -87,6 +89,7 @@ export class GameCollectableService extends UpdatableService {
     }
     const ship = by as unknown as Ship;
     const powerUp = object as unknown as PowerUpSprite;
+    this.sound.play('powerUp');
     ship.shotSpeed += powerUp.config.powerUp.speed;
     ship.shotPower = Math.min(ship.shotPower + powerUp.config.powerUp.shot, MAX_SHOT_POWER);
     ship.energy += powerUp.config.powerUp.energy;

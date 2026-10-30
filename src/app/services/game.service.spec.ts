@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { GameService } from './game.service';
+import { SoundService } from './sound.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { AppScreen } from '../models/pixijs/app-screen';
 import { GameCollectableService } from './game-collectable.service';
@@ -97,6 +98,7 @@ describe('GameService', () => {
           },
         },
         { provide: GameShotService, useValue: { update: jasmine.createSpy('update') } },
+        { provide: SoundService, useValue: jasmine.createSpyObj('SoundService', ['play', 'startMusic', 'stopMusic']) },
         { provide: ShipUpgradeService, useValue: {} },
         {
           provide: PlayerShipService,
@@ -558,6 +560,19 @@ describe('GameService', () => {
       expect(service.stage()).toBe(SAVED_STAGE_SEVEN);
       expect(storage.setLevelCheckpoint).toHaveBeenCalledWith(SAVED_STAGE_SEVEN);
     });
+  });
+
+  it('should play music only while the game runs', () => {
+    const sound = TestBed.inject(SoundService) as jasmine.SpyObj<SoundService>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (service as any).started.set(true);
+    TestBed.tick();
+    expect(sound.startMusic).toHaveBeenCalled();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (service as any).started.set(false);
+    TestBed.tick();
+    expect(sound.stopMusic).toHaveBeenCalled();
   });
 
   describe('damage tracking and survival streak', () => {
