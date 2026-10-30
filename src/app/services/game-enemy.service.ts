@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Assets, Spritesheet, Texture, Ticker } from 'pixi.js';
+import { Assets, Container, Graphics, Spritesheet, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { AnimatedGameSprite, LoopData, OrbitData } from '../models/pixijs/animated-game-sprite';
 import { Ship } from '../models/pixijs/ship';
@@ -72,6 +72,14 @@ const BOSS_SWEEP_INTERVAL_MS = 3000;
 const BOSS_SCREEN_CENTER_DIVIDER = 2;
 const BOSS_EXPLOSION_COUNT = 5;
 const BOSS_EXPLOSION_SCALE = 3;
+const DOUBLE = 2;
+const BOSS_BAR_WIDTH_RATIO = 0.6;
+const BOSS_BAR_HEIGHT = 8;
+const BOSS_BAR_Y = 100;
+const BOSS_BAR_BORDER = 2;
+const BOSS_BAR_BACKGROUND = 0x330000;
+const BOSS_BAR_COLOR = 0xff3333;
+const BOSS_BAR_BORDER_COLOR = 0xffffff;
 const ENEMY_ANIMATION_SPEED = 0.167;
 
 interface EnemyMovementState {
@@ -92,6 +100,8 @@ export class GameEnemyService extends UpdatableService {
   private elapsed = 0;
   private lastEnemySpawn: number | null = null;
   private boss: Ship | null = null;
+  private bossBar: Container | null = null;
+  private bossBarFill: Graphics | null = null;
 
   private enemySprite!: Spritesheet;
   private readonly movementStates = new WeakMap<ObjectModelType, EnemyMovementState>();
@@ -107,6 +117,7 @@ export class GameEnemyService extends UpdatableService {
     if (this.boss?.destroying || this.boss?.destroyed) {
       this.boss = null;
     }
+    this.updateBossBar();
 
     const enemies = this.object.enemies();
 
@@ -334,12 +345,43 @@ export class GameEnemyService extends UpdatableService {
     boss.tint = BOSS_TINT;
     boss.x = this.application.screen.width / BOSS_SCREEN_CENTER_DIVIDER;
     boss.y = 0;
-    boss.enableEnergyDisplay();
     this.object.add(boss);
     this.application.stage.addChild(boss);
     this.boss = boss;
+    this.createBossBar();
 
     this.updateBossMovement(boss);
+  }
+
+  private createBossBar(): void {
+    this.bossBar?.destroy({ children: true });
+    const width = this.application.screen.width * BOSS_BAR_WIDTH_RATIO;
+    this.bossBar = new Container();
+    this.bossBar.addChild(
+      new Graphics()
+        .rect(-BOSS_BAR_BORDER, -BOSS_BAR_BORDER, width + BOSS_BAR_BORDER * DOUBLE, BOSS_BAR_HEIGHT + BOSS_BAR_BORDER * DOUBLE)
+        .fill(BOSS_BAR_BORDER_COLOR)
+        .rect(0, 0, width, BOSS_BAR_HEIGHT)
+        .fill(BOSS_BAR_BACKGROUND),
+    );
+    this.bossBarFill = new Graphics().rect(0, 0, width, BOSS_BAR_HEIGHT).fill(BOSS_BAR_COLOR);
+    this.bossBar.addChild(this.bossBarFill);
+    this.bossBar.x = (this.application.screen.width - width) / DOUBLE;
+    this.bossBar.y = BOSS_BAR_Y;
+    this.application.stage.addChild(this.bossBar);
+  }
+
+  private updateBossBar(): void {
+    if (!this.bossBar) {
+      return;
+    }
+    if (!this.boss) {
+      this.bossBar.destroy({ children: true });
+      this.bossBar = null;
+      this.bossBarFill = null;
+      return;
+    }
+    this.bossBarFill!.scale.x = Math.max(0, this.boss.energy / (this.boss.initialEnergy ?? this.boss.maxEnergy));
   }
 
   private updateBossMovement(boss: AnimatedGameSprite): void {
