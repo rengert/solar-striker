@@ -5,6 +5,7 @@ import { PowerUpConfig } from './models/power-up-config.model';
 export const THE_MIDDLE = 0.5;
 export const LARGE_POP_UP_HEIGHT = 420;
 export const SHIELD_DURATION_MS = 5000;
+export const SLOW_MOTION_DURATION_MS = 5000;
 export const OFF_SCREEN_BUFFER = 50;
 export const MAX_SHOT_POWER = 5;
 export const MAX_STAGE = 100;
@@ -163,6 +164,19 @@ export const GAME_CONFIG: GameConfig = {
         shot: 0,
         energy: 0,
         orbitalStrike: true,
+      },
+    },
+    {
+      type: PowerUp.slowMotion,
+      assetUrl: 'assets/game/powerups/power-up-2.json',
+      animationName: 'power-up-2',
+      // eslint-disable-next-line no-magic-numbers
+      tint: 0x66ff66,
+      powerUp: {
+        speed: 0,
+        shot: 0,
+        energy: 0,
+        slowMotion: SLOW_MOTION_DURATION_MS,
       },
     },
   ],

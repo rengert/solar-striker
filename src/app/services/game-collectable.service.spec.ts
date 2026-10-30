@@ -5,7 +5,8 @@ import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameCollectableService } from './game-collectable.service';
 import { AchievementService } from './achievement.service';
 import { GameShotService } from './game-shot.service';
-import { MAX_SHOT_POWER, OFF_SCREEN_BUFFER, SHIELD_DURATION_MS } from '../game-constants';
+import { ParticleService } from './particle.service';
+import { MAX_SHOT_POWER, OFF_SCREEN_BUFFER, SHIELD_DURATION_MS, SLOW_MOTION_DURATION_MS } from '../game-constants';
 
 const MOCK_SCREEN_HEIGHT = 600;
 const MOCK_SCREEN_WIDTH = 400;
@@ -31,6 +32,7 @@ function createMockPowerUp(powerUpConfig: {
   energy: number;
   shield?: number;
   nuke?: boolean;
+  slowMotion?: number;
 }): ObjectModelType {
   return {
     type: ObjectType.collectable,
@@ -110,6 +112,7 @@ describe('GameCollectableService - collectPowerUp', () => {
             fireOrbitalStrike: jasmine.createSpy('fireOrbitalStrike'),
           },
         },
+        { provide: ParticleService, useValue: { emit: jasmine.createSpy('emit') } },
       ],
     });
 
@@ -243,6 +246,14 @@ describe('GameCollectableService - collectPowerUp', () => {
     expect((enemy as unknown as { shieldTicks: number }).shieldTicks).toBe(0);
   });
 
+  it('should start slow motion when the ship collects a slow-motion power-up', () => {
+    const powerUp = createMockPowerUp({ speed: 0, shot: 0, energy: 0, slowMotion: SLOW_MOTION_DURATION_MS });
+
+    objectService.triggerCallbacks(powerUp, createMockShip());
+
+    expect(objectService.slowMotionMs).toBe(SLOW_MOTION_DURATION_MS);
+  });
+
   describe('nuke power-up', () => {
     // nuked enemies would otherwise randomly drop power-ups whose textures are not loaded in tests
     beforeEach(() => spyOn(Math, 'random').and.returnValue(1));
@@ -369,6 +380,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
             fireOrbitalStrike: jasmine.createSpy('fireOrbitalStrike'),
           },
         },
+        { provide: ParticleService, useValue: { emit: jasmine.createSpy('emit') } },
       ],
     });
 
@@ -384,6 +396,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
       reference: undefined,
       energy: 0,
       power: 0,
+      config: {},
       y,
       destroy: jasmine.createSpy('destroy').and.callFake(() => {
         collectable['destroyed'] = true;

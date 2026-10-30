@@ -41,7 +41,8 @@ export class GameMeteorService extends UpdatableService {
     });
   }
 
-  update(ticker: Ticker, level: number): void {
+  update(realTicker: Ticker, level: number): void {
+    const ticker = this.object.getScaledTicker(realTicker);
     this.currentLevel = level;
     this.elapsed += ticker.deltaMS;
 

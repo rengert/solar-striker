@@ -9,6 +9,7 @@ import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 import { AchievementService } from './achievement.service';
 import { GameShotService } from './game-shot.service';
+import { ParticleService } from './particle.service';
 
 interface Dictionary<T> {
   [key: string]: T;
@@ -27,12 +28,20 @@ const ORBITAL_STRIKE_FONT_SIZE = 40;
 const ORBITAL_STRIKE_STROKE_WIDTH = 5;
 const ORBITAL_STRIKE_FLASH_COLOR = 0x00ffff;
 const ORBITAL_STRIKE_TEXT_COLOR = 0x0088ff;
+const ORBITAL_STRIKE_FLASH_ALPHA = 0.4;
+const SLOW_MOTION_FLASH_COLOR = 0x66ff66;
+const SLOW_MOTION_FLASH_ALPHA = 0.3;
+const SLOW_MOTION_TEXT_COLOR = 0x118833;
+const POWER_UP_GLOW_LIFE_MS = 350;
+const POWER_UP_GLOW_SCALE = 2.2;
+const POWER_UP_GLOW_ALPHA = 0.5;
 
 @Injectable()
 export class GameCollectableService extends UpdatableService {
   private readonly object = inject(ObjectService);
   private readonly achievementService = inject(AchievementService);
   private readonly shotService = inject(GameShotService);
+  private readonly particles = inject(ParticleService);
 
   private readonly animations: Dictionary<Texture[]> = {};
 
@@ -54,6 +63,18 @@ export class GameCollectableService extends UpdatableService {
   }
 
   update(): void {
+    // pulsing halo so power-ups stand out against the background
+    this.object.collectables().forEach((collectable) =>
+      this.particles.emit({
+        x: collectable.x,
+        y: collectable.y,
+        color: (collectable as PowerUpSprite).config.tint ?? NUKE_FLASH_COLOR,
+        life: POWER_UP_GLOW_LIFE_MS,
+        scale: POWER_UP_GLOW_SCALE,
+        endScale: 0,
+        alpha: POWER_UP_GLOW_ALPHA,
+      }),
+    );
     this.object
       .collectables()
       .filter((collectable) => collectable.y > this.application.screen.height + OFF_SCREEN_BUFFER)
@@ -79,6 +100,18 @@ export class GameCollectableService extends UpdatableService {
     if (powerUp.config.powerUp.orbitalStrike === true) {
       this.applyOrbitalStrike(ship);
     }
+
+    if (powerUp.config.powerUp.slowMotion) {
+      this.object.slowMotionMs = Math.max(this.object.slowMotionMs, powerUp.config.powerUp.slowMotion);
+      this.announce(
+        '⏳ SLOW-MO! ⏳',
+        SLOW_MOTION_TEXT_COLOR,
+        SLOW_MOTION_FLASH_COLOR,
+        SLOW_MOTION_FLASH_ALPHA,
+        ORBITAL_STRIKE_FONT_SIZE,
+        ORBITAL_STRIKE_STROKE_WIDTH,
+      );
+    }
   }
 
   private applyNuke(ship: ObjectModelType): void {
@@ -89,62 +122,29 @@ export class GameCollectableService extends UpdatableService {
         this.object.triggerCallbacks(target, ship);
       });
 
-    const flash = new Graphics();
-    flash.fill(NUKE_FLASH_COLOR);
-    flash.rect(0, 0, this.application.screen.width, this.application.screen.height);
-    flash.fill();
-    flash.alpha = NUKE_FLASH_ALPHA;
-    this.application.stage.addChild(flash);
-    void gsap.to(flash, {
-      alpha: 0,
-      duration: NUKE_FLASH_DURATION_S,
-      onComplete: () => {
-        flash.parent?.removeChild(flash);
-        flash.destroy();
-      },
-    });
-
-    const text = new Text({
-      text: '☢ NUKE! ☢',
-      style: new TextStyle({
-        fontFamily: 'Arial',
-        fontSize: NUKE_FONT_SIZE,
-        fontWeight: 'bold',
-        fill: NUKE_TEXT_COLOR,
-        stroke: {
-          color: NUKE_FLASH_COLOR,
-          width: NUKE_STROKE_WIDTH,
-        },
-        align: 'center',
-      }),
-    });
-    text.anchor.set(THE_MIDDLE);
-    text.x = this.application.screen.width / CENTER_DIVISOR;
-    text.y = this.application.screen.height / CENTER_DIVISOR;
-    this.application.stage.addChild(text);
-
-    setTimeout(() => {
-      void gsap.to(text, {
-        alpha: 0,
-        duration: NUKE_TEXT_FADE_S,
-        onComplete: () => {
-          text.parent?.removeChild(text);
-          text.destroy();
-        },
-      });
-    }, NUKE_TEXT_DISPLAY_MS);
+    this.announce('☢ NUKE! ☢', NUKE_TEXT_COLOR, NUKE_FLASH_COLOR, NUKE_FLASH_ALPHA, NUKE_FONT_SIZE, NUKE_STROKE_WIDTH);
   }
 
   private applyOrbitalStrike(ship: Ship): void {
     this.shotService.fireOrbitalStrike(ship);
+    this.announce(
+      '🌀 ORBITAL STRIKE! 🌀',
+      ORBITAL_STRIKE_TEXT_COLOR,
+      ORBITAL_STRIKE_FLASH_COLOR,
+      ORBITAL_STRIKE_FLASH_ALPHA,
+      ORBITAL_STRIKE_FONT_SIZE,
+      ORBITAL_STRIKE_STROKE_WIDTH,
+    );
+  }
 
+  /** Full-screen flash plus a centered banner that fades out. */
+  // eslint-disable-next-line max-params
+  private announce(label: string, textColor: number, flashColor: number, flashAlpha: number, fontSize: number, strokeWidth: number): void {
     const flash = new Graphics();
-    // eslint-disable-next-line no-magic-numbers
-    flash.fill(ORBITAL_STRIKE_FLASH_COLOR);
+    flash.fill(flashColor);
     flash.rect(0, 0, this.application.screen.width, this.application.screen.height);
     flash.fill();
-    // eslint-disable-next-line no-magic-numbers
-    flash.alpha = 0.4;
+    flash.alpha = flashAlpha;
     this.application.stage.addChild(flash);
     void gsap.to(flash, {
       alpha: 0,
@@ -156,15 +156,15 @@ export class GameCollectableService extends UpdatableService {
     });
 
     const text = new Text({
-      text: '🌀 ORBITAL STRIKE! 🌀',
+      text: label,
       style: new TextStyle({
         fontFamily: 'Arial',
-        fontSize: ORBITAL_STRIKE_FONT_SIZE,
+        fontSize,
         fontWeight: 'bold',
-        fill: ORBITAL_STRIKE_TEXT_COLOR,
+        fill: textColor,
         stroke: {
-          color: ORBITAL_STRIKE_FLASH_COLOR,
-          width: ORBITAL_STRIKE_STROKE_WIDTH,
+          color: flashColor,
+          width: strokeWidth,
         },
         align: 'center',
       }),
