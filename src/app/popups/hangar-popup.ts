@@ -6,15 +6,15 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 500;
+const POPUP_HEIGHT = 505;
 const HALF = 0.5;
 const SCROLL_BOX_WIDTH = 240;
 const SCROLL_BOX_HEIGHT = 240;
 const SCROLL_BOX_X = -(SCROLL_BOX_WIDTH * HALF);
-const SCROLL_BOX_Y = 20;
+const SCROLL_BOX_Y = 70;
 
 // Ship selection section constants
-const SHIP_SECTION_Y = -195;
+const SHIP_SECTION_Y = -70;
 const SHIP_SECTION_TITLE_Y = SHIP_SECTION_Y;
 const SHIP_CARD_WIDTH = 72;
 const SHIP_CARD_GAP = 5;
@@ -22,7 +22,7 @@ const SHIP_CARDS_TOTAL = 3;
 const SHIP_CARDS_TOTAL_WIDTH = SHIP_CARDS_TOTAL * SHIP_CARD_WIDTH + (SHIP_CARDS_TOTAL - 1) * SHIP_CARD_GAP;
 const SHIP_CARD_START_X = -(SHIP_CARDS_TOTAL_WIDTH * HALF);
 const SHIP_CARD_INNER_HALF = SHIP_CARD_WIDTH * HALF;
-const SHIP_CARD_Y_OFFSET = 18;
+const SHIP_CARD_Y_OFFSET = 14;
 const SHIP_CARD_Y = SHIP_SECTION_Y + SHIP_CARD_Y_OFFSET;
 const SHIP_CARD_HEIGHT = 115;
 const SHIP_CARD_PADDING = 4;
@@ -36,14 +36,14 @@ const ROW_CENTER_X = SCROLL_BOX_WIDTH * HALF;
 const ROW_TITLE_X = -110;
 const ROW_TITLE_Y = 10;
 const DESCRIPTION_Y = 22;
-const LEVEL_LABEL_Y = 42;
-const COST_LABEL_Y = 60;
-const DESCRIPTION_WORD_WRAP_WIDTH = 110;
+const LINE_GAP = 10;
+const COST_LINE_OFFSET = 18;
+const BUTTON_LINE_OFFSET = 12;
+const DESCRIPTION_WORD_WRAP_WIDTH = 220;
 const BUTTON_X = 0;
-const BUTTON_Y = 70;
 const BUTTON_WIDTH = 120;
 const BUTTON_HEIGHT = 30;
-const BACK_BUTTON_PADDING = 20;
+const BACK_BUTTON_PADDING = 15;
 const BACK_BUTTON_Y = SCROLL_BOX_Y + SCROLL_BOX_HEIGHT + BACK_BUTTON_PADDING;
 
 interface UpgradeRow {
@@ -68,8 +68,6 @@ export class HangarPopup extends Popup {
     private readonly translation: TranslationService,
   ) {
     super(translation.getTranslation('hangar.title'), POPUP_HEIGHT);
-
-    this.y = -150;
 
     this.createShipSelectionSection();
 
@@ -142,7 +140,7 @@ export class HangarPopup extends Popup {
     });
     levelText.anchor.set(0, HALF);
     levelText.x = ROW_TITLE_X;
-    levelText.y = LEVEL_LABEL_Y;
+    levelText.y = description.y + description.height + LINE_GAP;
     rowContainer.addChild(levelText);
 
     const costText = new Text({
@@ -155,14 +153,14 @@ export class HangarPopup extends Popup {
     });
     costText.anchor.set(0, HALF);
     costText.x = ROW_TITLE_X;
-    costText.y = COST_LABEL_Y;
+    costText.y = levelText.y + COST_LINE_OFFSET;
     rowContainer.addChild(costText);
 
     const button = new ButtonContainer(Sprite.from(Texture.from('button')));
     button.width = BUTTON_WIDTH;
     button.height = BUTTON_HEIGHT;
     button.x = BUTTON_X;
-    button.y = BUTTON_Y;
+    button.y = costText.y + BUTTON_LINE_OFFSET;
 
     const buttonText = new Text({
       text: this.translation.getTranslation('hangar.upgrade'),

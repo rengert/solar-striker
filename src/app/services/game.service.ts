@@ -352,6 +352,8 @@ export class GameService {
 
     this.setup();
 
+    this.application.renderer.on('resize', (width: number, height: number) => this.currentPopup?.resize?.(width, height));
+
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden || !this.started() || this.#paused()) {
         return;

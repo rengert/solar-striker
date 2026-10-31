@@ -3,11 +3,13 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const ACHIEVEMENT_POPUP_HEIGHT = 420;
+const ACHIEVEMENT_POPUP_HEIGHT = 380;
 const ACHIEVEMENT_ROW_SPACING = 17;
 const ACHIEVEMENT_START_Y = -65;
-const ACHIEVEMENT_TITLE_X = -80;
-const ACHIEVEMENT_STATUS_X = 95;
+const ACHIEVEMENT_TITLE_X = -115;
+const ACHIEVEMENT_STATUS_X = 115;
+const ALIGN_LEFT = 0;
+const ALIGN_RIGHT = 1;
 const ACHIEVEMENT_LABEL_SIZE = 10;
 const CLOSE_BUTTON_INDEX = 5;
 const PROGRESS_LABEL_SIZE = 9;
@@ -40,18 +42,18 @@ export class AchievementsPopup extends Popup {
   private addAchievementRow({ def, state, translation, rowY }: AchievementRowContext): void {
     const titleKey = `achievement.${def.id}.title` as Parameters<typeof translation.getTranslation>[0];
     const title = `${def.icon} ${translation.getTranslation(titleKey)}`;
-    this.addText(title, { size: ACHIEVEMENT_LABEL_SIZE }, { y: rowY, x: ACHIEVEMENT_TITLE_X });
+    this.addText(title, { size: ACHIEVEMENT_LABEL_SIZE, anchorX: ALIGN_LEFT }, { y: rowY, x: ACHIEVEMENT_TITLE_X });
 
     if (state.unlocked) {
-      this.addText('✓', { size: ACHIEVEMENT_LABEL_SIZE }, { y: rowY, x: ACHIEVEMENT_STATUS_X });
+      this.addText('✓', { size: ACHIEVEMENT_LABEL_SIZE, anchorX: ALIGN_RIGHT }, { y: rowY, x: ACHIEVEMENT_STATUS_X });
     } else if (def.cumulative) {
       const progressText = translation.getTranslation('achievements.progress', {
         current: String(state.progress),
         total: String(def.threshold),
       });
-      this.addText(progressText, { size: PROGRESS_LABEL_SIZE }, { y: rowY, x: ACHIEVEMENT_STATUS_X });
+      this.addText(progressText, { size: PROGRESS_LABEL_SIZE, anchorX: ALIGN_RIGHT }, { y: rowY, x: ACHIEVEMENT_STATUS_X });
     } else {
-      this.addText('—', { size: ACHIEVEMENT_LABEL_SIZE }, { y: rowY, x: ACHIEVEMENT_STATUS_X });
+      this.addText('—', { size: ACHIEVEMENT_LABEL_SIZE, anchorX: ALIGN_RIGHT }, { y: rowY, x: ACHIEVEMENT_STATUS_X });
     }
   }
 }

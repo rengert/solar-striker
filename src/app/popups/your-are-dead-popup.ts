@@ -21,6 +21,6 @@ export class YouAreDeadPopup extends Popup {
     this.addText(gameService.highestCombo().toString(), { size: 12 }, { y: 110 });
 
     // eslint-disable-next-line no-magic-numbers
-    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 3);
+    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 4.5);
   }
 }

@@ -33,6 +33,13 @@ export class ApplicationService {
     return this.app.screen;
   }
 
+  get renderer(): Application['renderer'] {
+    if (!this.app) {
+      throw new Error('Application not initialized');
+    }
+    return this.app.renderer;
+  }
+
   async init(elementRef: ElementRef): Promise<void> {
     this.app = new Application();
     await this.app.init({
@@ -48,10 +55,6 @@ export class ApplicationService {
       src: 'assets/game/desert-background-looped.png',
     });
     Assets.add({ alias: 'clouds', src: 'assets/game/clouds-transparent.png' });
-    Assets.add({
-      alias: 'popup-bottom',
-      src: 'assets/ui/navigation-popup-bottom.png',
-    });
     Assets.add({ alias: 'ship', src: 'assets/game/ship/ship_blue.json' });
 
     Assets.add({ alias: 'button', src: 'assets/ui/yellow_button00.png' });
@@ -61,7 +64,7 @@ export class ApplicationService {
       await Assets.load(alias);
     }
 
-    await Assets.load(['background', 'popup', 'clouds', 'popup-bottom', 'button']);
+    await Assets.load(['background', 'popup', 'clouds', 'button']);
 
     elementRef.nativeElement.appendChild(this.app!.canvas);
   }
