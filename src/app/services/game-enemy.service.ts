@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
-import { Assets, Container, Graphics, Spritesheet, Texture, Ticker } from 'pixi.js';
+import { Assets, Container, Graphics, Rectangle, Spritesheet, Text, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { AnimatedGameSprite, LoopData, OrbitData } from '../models/pixijs/animated-game-sprite';
 import { ObjectType } from '../models/pixijs/object-type.enum';
+import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
@@ -266,11 +267,29 @@ export class GameEnemyService extends UpdatableService {
     const usableWidth = Math.max(0, this.application.screen.width - enemy.width);
     enemy.x = Math.floor(Math.random() * usableWidth) + enemyHalfWidth;
     enemy.y = 0;
+    this.decorateForSeason(enemy);
     enemy.enableEnergyDisplay();
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
 
     this.updateMovement(enemy, level, true);
+  }
+
+  private decorateForSeason(enemy: Ship): void {
+    if (!CURRENT_SEASON_EVENT) {
+      return;
+    }
+    const { enemyIcons } = CURRENT_SEASON_EVENT;
+    const { width, height } = enemy.texture;
+    // keep the hit box at the ship's frame although the icon is drawn larger
+    enemy.boundsArea = new Rectangle(-width * THE_MIDDLE, -height * THE_MIDDLE, width, height);
+    const icon = new Text({
+      text: enemyIcons[Math.floor(Math.random() * enemyIcons.length)],
+      // eslint-disable-next-line no-magic-numbers
+      style: { fontSize: Math.round(height * 1.4) },
+    });
+    icon.anchor.set(THE_MIDDLE);
+    enemy.addChild(icon);
   }
 
   private spawnOrbiter(level: number, animations: Record<string, Texture[]>): void {

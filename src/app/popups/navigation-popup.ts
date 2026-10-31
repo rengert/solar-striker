@@ -1,3 +1,4 @@
+import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { version } from '../version';
@@ -11,6 +12,8 @@ const BUTTON_STEP_Y = 50;
 const BUTTON_HEIGHT = 49;
 const PANEL_PADDING = 135;
 const BASE_BUTTON_COUNT = 7;
+const EVENT_LABEL_HEIGHT = 20;
+const EVENT_LABEL_OFFSET = 10;
 
 export function getDailySurpriseIcon(now: Date = new Date()): string {
   const daySinceEpoch = Math.floor(now.getTime() / DAY_IN_MS);
@@ -23,8 +26,9 @@ export class NavigationPopup extends Popup {
     const savedStage = gameService.savedStage();
     const buttonCount = BASE_BUTTON_COUNT + (savedStage === null ? 0 : 1);
     super(
-      `${translation.getTranslation('app.title')} ${getDailySurpriseIcon()}`,
-      BUTTON_START_Y + (buttonCount - 1) * BUTTON_STEP_Y + BUTTON_HEIGHT + PANEL_PADDING,
+      `${translation.getTranslation('app.title')} ${CURRENT_SEASON_EVENT?.enemyIcons[0] ?? getDailySurpriseIcon()}`,
+      BUTTON_START_Y + (buttonCount - 1) * BUTTON_STEP_Y + BUTTON_HEIGHT + PANEL_PADDING
+      + (CURRENT_SEASON_EVENT ? EVENT_LABEL_HEIGHT : 0),
     );
     const buttons = [];
 
@@ -98,5 +102,13 @@ export class NavigationPopup extends Popup {
     buttons.forEach(({ button }, index) => {
       button.y = BUTTON_START_Y + index * BUTTON_STEP_Y;
     });
+    if (CURRENT_SEASON_EVENT) {
+      const { name, enemyIcons } = CURRENT_SEASON_EVENT;
+      this.addText(
+        `${enemyIcons.join(' ')} ${translation.getTranslation(name)}`,
+        { size: 12 },
+        { y: BUTTON_START_Y + buttonCount * BUTTON_STEP_Y + EVENT_LABEL_OFFSET },
+      );
+    }
   }
 }
