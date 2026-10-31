@@ -290,6 +290,31 @@ describe('GameService', () => {
     });
   });
 
+  describe('hangar purchases', () => {
+    const STORED_COINS = 100;
+    const UPGRADE_COST = 30;
+
+    it('should persist the reduced balance so continuing does not restore spent coins', async () => {
+      const storage = TestBed.inject(StorageService) as unknown as { getCoins: jasmine.Spy; setCoins: jasmine.Spy };
+      let persisted = STORED_COINS;
+      storage.getCoins.and.callFake(() => Promise.resolve(persisted));
+      storage.setCoins.and.callFake((amount: number) => {
+        persisted = amount;
+        return Promise.resolve();
+      });
+      Object.assign(service.shipUpgrades, {
+        getUpgradeCost: (): number => UPGRADE_COST,
+        levelUp: (): Promise<boolean> => Promise.resolve(true),
+      });
+      service.storedCoins.set(STORED_COINS);
+
+      expect(await service.handleUpgradePurchase('fireRate' as never)).toBeTrue();
+      await service.continueFromCheckpoint({} as AppScreen);
+
+      expect(service.coins()).toBe(STORED_COINS - UPGRADE_COST);
+    });
+  });
+
   describe('pause state', () => {
     let presentPopupSpy: jasmine.Spy;
     let tickerMock: { add: jasmine.Spy; remove: jasmine.Spy; stop: jasmine.Spy; start: jasmine.Spy };

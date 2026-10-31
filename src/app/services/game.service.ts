@@ -609,6 +609,7 @@ export class GameService {
       return false;
     }
 
+    await this.storage.setCoins(this.coins());
     this.ship.applyUpgrades();
 
     if (this.started()) {
@@ -632,6 +633,7 @@ export class GameService {
     }
 
     this.applyCoinCost(definition.cost);
+    await this.storage.setCoins(this.coins());
     await this.playerShipService.unlock(cls);
     await this.playerShipService.selectClass(cls);
     this.ship.applyUpgrades();
