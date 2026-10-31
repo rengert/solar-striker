@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AchievementState } from '../models/achievement.model';
 import { DailyChallengeState } from '../models/daily-challenge.model';
+import { HighscoreEntry } from '../models/highscore.model';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 
 export interface ShipClassSelectionState {
@@ -93,17 +94,12 @@ export class StorageService {
     });
   }
 
-  getHighscore(): Promise<{ date: string; kills: number; level: number }[]> {
+  getHighscore(): Promise<HighscoreEntry[]> {
     return getManyFromStore(Store.games, () => true);
   }
 
-  setHighscore(kills: number, level: number): Promise<void> {
-    return this.toStore(Store.games, {
-      id: crypto.randomUUID(),
-      date: new Date().toISOString(),
-      kills,
-      level,
-    });
+  setHighscore(entry: HighscoreEntry): Promise<void> {
+    return this.toStore(Store.games, entry);
   }
 
   async getCoins(): Promise<number> {

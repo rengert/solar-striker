@@ -143,6 +143,7 @@ describe('GameService', () => {
           useValue: {
             getCoins: jasmine.createSpy('getCoins').and.returnValue(Promise.resolve(0)),
             setCoins: jasmine.createSpy('setCoins').and.returnValue(Promise.resolve()),
+            getHighscore: jasmine.createSpy('getHighscore').and.returnValue(Promise.resolve([])),
             setHighscore: jasmine.createSpy('setHighscore').and.returnValue(Promise.resolve()),
             getLevelCheckpoint: jasmine.createSpy('getLevelCheckpoint').and.returnValue(Promise.resolve(null)),
             setLevelCheckpoint: jasmine.createSpy('setLevelCheckpoint').and.returnValue(Promise.resolve()),
@@ -513,7 +514,7 @@ describe('GameService', () => {
       );
     });
 
-    it('should trigger victory after the final stage boss is defeated', () => {
+    it('should trigger victory after the final stage boss is defeated', async () => {
       const presentPopupSpy = spyOn(
         service as unknown as { presentPopup: () => Promise<void> },
         'presentPopup',
@@ -522,6 +523,8 @@ describe('GameService', () => {
       service.stage.set(MAX_STAGE);
       const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
       objectService.triggerCallbacks(bossEnemy, playerRocket);
+      // the run is ranked against stored scores before the popup opens
+      await new Promise((resolve) => setTimeout(resolve));
 
       expect(presentPopupSpy).toHaveBeenCalledTimes(1);
       expect(service.stage()).toBe(MAX_STAGE); // stage should not advance beyond max

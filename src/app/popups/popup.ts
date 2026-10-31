@@ -72,14 +72,15 @@ export abstract class Popup extends Container {
 
   protected addText(
     content: string,
-    appearance: { size: number; rotated?: boolean; anchorX?: number },
+    appearance: { size: number; rotated?: boolean; anchorX?: number; fill?: number },
     position: { y: number; x?: number },
-  ): void {
+  ): Text {
     const text = new Text({
       text: content,
       style: {
         fontFamily: 'DefaultFont',
         fontSize: appearance.size,
+        ...(appearance.fill === undefined ? {} : { fill: appearance.fill }),
       },
     });
     text.x = position.x ?? 0;
@@ -89,6 +90,7 @@ export abstract class Popup extends Container {
     // eslint-disable-next-line no-magic-numbers
     text.rotation = appearance.rotated ? -3.14 / 2 : 0;
     this.container.addChild(text);
+    return text;
   }
 
   protected addButton(textContent: string, callback: () => void, index: number): LabeledButton {

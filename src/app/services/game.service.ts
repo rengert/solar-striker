@@ -2,6 +2,7 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
+import { HighscoreEntry, calculateRunResult, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PlayerShipClass } from '../models/player-ship-class.model';
@@ -75,6 +76,7 @@ export class GameService {
   readonly coins = computed(() => this.storedCoins() + this.sessionCoins());
   readonly combo = signal(1);
   readonly highestCombo = signal(1);
+  lastRun?: RunResult;
   readonly stage = signal(1);
   readonly savedStage = signal<number | null>(null);
 
@@ -278,9 +280,8 @@ export class GameService {
     const currentStage = this.stage();
     if (currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
-      void this.storage.setHighscore(this.kills(), currentStage);
       void this.resetSavedStage();
-      void this.presentPopup(VictoryPopup);
+      void this.finishRun(VictoryPopup);
       this.ship.instance.autoFire = false;
       this.started.set(false);
       this.gameScreen.pauseButtonVisible = false;
@@ -504,8 +505,7 @@ export class GameService {
       this.lastShipEnergy = currentEnergy;
 
       if (this.ship.instance.energy === 0) {
-        void this.storage.setHighscore(this.kills(), this.stage());
-        void this.presentPopup(YouAreDeadPopup);
+        void this.finishRun(YouAreDeadPopup);
         this.ship.instance.autoFire = false;
         this.started.set(false);
         this.gameScreen.pauseButtonVisible = false;
@@ -531,6 +531,24 @@ export class GameService {
 
       handleMouseMove(event, ship.instance, this.application.screen.height);
     });
+  }
+
+  // ranks the run before the result popup opens, so the popup can show rank and record
+  private async finishRun(popup: AppScreenConstructor): Promise<void> {
+    const entry: HighscoreEntry = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString(),
+      kills: this.kills(),
+      level: this.stage(),
+      combo: this.highestCombo(),
+      coins: this.sessionCoins(),
+    };
+    this.lastRun = calculateRunResult(await this.storage.getHighscore(), entry);
+    await this.storage.setHighscore(entry);
+    if (this.lastRun.isRecord) {
+      this.sound.play('powerUp');
+    }
+    await this.presentPopup(popup);
   }
 
   private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
