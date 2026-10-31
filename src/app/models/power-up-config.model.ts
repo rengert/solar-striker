@@ -14,5 +14,7 @@ export interface PowerUpConfig {
     orbitalStrike?: boolean;
     /** slow-motion duration in ms */
     slowMotion?: number;
+    /** spread-shot duration in ms */
+    spreadShot?: number;
   };
 }

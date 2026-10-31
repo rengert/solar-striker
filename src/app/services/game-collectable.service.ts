@@ -94,6 +94,7 @@ export class GameCollectableService extends UpdatableService {
     ship.shotPower = Math.min(ship.shotPower + powerUp.config.powerUp.shot, MAX_SHOT_POWER);
     ship.energy += powerUp.config.powerUp.energy;
     ship.shieldTicks += powerUp.config.powerUp.shield ?? 0;
+    ship.spreadShotTicks += powerUp.config.powerUp.spreadShot ?? 0;
 
     if (powerUp.config.powerUp.nuke === true) {
       this.applyNuke(by);

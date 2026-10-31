@@ -22,6 +22,8 @@ const SHOT_OFFSETS: [number, number][][] = [
 
 const ORBITAL_STRIKE_COUNT = 8;
 const ORBITAL_STRIKE_SPEED = 3.0;
+const SPREAD_SHOT_ARC = Math.PI / 4;
+const UP = -Math.PI / 2;
 
 @Injectable()
 export class GameShotService extends UpdatableService {
@@ -66,6 +68,11 @@ export class GameShotService extends UpdatableService {
 
   fireOrbitalStrike(ship: Ship): void {
     this.fireRadial(ship, ORBITAL_STRIKE_COUNT, ORBITAL_STRIKE_SPEED);
+  }
+
+  /** Two extra shots angled left and right of straight up. */
+  fireSpread(ship: Ship): void {
+    this.fireRadial(ship, 2, ship.rocketSpeed, UP - SPREAD_SHOT_ARC / 2, SPREAD_SHOT_ARC);
   }
 
   /** Fires `count` shots spread evenly over `arc` radians, starting at `fromAngle` (0 = right, PI/2 = down). */
