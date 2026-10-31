@@ -28,6 +28,19 @@ export class SoundService {
   private step = 0;
   private mutedState = readMuted();
 
+  constructor() {
+    // browsers (iOS Safari strictly) only let audio start inside a user gesture handler, but music and effects
+    // start from the game loop, so unlock the context on every gesture; a no-op once it is running
+    for (const type of ['pointerup', 'touchend', 'click', 'keydown']) {
+      window.addEventListener(type, () => this.getContext(), { capture: true, passive: true });
+    }
+    // iOS mutes Web Audio while the ringer switch is on silent unless the session is declared as playback
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session) {
+      session.type = 'playback';
+    }
+  }
+
   get muted(): boolean {
     return this.mutedState;
   }
@@ -177,7 +190,8 @@ export class SoundService {
       }
     }
     // browsers start the context suspended until the first user gesture
-    if (this.context.state === 'suspended' && !this.mutedState) {
+    // 'interrupted' is iOS after a phone call or Siri
+    if (this.context.state !== 'running' && this.context.state !== 'closed' && !this.mutedState) {
       void this.context.resume();
     }
     return this.context;
