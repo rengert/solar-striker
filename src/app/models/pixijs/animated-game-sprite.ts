@@ -53,6 +53,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   explosionCount = 1;
   explosionScale = 1;
   targetX?: number;
+  targetY?: number;
   xSpeed: number = 1;
   loopData: LoopData | undefined;
   orbitData: OrbitData | undefined;
@@ -199,6 +200,12 @@ export class AnimatedGameSprite extends AnimatedSprite {
         // eslint-disable-next-line no-magic-numbers
         const direction = this.targetX > this.x ? 1 : -1;
         this.x += direction * this.getSpeed(this.targetX, this.x);
+      }
+
+      if (this.targetY !== undefined && this.y !== this.targetY) {
+        // eslint-disable-next-line no-magic-numbers
+        const direction = this.targetY > this.y ? 1 : -1;
+        this.y += direction * this.getSpeed(this.targetY, this.y);
       }
     }
   }

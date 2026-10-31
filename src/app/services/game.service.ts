@@ -529,7 +529,7 @@ export class GameService {
         return;
       }
 
-      handleMouseMove(event, ship.instance);
+      handleMouseMove(event, ship.instance, this.application.screen.height);
     });
   }
 
