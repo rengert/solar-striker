@@ -11,6 +11,7 @@ import { CreditsPopup } from '../popups/credits-popup';
 import { DailyChallengesPopup } from '../popups/daily-challenges-popup';
 import { HangarPopup } from '../popups/hangar-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
+import { LibraryEnemiesPopup, LibraryPopup } from '../popups/library-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { PausePopup } from '../popups/pause-popup';
 import { SettingsPopup } from '../popups/settings-popup';
@@ -409,6 +410,11 @@ export class GameService {
   async openCredits(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(CreditsPopup);
+  }
+
+  async openLibrary(requester: AppScreen, enemies = false): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(enemies ? LibraryEnemiesPopup : LibraryPopup);
   }
 
   async pause(): Promise<void> {

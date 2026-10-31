@@ -11,7 +11,7 @@ const BUTTON_START_Y = -74;
 const BUTTON_STEP_Y = 50;
 const BUTTON_HEIGHT = 49;
 const PANEL_PADDING = 135;
-const BASE_BUTTON_COUNT = 7;
+const BASE_BUTTON_COUNT = 8;
 const EVENT_LABEL_HEIGHT = 20;
 const EVENT_LABEL_OFFSET = 10;
 
@@ -88,6 +88,13 @@ export class NavigationPopup extends Popup {
       this.addButton(
         translation.getTranslation('navigation.daily'),
         () => gameService.openDailyChallenges(this),
+        0,
+      ),
+    );
+    buttons.push(
+      this.addButton(
+        translation.getTranslation('navigation.library'),
+        () => gameService.openLibrary(this),
         0,
       ),
     );
