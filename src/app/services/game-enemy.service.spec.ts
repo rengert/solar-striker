@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Texture, Ticker } from 'pixi.js';
 import { ApplicationService } from './application.service';
 import { ExplosionService } from './explosion.service';
-import { GameEnemyService } from './game-enemy.service';
+import { BossPattern, GameEnemyService, getBossPattern } from './game-enemy.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
@@ -124,5 +124,87 @@ describe('GameEnemyService - enemy recycling', () => {
     service.update(createMockTicker(), 1);
 
     expect(enemy.energy).toBe(1);
+  });
+});
+
+/* eslint-disable no-magic-numbers */
+describe('GameEnemyService - boss patterns', () => {
+  let service: GameEnemyService;
+  let objectService: ObjectService;
+  let shotService: { shot: jasmine.Spy; fireRadial: jasmine.Spy };
+
+  beforeEach(() => {
+    shotService = { shot: jasmine.createSpy('shot'), fireRadial: jasmine.createSpy('fireRadial') };
+    TestBed.configureTestingModule({
+      providers: [
+        GameEnemyService,
+        ObjectService,
+        { provide: ApplicationService, useValue: buildApplicationServiceMock() },
+        { provide: ExplosionService, useValue: { explode: jasmine.createSpy('explode') } },
+        { provide: GameShotService, useValue: shotService },
+        { provide: GameScreenService, useValue: { showBossWarning: jasmine.createSpy('showBossWarning') } },
+      ],
+    });
+    service = TestBed.inject(GameEnemyService);
+    objectService = TestBed.inject(ObjectService);
+    (service as unknown as { enemySprite: unknown }).enemySprite = { animations: { frame: [Texture.EMPTY] } };
+  });
+
+  function spawnBoss(stage: number): Ship {
+    service.spawnStageBoss(stage);
+    const boss = objectService.enemies()[0] as Ship;
+    // skip the fly-in
+    boss.y = MOCK_SCREEN_HEIGHT;
+    service.update(createMockTicker(), stage);
+    return boss;
+  }
+
+  it('cycles sweeper, orbiter and hunter by stage', () => {
+    expect([1, 2, 3, 4, 5, 6].map(getBossPattern)).toEqual([
+      BossPattern.sweeper, BossPattern.orbiter, BossPattern.hunter,
+      BossPattern.sweeper, BossPattern.orbiter, BossPattern.hunter,
+    ]);
+  });
+
+  it('stops descending at its hover height', () => {
+    const boss = spawnBoss(1);
+
+    expect(boss.y).toBeLessThan(MOCK_SCREEN_HEIGHT / 2);
+  });
+
+  it('orbiter fires a full ring after its attack interval', () => {
+    const boss = spawnBoss(2);
+    expect(shotService.fireRadial).not.toHaveBeenCalled();
+
+    service.update(createMockTicker(2300), 2);
+
+    expect(shotService.fireRadial).toHaveBeenCalledOnceWith(boss, 12, jasmine.any(Number));
+  });
+
+  it('hunter aims its volley at the player', () => {
+    const player = new Ship(ShipType.ship, shotService as unknown as GameShotService, null as unknown as ExplosionService, 0, [Texture.EMPTY]);
+    player.x = 0;
+    player.y = MOCK_SCREEN_HEIGHT;
+    objectService.add(player);
+    const boss = spawnBoss(3);
+
+    service.update(createMockTicker(1700), 3);
+
+    const [, count, , fromAngle, arc] = shotService.fireRadial.calls.mostRecent().args as number[];
+    const aim = Math.atan2(player.y - boss.y, player.x - boss.x);
+    expect(count).toBe(3);
+    expect(fromAngle + arc / 2).toBeCloseTo(aim);
+  });
+
+  it('attacks faster below half energy', () => {
+    const boss = spawnBoss(1);
+    boss.energy = 1;
+    service.update(createMockTicker(2600), 1);
+    shotService.fireRadial.calls.reset();
+
+    // 0.6 * 2600 = 1560ms enraged interval
+    service.update(createMockTicker(1600), 1);
+
+    expect(shotService.fireRadial).toHaveBeenCalledTimes(1);
   });
 });
