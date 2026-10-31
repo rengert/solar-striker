@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { AnimatedSprite, Assets, Spritesheet, Texture } from 'pixi.js';
+import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
 import { ApplicationService } from './application.service';
 import { ParticleService } from './particle.service';
 import { SoundService } from './sound.service';
@@ -44,9 +45,10 @@ export class ExplosionService {
     this.particles.emit({ x, y, color: 0xffcc66, life: 300, scale: 1.5 * scale, endScale: 3 * scale });
     // shockwave
     this.particles.emit({ x, y, color: 0xffaa55, ring: true, life: 500, scale: 0.2 * scale, endScale: 2 * scale });
-    // sparks
+    // sparks, in seasonal colors during events
+    const colors = CURRENT_SEASON_EVENT?.colors;
     this.particles.emit({
-      x, y, color: 0xffdd88, count: Math.round(14 * scale), speed: 0.35, life: 700, scale: 0.4, endScale: 0.05, drag: 0.94,
+      x, y, color: colors ? colors[Math.floor(Math.random() * colors.length)] : 0xffdd88, count: Math.round(14 * scale), speed: 0.35, life: 700, scale: 0.4, endScale: 0.05, drag: 0.94,
     });
     // smoke
     this.particles.emit({
