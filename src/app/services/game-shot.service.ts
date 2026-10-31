@@ -65,11 +65,19 @@ export class GameShotService extends UpdatableService {
   }
 
   fireOrbitalStrike(ship: Ship): void {
+    this.fireRadial(ship, ORBITAL_STRIKE_COUNT, ORBITAL_STRIKE_SPEED);
+  }
+
+  /** Fires `count` shots spread evenly over `arc` radians, starting at `fromAngle` (0 = right, PI/2 = down). */
+  // eslint-disable-next-line max-params
+  fireRadial(ship: Ship, count: number, speed: number, fromAngle = 0, arc = Math.PI * 2): void {
     const { x, y } = ship;
-    for (let i = 0; i < ORBITAL_STRIKE_COUNT; i++) {
-      const angle = (i / ORBITAL_STRIKE_COUNT) * Math.PI * 2;
-      const vx = Math.cos(angle) * ORBITAL_STRIKE_SPEED;
-      const vy = Math.sin(angle) * ORBITAL_STRIKE_SPEED;
+    // a full circle must not put the last shot onto the first one
+    const step = arc >= Math.PI * 2 ? arc / count : arc / Math.max(1, count - 1);
+    for (let i = 0; i < count; i++) {
+      const angle = fromAngle + i * step;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
       const rocket = new OrbitalRocket(this.explosionService, vx, vy, this.laserAnimation!);
       rocket.reference = ship;
       rocket.animationSpeed = 0.167;
