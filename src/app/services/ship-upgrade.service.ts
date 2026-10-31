@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { MAX_SHOT_POWER } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
 import {
   DEFAULT_SHIP_UPGRADE_LEVELS,
@@ -75,7 +76,8 @@ export class ShipUpgradeService {
 
     ship.maxEnergy = newMaxEnergy;
     ship.energy = Math.min(ship.energy + energyGain, ship.maxEnergy);
-    ship.shotPower = ship.baseShotPower + bonus.shotPower;
+    // the shot pattern only exists up to MAX_SHOT_POWER cannons; more crashes the game loop on the first shot
+    ship.shotPower = Math.min(ship.baseShotPower + bonus.shotPower, MAX_SHOT_POWER);
     ship.shotSpeed = ship.baseShotSpeed + bonus.shotSpeed;
   }
 
