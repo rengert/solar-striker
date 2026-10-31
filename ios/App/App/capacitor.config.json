@@ -2,6 +2,10 @@
 	"appId": "net.bolzplatzarena.solarstriker",
 	"appName": "Solar Striker",
 	"webDir": "dist/solar-striker/browser",
+	"ios": {
+		"contentInset": "always",
+		"scrollEnabled": false
+	},
 	"plugins": {
 		"SplashScreen": {
 			"launchShowDuration": 3000,
