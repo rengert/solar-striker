@@ -8,7 +8,7 @@ export class HighscorePopup extends Popup {
 
   constructor(gameService: GameService, private readonly translation: TranslationService) {
     // eslint-disable-next-line no-magic-numbers
-    super(translation.getTranslation('highscore.title'), 420);
+    super(translation.getTranslation('highscore.title'), 380);
 
     // eslint-disable-next-line no-magic-numbers
     this.addButton(translation.getTranslation('common.close'), () => gameService.openNavigation(this), 5);
@@ -18,7 +18,7 @@ export class HighscorePopup extends Popup {
     const highscore = await this.storage.getHighscore();
     highscore.sort((a, b) => b.kills - a.kills);
 
-    this.addText(this.translation.getTranslation('highscore.date'), { size: 12 }, { y: -60, x: -90 });
+    this.addText(this.translation.getTranslation('highscore.date'), { size: 12 }, { y: -60, x: -60 });
     this.addText(this.translation.getTranslation('highscore.kills'), { size: 12 }, { y: -60, x: 35 });
     this.addText(this.translation.getTranslation('highscore.level'), { size: 12 }, { y: -60, x: 100 });
 

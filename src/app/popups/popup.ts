@@ -1,10 +1,17 @@
 import { ButtonContainer } from '@pixi/ui';
 import gsap from 'gsap';
-import { Container, Sprite, Text, Texture } from 'pixi.js';
+import { Container, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js';
 import { LabeledButton } from '../models/pixijs/labeled-button.model';
+
+const PANEL_WIDTH = 265;
+const PANEL_TOP = -115;
+const PANEL_SLICE = { leftWidth: 12, rightWidth: 12, topHeight: 50, bottomHeight: 12 };
+const SCREEN_FILL = 0.92;
+const MAX_SCALE = 2;
 
 export abstract class Popup extends Container {
   private readonly container: Container;
+  private readonly panelHeight: number;
   private readonly background: Sprite;
   private titleLabel!: Text;
 
@@ -21,21 +28,17 @@ export abstract class Popup extends Container {
     this.addChild(this.background);
 
     this.container = new Container();
-    this.container.width = 265;
-    this.container.height = height;
-
     this.addChild(this.container);
-    const panel = new Sprite(Texture.from('popup'));
+    this.panelHeight = height;
+    // nine-slice keeps header and rounded corners intact at any height
+    const panel = new NineSliceSprite({ texture: Texture.from('popup'), ...PANEL_SLICE });
+    panel.width = PANEL_WIDTH;
+    panel.height = height;
     // eslint-disable-next-line no-magic-numbers
-    panel.anchor.set(0.5);
-    panel.width = 265;
-    panel.height = 230;
+    panel.x = -PANEL_WIDTH / 2;
+    panel.y = PANEL_TOP;
     this.container.addChild(panel);
 
-    // eslint-disable-next-line no-magic-numbers
-    if (height > 230) {
-      this.setLongPopup(height);
-    }
     this.addTitle(title);
   }
 
@@ -58,15 +61,18 @@ export abstract class Popup extends Container {
   resize(width: number, height: number): void {
     this.background.width = width;
     this.background.height = height;
+    // fit the whole panel on screen (phones shrink it, large screens enlarge it)
+    const scale = Math.min(MAX_SCALE, (width * SCREEN_FILL) / PANEL_WIDTH, (height * SCREEN_FILL) / this.panelHeight);
+    this.container.scale.set(scale);
     // eslint-disable-next-line no-magic-numbers
     this.container.x = width * 0.5;
     // eslint-disable-next-line no-magic-numbers
-    this.container.y = height * 0.5;
+    this.container.y = height * 0.5 - (PANEL_TOP + this.panelHeight / 2) * scale;
   }
 
   protected addText(
     content: string,
-    appearance: { size: number; rotated?: boolean },
+    appearance: { size: number; rotated?: boolean; anchorX?: number },
     position: { y: number; x?: number },
   ): void {
     const text = new Text({
@@ -79,7 +85,7 @@ export abstract class Popup extends Container {
     text.x = position.x ?? 0;
     text.y = position.y;
     // eslint-disable-next-line no-magic-numbers
-    text.anchor.set(0.5, 0.5);
+    text.anchor.set(appearance.anchorX ?? 0.5, 0.5);
     // eslint-disable-next-line no-magic-numbers
     text.rotation = appearance.rotated ? -3.14 / 2 : 0;
     this.container.addChild(text);
@@ -133,17 +139,5 @@ export abstract class Popup extends Container {
     // eslint-disable-next-line no-magic-numbers
     this.titleLabel.anchor.set(0.5, 0.5);
     this.container.addChild(this.titleLabel);
-  }
-
-  private setLongPopup(height: number): void {
-    const bottom = new Sprite(Texture.from('popup-bottom'));
-    // eslint-disable-next-line no-magic-numbers
-    bottom.anchor.set(0.5, 0.5);
-    bottom.width = 265;
-    bottom.height = 230;
-    // eslint-disable-next-line no-magic-numbers
-    bottom.y = Math.max(80, height - 230);
-    bottom.x = 0;
-    this.container.addChild(bottom);
   }
 }

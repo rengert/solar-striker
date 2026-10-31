@@ -16,6 +16,6 @@ export class VictoryPopup extends Popup {
     this.addText(gameService.sessionCoins().toString().padStart(PADDED_DIGITS, '0'), { size: 12 }, { y: 80 });
 
     // eslint-disable-next-line no-magic-numbers
-    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 3);
+    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 3.5);
   }
 }

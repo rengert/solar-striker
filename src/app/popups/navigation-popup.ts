@@ -3,12 +3,14 @@ import { TranslationService } from '../services/translation.service';
 import { version } from '../version';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 502;
 // eslint-disable-next-line no-magic-numbers
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const DAILY_SURPRISE_ICONS = ['✨', '🚀', '☄️'] as const;
 const BUTTON_START_Y = -74;
-const BUTTON_STEP_Y = 42;
+const BUTTON_STEP_Y = 50;
+const BUTTON_HEIGHT = 49;
+const PANEL_PADDING = 135;
+const BASE_BUTTON_COUNT = 7;
 
 export function getDailySurpriseIcon(now: Date = new Date()): string {
   const daySinceEpoch = Math.floor(now.getTime() / DAY_IN_MS);
@@ -18,9 +20,13 @@ export function getDailySurpriseIcon(now: Date = new Date()): string {
 
 export class NavigationPopup extends Popup {
   constructor(gameService: GameService, translation: TranslationService) {
-    super(`${translation.getTranslation('app.title')} ${getDailySurpriseIcon()}`, POPUP_HEIGHT);
-    const buttons = [];
     const savedStage = gameService.savedStage();
+    const buttonCount = BASE_BUTTON_COUNT + (savedStage === null ? 0 : 1);
+    super(
+      `${translation.getTranslation('app.title')} ${getDailySurpriseIcon()}`,
+      BUTTON_START_Y + (buttonCount - 1) * BUTTON_STEP_Y + BUTTON_HEIGHT + PANEL_PADDING,
+    );
+    const buttons = [];
 
     this.addText(
       translation.getTranslation('app.version', { version: version.code }),
