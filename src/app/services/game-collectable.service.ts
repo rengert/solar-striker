@@ -56,9 +56,9 @@ export class GameCollectableService extends UpdatableService {
 
   async init(): Promise<void> {
     if (Object.values(this.animations).length === 0) {
+      const sheets = await Assets.load<Spritesheet>(GAME_CONFIG.powerUpConfig.map((config) => config.assetUrl));
       for (const config of GAME_CONFIG.powerUpConfig) {
-        const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
-        const animations: Record<string, Texture[]> = powerUp.animations;
+        const animations: Record<string, Texture[]> = sheets[config.assetUrl].animations;
         this.animations[config.type] = animations[config.animationName];
       }
     }

@@ -1,5 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import { SplashScreen } from '@capacitor/splash-screen';
+import { Component } from '@angular/core';
 import { PixijsComponent } from './components/pixijs/pixijs.component';
 
 @Component({
@@ -8,8 +7,4 @@ import { PixijsComponent } from './components/pixijs/pixijs.component';
   styleUrls: ['./app.component.scss'],
   imports: [PixijsComponent]
 })
-export class AppComponent implements OnInit {
-  ngOnInit(): void {
-    void SplashScreen.hide();
-  }
-}
+export class AppComponent {}

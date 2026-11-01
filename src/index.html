@@ -6,8 +6,26 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!-- Inline so it paints before the game bundle is downloaded and parsed. -->
+  <style>
+    html, body { background: #000; }
+    #boot-loader {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+      background: radial-gradient(ellipse at center, #10183a 0%, #000 70%);
+      color: #ffd23f; font: bold 28px/1.2 system-ui, sans-serif; letter-spacing: 4px;
+      transition: opacity .3s;
+    }
+    #boot-loader::after {
+      content: ""; width: 36px; height: 36px; border-radius: 50%;
+      border: 4px solid #ffd23f33; border-top-color: #ffd23f;
+      animation: boot-spin .8s linear infinite;
+    }
+    @keyframes boot-spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
+  <div id="boot-loader" role="status" aria-label="Loading">SOLAR STRIKER</div>
   <app-root></app-root>
 </body>
 </html>
