@@ -6,7 +6,7 @@ import { GameCollectableService } from './game-collectable.service';
 import { AchievementService } from './achievement.service';
 import { GameShotService } from './game-shot.service';
 import { ParticleService } from './particle.service';
-import { MAX_SHOT_POWER, OFF_SCREEN_BUFFER, SHIELD_DURATION_MS, SLOW_MOTION_DURATION_MS } from '../game-constants';
+import { MAX_SHOT_POWER, OFF_SCREEN_BUFFER, SHIELD_DURATION_MS, SLOW_MOTION_DURATION_MS, SPREAD_SHOT_DURATION_MS } from '../game-constants';
 
 const MOCK_SCREEN_HEIGHT = 600;
 const MOCK_SCREEN_WIDTH = 400;
@@ -22,6 +22,7 @@ function createMockShip(overrides: Record<string, unknown> = {}): ObjectModelTyp
     shotSpeed: 1.5,
     shotPower: 1,
     shieldTicks: 0,
+    spreadShotTicks: 0,
     ...overrides,
   } as unknown as ObjectModelType;
 }
@@ -33,6 +34,7 @@ function createMockPowerUp(powerUpConfig: {
   shield?: number;
   nuke?: boolean;
   slowMotion?: number;
+  spreadShot?: number;
 }): ObjectModelType {
   return {
     type: ObjectType.collectable,
@@ -218,6 +220,15 @@ describe('GameCollectableService - collectPowerUp', () => {
 
     // eslint-disable-next-line no-magic-numbers
     expect((ship as unknown as { shieldTicks: number }).shieldTicks).toBe(SHIELD_DURATION_MS * 2);
+  });
+
+  it('should activate spread shot on the ship when a spread-shot power-up is collected', () => {
+    const ship = createMockShip();
+    const powerUp = createMockPowerUp({ speed: 0, shot: 0, energy: 0, spreadShot: SPREAD_SHOT_DURATION_MS });
+
+    objectService.triggerCallbacks(powerUp, ship);
+
+    expect((ship as unknown as { spreadShotTicks: number }).spreadShotTicks).toBe(SPREAD_SHOT_DURATION_MS);
   });
 
   it('should NOT activate shield when the shield field is absent (regular power-up)', () => {
