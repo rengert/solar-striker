@@ -1,4 +1,5 @@
 import { Component, ElementRef, inject, NgZone } from '@angular/core';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { ApplicationService } from '../../services/application.service';
 import { ExplosionService } from '../../services/explosion.service';
 import { GameCollectableService } from '../../services/game-collectable.service';
@@ -40,6 +41,13 @@ export class PixijsComponent {
     const elementRef = inject(ElementRef);
     const ngZone = inject(NgZone);
     const pixiGame = inject(GameService);
-    void application.init(elementRef).then(() => ngZone.runOutsideAngular(() => pixiGame.init()));
+    void application
+      .init(elementRef)
+      .then(() => ngZone.runOutsideAngular(() => pixiGame.init()))
+      .finally(() => {
+        // Keep the native splash / inline loader up until the menu is drawn, so the start never shows a black screen.
+        void SplashScreen.hide();
+        document.getElementById('boot-loader')?.remove();
+      });
   }
 }
