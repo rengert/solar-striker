@@ -19,9 +19,10 @@ function label(content: string, size: number, y: number, fill = TEXT_COLOR): Tex
   return text;
 }
 
+// finite repeat: the popup is only detached, never destroyed, so an endless tween would outlive it
 function startPulse(target: Container): void {
   // eslint-disable-next-line no-magic-numbers
-  gsap.to(target.scale, { x: 1.12, y: 1.12, duration: 0.45, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+  gsap.to(target.scale, { x: 1.12, y: 1.12, duration: 0.45, yoyo: true, repeat: 11, ease: 'sine.inOut' });
 }
 
 function spawnConfetti(parent: Container, y: number): void {

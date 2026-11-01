@@ -327,7 +327,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'highscore.date': 'Date',
     'highscore.kills': 'Éliminations',
     'highscore.level': 'Niveau',
-    'highscore.allTime': 'Toujours',
+    'highscore.allTime': 'Général',
     'highscore.today': 'Aujourd\'hui',
     'highscore.combo': 'Combo',
     'highscore.summary': 'Record {{best}} · {{games}} vols',
