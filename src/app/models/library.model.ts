@@ -1,7 +1,7 @@
 import { PowerUp } from './pixijs/power-up-sprite';
 
 export interface LibraryEnemy {
-  readonly id: 'fighter' | 'orbiter' | 'meteor' | 'sweeper' | 'bossOrbiter' | 'hunter';
+  readonly id: 'fighter' | 'orbiter' | 'diver' | 'weaver' | 'sniper' | 'meteor' | 'sweeper' | 'bossOrbiter' | 'hunter';
   readonly icon: string;
 }
 
@@ -11,6 +11,9 @@ export const LIBRARY_POWER_UPS: readonly PowerUp[] = Object.values(PowerUp);
 export const LIBRARY_ENEMIES: readonly LibraryEnemy[] = [
   { id: 'fighter', icon: '🛸' },
   { id: 'orbiter', icon: '🌀' },
+  { id: 'diver', icon: '🔥' },
+  { id: 'weaver', icon: '🐍' },
+  { id: 'sniper', icon: '🔭' },
   { id: 'meteor', icon: '☄️' },
   { id: 'sweeper', icon: '👹' },
   { id: 'bossOrbiter', icon: '👁️' },

@@ -196,7 +196,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
     } else {
       this.y += ticker.deltaMS * this.speed * SPEED_SCALE;
 
-      if (this.targetX && this.x !== this.targetX) {
+      if (this.targetX !== undefined && this.x !== this.targetX) {
         // eslint-disable-next-line no-magic-numbers
         const direction = this.targetX > this.x ? 1 : -1;
         this.x += direction * this.getSpeed(this.targetX, this.x);
