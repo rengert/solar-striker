@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Texture, Ticker } from 'pixi.js';
 import { ApplicationService } from './application.service';
 import { ExplosionService } from './explosion.service';
-import { BossPattern, GameEnemyService, getBossPattern } from './game-enemy.service';
+import { BossPattern, EnemyKind, GameEnemyService, getBossPattern } from './game-enemy.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
@@ -206,5 +206,76 @@ describe('GameEnemyService - boss patterns', () => {
     service.update(createMockTicker(1600), 1);
 
     expect(shotService.fireRadial).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('GameEnemyService - enemy kinds', () => {
+  let service: GameEnemyService;
+  let objectService: ObjectService;
+  let shotService: { shot: jasmine.Spy; fireRadial: jasmine.Spy };
+  let player: Ship;
+
+  beforeEach(() => {
+    shotService = { shot: jasmine.createSpy('shot'), fireRadial: jasmine.createSpy('fireRadial') };
+    TestBed.configureTestingModule({
+      providers: [
+        GameEnemyService,
+        ObjectService,
+        { provide: ApplicationService, useValue: buildApplicationServiceMock() },
+        { provide: ExplosionService, useValue: { explode: jasmine.createSpy('explode') } },
+        { provide: GameShotService, useValue: shotService },
+        { provide: GameScreenService, useValue: { showBossWarning: jasmine.createSpy('showBossWarning') } },
+      ],
+    });
+    service = TestBed.inject(GameEnemyService);
+    objectService = TestBed.inject(ObjectService);
+    (service as unknown as { enemySprite: unknown }).enemySprite = { animations: { frame: [Texture.EMPTY] } };
+    player = new Ship(ShipType.ship, shotService as unknown as GameShotService, null as unknown as ExplosionService, 0, [Texture.EMPTY]);
+    player.x = 50;
+    player.y = MOCK_SCREEN_HEIGHT - 50;
+    objectService.add(player);
+  });
+
+  it('gives every kind its own colour', () => {
+    const tints = Object.values(EnemyKind).map((kind) => service.spawnKind(1, kind).tint);
+    expect(new Set(tints).size).toBe(tints.length);
+  });
+
+  it('diver locks onto the player and dives', () => {
+    const diver = service.spawnKind(1, EnemyKind.diver);
+    diver.y = MOCK_SCREEN_HEIGHT / 2;
+
+    service.update(createMockTicker(), 1);
+
+    expect(diver.targetX).toBe(player.x);
+    expect(diver.y).toBeGreaterThan(MOCK_SCREEN_HEIGHT / 2);
+  });
+
+  it('weaver swings sideways', () => {
+    const weaver = service.spawnKind(1, EnemyKind.weaver);
+    const startX = weaver.x;
+
+    service.update(createMockTicker(400), 1);
+
+    expect(weaver.x).toBeGreaterThan(startX);
+  });
+
+  it('sniper holds its post, fires aimed shots and then leaves', () => {
+    const sniper = service.spawnKind(1, EnemyKind.sniper);
+    sniper.y = MOCK_SCREEN_HEIGHT;
+
+    service.update(createMockTicker(), 1);
+    expect(sniper.y).toBe(MOCK_SCREEN_HEIGHT * 0.2);
+
+    service.update(createMockTicker(800), 1);
+    const [shooter, count, , angle] = shotService.fireRadial.calls.mostRecent().args as [Ship, number, number, number];
+    expect(shooter).toBe(sniper);
+    expect(count).toBe(1);
+    expect(angle).toBeCloseTo(Math.atan2(player.y - sniper.y, player.x - sniper.x));
+
+    service.update(createMockTicker(5000), 1);
+    sniper.y += 10;
+    service.update(createMockTicker(), 1);
+    expect(sniper.y).toBeGreaterThan(MOCK_SCREEN_HEIGHT * 0.2);
   });
 });

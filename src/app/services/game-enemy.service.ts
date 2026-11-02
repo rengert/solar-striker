@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Assets, Container, Graphics, Rectangle, Spritesheet, Text, Texture, Ticker } from 'pixi.js';
+import { Assets, Container, Graphics, Rectangle, Sprite, Spritesheet, Text, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { AnimatedGameSprite, LoopData, OrbitData } from '../models/pixijs/animated-game-sprite';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -11,6 +11,7 @@ import { GameScreenService } from './game-screen.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
+import { createGlowTexture } from '../utils/texture.util';
 
 const halfWidth = 10;
 const MOVEMENT_TARGET_SNAP_DISTANCE = 5;
@@ -59,6 +60,46 @@ const ORBITER_SCALE = 1.2;
 const ORBITER_SHOT_SPEED = 0.5;
 // eslint-disable-next-line no-magic-numbers
 const ORBITER_TINT = 0x88ffff;
+
+/** Regular enemies with their own flight style; each also gets its own colour, size and glow. */
+export enum EnemyKind {
+  diver = 'diver',
+  weaver = 'weaver',
+  sniper = 'sniper',
+}
+
+interface EnemyKindDefinition {
+  readonly spawnChance: number;
+  readonly tint: number;
+  readonly scale: number;
+  readonly energyMultiplier: number;
+  readonly speed: number;
+  readonly autoFire: boolean;
+}
+
+/* eslint-disable no-magic-numbers */
+const ENEMY_KIND_DEFINITIONS: Record<EnemyKind, EnemyKindDefinition> = {
+  // drifts in slowly, then locks onto the player and rams them
+  [EnemyKind.diver]: { spawnChance: 0.1, tint: 0xff5533, scale: 0.85, energyMultiplier: 1, speed: 0.3, autoFire: false },
+  // snakes down in wide sine waves while shooting
+  [EnemyKind.weaver]: { spawnChance: 0.1, tint: 0x66ff88, scale: 1, energyMultiplier: 1, speed: 0.45, autoFire: true },
+  // parks near the top, fires aimed shots, then leaves
+  [EnemyKind.sniper]: { spawnChance: 0.08, tint: 0xffee44, scale: 1.4, energyMultiplier: 2, speed: 0.5, autoFire: false },
+};
+/* eslint-enable no-magic-numbers */
+const ENEMY_KINDS = Object.values(EnemyKind);
+const ENEMY_GLOW_SIZE_FACTOR = 1.8;
+const ENEMY_GLOW_ALPHA = 0.45;
+const DIVER_TRIGGER_Y_RATIO = 0.3;
+const DIVER_DIVE_SPEED = 0.45;
+const KIND_XSPEED = 0.15;
+const WEAVER_AMPLITUDE = 60;
+// eslint-disable-next-line no-magic-numbers
+const WEAVER_ANGULAR_SPEED = (Math.PI * 2) / 1800;
+const SNIPER_HOLD_Y_RATIO = 0.2;
+const SNIPER_HOLD_MS = 5000;
+const SNIPER_SHOT_INTERVAL_MS = 1400;
+const SNIPER_SHOT_SPEED = 0.7;
 
 const BOSS_ENERGY_BASE = 30;
 const BOSS_ENERGY_LEVEL_STEP = 5;
@@ -130,6 +171,10 @@ interface EnemyMovementState {
   nextAttack?: number;
   orbitAngle?: number;
   bossArrived?: boolean;
+  /** Diver: dive started. Weaver: x the wave swings around. Sniper: when it leaves its post. */
+  diving?: boolean;
+  weaveCenterX?: number;
+  leaveAt?: number;
 }
 
 export function getBossPattern(stage: number): BossPattern {
@@ -155,6 +200,9 @@ export class GameEnemyService extends UpdatableService {
 
   private enemySprite!: Spritesheet;
   private readonly movementStates = new WeakMap<ObjectModelType, EnemyMovementState>();
+  // separate from movementStates because those are reset when an enemy is recycled
+  private readonly enemyKinds = new WeakMap<ObjectModelType, EnemyKind>();
+  private glowTexture?: Texture;
 
   async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
@@ -229,6 +277,11 @@ export class GameEnemyService extends UpdatableService {
       this.spawnOrbiter(level, animations);
       return;
     }
+    const kind = this.pickEnemyKind();
+    if (kind) {
+      this.spawnKind(level, kind, animations);
+      return;
+    }
     const isLarge = Math.random() < LARGE_ENEMY_SPAWN_CHANCE;
     // eslint-disable-next-line no-magic-numbers
     const maxSpeed = 0.5 + 0.03 * level;
@@ -273,6 +326,101 @@ export class GameEnemyService extends UpdatableService {
     this.application.stage.addChild(enemy);
 
     this.updateMovement(enemy, level, true);
+  }
+
+  private pickEnemyKind(): EnemyKind | undefined {
+    let roll = Math.random();
+    for (const kind of ENEMY_KINDS) {
+      roll -= ENEMY_KIND_DEFINITIONS[kind].spawnChance;
+      if (roll < 0) {
+        return kind;
+      }
+    }
+    return undefined;
+  }
+
+  /** Spawns one of the special enemy kinds, at the top of the screen. */
+  spawnKind(level: number, kind: EnemyKind, animations: Record<string, Texture[]> = this.enemySprite.animations): Ship {
+    const definition = ENEMY_KIND_DEFINITIONS[kind];
+    // eslint-disable-next-line no-magic-numbers
+    const enemy = new Ship(ShipType.enemy, this.shotService, this.explosionService, definition.speed + 0.02 * level, animations['frame']);
+    enemy.autoFire = definition.autoFire;
+    enemy.animationSpeed = ENEMY_ANIMATION_SPEED;
+    enemy.play();
+    enemy.anchor.set(THE_MIDDLE);
+    enemy.scale.set(definition.scale);
+    enemy.tint = definition.tint;
+    enemy.xSpeed = KIND_XSPEED;
+    const energy = (ENEMY_BASE_ENERGY + Math.floor((level - 1) / ENEMY_ENERGY_LEVEL_STEP)) * definition.energyMultiplier;
+    enemy.maxEnergy = energy;
+    enemy.energy = energy;
+    const usableWidth = Math.max(0, this.application.screen.width - enemy.width - WEAVER_AMPLITUDE * DOUBLE);
+    enemy.x = Math.floor(Math.random() * usableWidth) + enemy.width / DOUBLE + WEAVER_AMPLITUDE;
+    enemy.y = 0;
+    this.addGlow(enemy, definition.tint);
+    this.decorateForSeason(enemy);
+    enemy.enableEnergyDisplay();
+    this.enemyKinds.set(enemy, kind);
+    this.object.add(enemy);
+    this.application.stage.addChild(enemy);
+    return enemy;
+  }
+
+  /** Coloured halo behind the ship so the kinds are told apart at a glance. */
+  private addGlow(enemy: Ship, color: number): void {
+    const { width, height } = enemy.texture;
+    // keep the hit box at the ship's frame although the glow is larger
+    enemy.boundsArea = new Rectangle(-width * THE_MIDDLE, -height * THE_MIDDLE, width, height);
+    this.glowTexture ??= createGlowTexture();
+    const glow = new Sprite(this.glowTexture);
+    glow.anchor.set(THE_MIDDLE);
+    glow.width = Math.max(width, height) * ENEMY_GLOW_SIZE_FACTOR;
+    glow.height = glow.width;
+    glow.tint = color;
+    glow.alpha = ENEMY_GLOW_ALPHA;
+    glow.blendMode = 'add';
+    enemy.addChildAt(glow, 0);
+  }
+
+  private updateKind(enemy: Ship, kind: EnemyKind, movement: EnemyMovementState): void {
+    const screen = this.application.screen;
+    switch (kind) {
+      case EnemyKind.diver:
+        if (!movement.diving && enemy.y >= screen.height * DIVER_TRIGGER_Y_RATIO) {
+          movement.diving = true;
+          enemy.targetX = this.getPlayer()?.x ?? enemy.x;
+        }
+        if (movement.diving) {
+          enemy.y += DIVER_DIVE_SPEED * this.lastDeltaMs;
+        }
+        break;
+      case EnemyKind.weaver:
+        movement.weaveCenterX ??= enemy.x;
+        movement.orbitAngle = (movement.orbitAngle ?? 0) + WEAVER_ANGULAR_SPEED * this.lastDeltaMs;
+        enemy.targetX = undefined;
+        enemy.x = movement.weaveCenterX + WEAVER_AMPLITUDE * Math.sin(movement.orbitAngle);
+        break;
+      default: {
+        // sniper
+        const holdY = screen.height * SNIPER_HOLD_Y_RATIO;
+        if (enemy.y < holdY) {
+          break;
+        }
+        movement.leaveAt ??= this.elapsed + SNIPER_HOLD_MS;
+        if (this.elapsed >= movement.leaveAt) {
+          break;
+        }
+        enemy.y = holdY;
+        enemy.targetX = this.getPlayer()?.x ?? enemy.x;
+        if ((movement.nextAttack ??= this.elapsed + SNIPER_SHOT_INTERVAL_MS / DOUBLE) <= this.elapsed) {
+          const player = this.getPlayer();
+          const angle = player ? Math.atan2(player.y - enemy.y, player.x - enemy.x) : DOWN;
+          this.shotService.fireRadial(enemy, 1, SNIPER_SHOT_SPEED, angle, 0);
+          movement.nextAttack = this.elapsed + SNIPER_SHOT_INTERVAL_MS;
+        }
+        break;
+      }
+    }
   }
 
   private decorateForSeason(enemy: Ship): void {
@@ -345,6 +493,11 @@ export class GameEnemyService extends UpdatableService {
 
     const screenWidth = this.application.screen.width;
     const movement = this.getMovementState(enemy);
+    const kind = this.enemyKinds.get(enemy);
+    if (kind && enemy instanceof Ship) {
+      this.updateKind(enemy, kind, movement);
+      return;
+    }
 
     if (enemy instanceof AnimatedGameSprite && enemy.loopData) {
       return;
