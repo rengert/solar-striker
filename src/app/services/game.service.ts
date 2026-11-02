@@ -207,8 +207,13 @@ export class GameService {
         this.achievementService.addCumulative('veteran', 1);
         // Daily challenge: track kills and boss
         this.dailyChallengeService.addKills(1);
+        const kind = this.enemy.getKind(destroyedEnemy);
+        if (kind) {
+          this.achievementService.addCumulative(`${kind}_hunter`, 1);
+        }
         if (isBoss) {
           this.achievementService.checkMilestone('boss_hunter', 1);
+          this.achievementService.addCumulative('boss_slayer', 1);
           this.dailyChallengeService.addBoss();
         }
       }
