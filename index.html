@@ -6,8 +6,25 @@
   <base href="/solar-striker/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!-- Inline so it paints before the game bundle is downloaded and parsed. -->
+  <style>
+    html, body { background: #000; }
+    #boot-loader {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+      background: radial-gradient(ellipse at center, #10183a 0%, #000 70%);
+      color: #ffd23f; font: bold 28px/1.2 system-ui, sans-serif; letter-spacing: 4px;
+    }
+    #boot-loader::after {
+      content: ""; width: 36px; height: 36px; border-radius: 50%;
+      border: 4px solid #ffd23f33; border-top-color: #ffd23f;
+      animation: boot-spin .8s linear infinite;
+    }
+    @keyframes boot-spin { to { transform: rotate(360deg); } }
+  </style>
 <style>:root{--fa-family-brands:"Font Awesome 7 Brands";--fa-font-brands:normal 400 1em/1 var(--fa-family-brands)}:root{--fa-font-regular:normal 400 1em/1 var(--fa-family-classic)}:root{--fa-family-classic:"Font Awesome 7 Free";--fa-font-solid:normal 900 1em/1 var(--fa-family-classic);--fa-style-family-classic:var(--fa-family-classic)}@font-face{font-family:DefaultFont;src:url("./media/kenvector_future-SU2HM7BV.ttf")}html,body{padding:0;margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-family:DefaultFont,sans-serif}</style><link rel="stylesheet" href="styles-624UKXMU.css" media="print" data-beasties-media="all"><noscript><link rel="stylesheet" href="styles-624UKXMU.css"></noscript></head>
 <body>
+  <div id="boot-loader" role="status" aria-label="Loading">SOLAR STRIKER</div>
   <app-root></app-root>
-<link rel="modulepreload" href="chunk-DMAWJU-B.js"><link rel="modulepreload" href="chunk-CHQIWXVB.js"><link rel="modulepreload" href="chunk-B-w-QiBT.js"><link rel="modulepreload" href="chunk-CXD44w-C.js"><link rel="modulepreload" href="chunk-I4qyQfD8.js"><link rel="modulepreload" href="chunk-xuSKOX3u.js"><link rel="modulepreload" href="chunk-CQWhq3W0.js"><script src="polyfills-PJGX3BAA.js" type="module"></script><script src="main-HIHLNXRQ.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
+<link rel="modulepreload" href="chunk-DMAWJU-B.js"><link rel="modulepreload" href="chunk-CHQIWXVB.js"><link rel="modulepreload" href="chunk-B-w-QiBT.js"><link rel="modulepreload" href="chunk-CXD44w-C.js"><link rel="modulepreload" href="chunk-I4qyQfD8.js"><link rel="modulepreload" href="chunk-xuSKOX3u.js"><link rel="modulepreload" href="chunk-CQWhq3W0.js"><script src="polyfills-PJGX3BAA.js" type="module"></script><script src="main-OC3U7TX5.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
 </html>
