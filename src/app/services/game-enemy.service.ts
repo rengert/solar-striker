@@ -171,9 +171,11 @@ interface EnemyMovementState {
   nextAttack?: number;
   orbitAngle?: number;
   bossArrived?: boolean;
-  /** Diver: dive started. Weaver: x the wave swings around. Sniper: when it leaves its post. */
+  /** Diver only: the dive has started. */
   diving?: boolean;
+  /** Weaver only: x the wave swings around. */
   weaveCenterX?: number;
+  /** Sniper only: when it leaves its post. */
   leaveAt?: number;
 }
 
