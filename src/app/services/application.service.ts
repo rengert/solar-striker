@@ -61,10 +61,9 @@ export class ApplicationService {
 
     for (const alias in assets) {
       Assets.add({ alias, src: assets[alias] });
-      await Assets.load(alias);
     }
 
-    await Assets.load(['background', 'popup', 'clouds', 'button']);
+    await Assets.load(['background', 'popup', 'clouds', 'button', ...Object.keys(assets)]);
 
     elementRef.nativeElement.appendChild(this.app!.canvas);
   }

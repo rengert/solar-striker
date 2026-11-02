@@ -317,12 +317,15 @@ export class GameService {
   }
 
   async init(): Promise<void> {
-    await this.translation.init();
-    await document.fonts.load('900 10px "Font Awesome 6 Free"');
-    await this.collectables.init();
-    await this.enemy.init();
-    await this.ship.init();
-    await this.shotService.init();
+    // Independent loads: run them in parallel instead of one network round trip after another.
+    await Promise.all([
+      this.translation.init(),
+      document.fonts.load('900 10px "Font Awesome 6 Free"'),
+      this.collectables.init(),
+      this.enemy.init(),
+      this.ship.init(),
+      this.shotService.init(),
+    ]);
     this.landscape.setup();
     this.gameScreen.init();
 
