@@ -20,6 +20,7 @@ import { AchievementService } from './achievement.service';
 import { DailyChallengeService } from './daily-challenge.service';
 import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
+import { PausePopup } from '../popups/pause-popup';
 
 const STAGE_TWO = 2;
 const STAGE_THREE = 3;
@@ -361,22 +362,20 @@ describe('GameService', () => {
       expect(service.paused()).toBe(false);
     });
 
-    it('should stop the ticker when pause() is called during an active game', async () => {
+    it('should keep the ticker running while paused so the pause menu renders', async () => {
       await service.start({} as AppScreen);
-      await service.pause();
-      expect(tickerMock.stop).toHaveBeenCalledTimes(1);
-    });
-
-    it('should not stop the ticker when game is not started', async () => {
       await service.pause();
       expect(tickerMock.stop).not.toHaveBeenCalled();
     });
 
-    it('should start the ticker when resume() is called', async () => {
+    it('should stay paused when returning from settings to the pause menu', async () => {
       await service.start({} as AppScreen);
       await service.pause();
-      await service.resume({} as AppScreen);
-      expect(tickerMock.start).toHaveBeenCalledTimes(1);
+      await service.openSettings({} as AppScreen);
+      await service.openPause({} as AppScreen);
+
+      expect(presentPopupSpy).toHaveBeenCalledWith(PausePopup);
+      expect(service.paused()).toBe(true);
     });
   });
 

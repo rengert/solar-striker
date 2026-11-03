@@ -29,7 +29,11 @@ export class SettingsPopup extends Popup {
     const backButtonIndex = soundButtonIndex + 1;
     this.backButton = this.addButton(
       this.translation.getTranslation('common.back'),
-      () => this.gameService.openNavigation(this),
+      // opened from the pause menu while playing, otherwise from the main menu
+      () =>
+        this.gameService.paused()
+          ? this.gameService.openPause(this)
+          : this.gameService.openNavigation(this),
       backButtonIndex,
     );
 

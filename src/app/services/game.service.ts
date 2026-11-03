@@ -147,7 +147,9 @@ export class GameService {
     });
 
     // music runs only while actually playing
-    effect(() => (this.started() && !this.#paused() ? this.sound.startMusic() : this.sound.stopMusic()));
+    effect(() =>
+      this.started() && !this.#paused() ? this.sound.startMusic() : this.sound.stopMusic(),
+    );
 
     effect(() => this.landscape.setStage(this.stage()));
 
@@ -201,7 +203,10 @@ export class GameService {
         } else if (this.started()) {
           // Track kills within the current stage; trigger boss when threshold is reached
           this.stageKills++;
-          if (!this.enemy.bossFightActive && this.stageKills >= this.getKillsRequiredForStage(this.stage())) {
+          if (
+            !this.enemy.bossFightActive &&
+            this.stageKills >= this.getKillsRequiredForStage(this.stage())
+          ) {
             this.enemy.bossFightActive = true;
             this.enemy.spawnStageBoss(this.stage());
           }
@@ -345,9 +350,13 @@ export class GameService {
 
     // Wire achievement unlock notification
     this.achievementService.onUnlocked = (def): void => {
-      const titleKey = `achievement.${def.id}.title` as Parameters<typeof this.translation.getTranslation>[0];
+      const titleKey = `achievement.${def.id}.title` as Parameters<
+        typeof this.translation.getTranslation
+      >[0];
       const title = this.translation.getTranslation(titleKey);
-      const rewardLine = this.translation.getTranslation('achievement.reward', { reward: String(def.reward) });
+      const rewardLine = this.translation.getTranslation('achievement.reward', {
+        reward: String(def.reward),
+      });
       this.gameScreen.showAchievementBanner(def.icon, title, rewardLine);
       this.addBonusCoins(def.reward);
     };
@@ -355,14 +364,18 @@ export class GameService {
     // Wire daily challenge completion notification
     this.dailyChallengeService.onCompleted = (challenge): void => {
       const title = this.translation.getTranslation('daily.completed');
-      const rewardLine = this.translation.getTranslation('daily.reward', { reward: String(challenge.reward) });
+      const rewardLine = this.translation.getTranslation('daily.reward', {
+        reward: String(challenge.reward),
+      });
       this.gameScreen.showAchievementBanner(challenge.icon, title, rewardLine);
       this.addBonusCoins(challenge.reward);
     };
 
     this.setup();
 
-    this.application.renderer.on('resize', (width: number, height: number) => this.currentPopup?.resize?.(width, height));
+    this.application.renderer.on('resize', (width: number, height: number) =>
+      this.currentPopup?.resize?.(width, height),
+    );
 
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden || !this.started() || this.#paused()) {
@@ -433,7 +446,11 @@ export class GameService {
 
     this.ship.instance.autoFire = false;
     this.#paused.set(true);
-    this.application.ticker.stop();
+    await this.presentPopup(PausePopup);
+  }
+
+  async openPause(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
     await this.presentPopup(PausePopup);
   }
 
@@ -441,7 +458,6 @@ export class GameService {
     await this.hideAndRemoveScreen(requester);
     this.currentPopup = undefined;
     this.#paused.set(false);
-    this.application.ticker.start();
   }
 
   async openNavigation(requester: AppScreen): Promise<void> {
@@ -484,6 +500,7 @@ export class GameService {
     this.ship.spawn();
     this.setupInteractions(this.ship);
     this.gameScreen.onPause = (): void => void this.pause();
+    window.addEventListener('keydown', (event) => event.key === 'Escape' && void this.pause());
 
     this.application.ticker.add((delta) => {
       if (!this.started() || this.#paused()) {
