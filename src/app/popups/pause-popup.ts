@@ -6,10 +6,11 @@ export class PausePopup extends Popup {
   constructor(gameService: GameService, translation: TranslationService) {
     super(translation.getTranslation('game.pause'));
 
+    this.addButton(translation.getTranslation('game.resume'), () => gameService.resume(this), 0);
     this.addButton(
-      translation.getTranslation('game.resume'),
-      () => gameService.resume(this),
-      0,
+      translation.getTranslation('settings.title'),
+      () => gameService.openSettings(this),
+      1,
     );
   }
 }
