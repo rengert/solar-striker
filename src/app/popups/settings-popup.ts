@@ -64,12 +64,15 @@ export class SettingsPopup extends Popup {
 
     for (const [language, elements] of this.languageButtons) {
       elements.label.text = this.translation.getTranslation(this.getLanguageKey(language));
+      Popup.fitLabel(elements);
     }
 
     this.soundButton.label.text = this.translation.getTranslation(
       this.gameService.sound.muted ? 'settings.soundOff' : 'settings.soundOn',
     );
     this.backButton.label.text = this.translation.getTranslation('common.back');
+    Popup.fitLabel(this.soundButton);
+    Popup.fitLabel(this.backButton);
     this.highlightSelectedLanguage();
   }
 
