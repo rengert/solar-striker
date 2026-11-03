@@ -8,9 +8,11 @@ import { Popup } from './popup';
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const DAILY_SURPRISE_ICONS = ['✨', '🚀', '☄️'] as const;
 const BUTTON_START_Y = -74;
-const BUTTON_STEP_Y = 50;
-const BUTTON_HEIGHT = 49;
-const PANEL_PADDING = 135;
+const BUTTON_STEP_Y = 40;
+const BUTTON_SIZE = { width: 160, height: 36, fontSize: 12 };
+const PANEL_PADDING = 120;
+const MENU_SCREEN_FILL = 0.8;
+const MENU_MAX_SCALE = 1.5;
 const BASE_BUTTON_COUNT = 8;
 const EVENT_LABEL_HEIGHT = 20;
 const EVENT_LABEL_OFFSET = 10;
@@ -22,12 +24,15 @@ export function getDailySurpriseIcon(now: Date = new Date()): string {
 }
 
 export class NavigationPopup extends Popup {
+  protected override readonly screenFill = MENU_SCREEN_FILL;
+  protected override readonly maxScale = MENU_MAX_SCALE;
+
   constructor(gameService: GameService, translation: TranslationService) {
     const savedStage = gameService.savedStage();
     const buttonCount = BASE_BUTTON_COUNT + (savedStage === null ? 0 : 1);
     super(
       `${translation.getTranslation('app.title')} ${CURRENT_SEASON_EVENT?.enemyIcons[0] ?? getDailySurpriseIcon()}`,
-      BUTTON_START_Y + (buttonCount - 1) * BUTTON_STEP_Y + BUTTON_HEIGHT + PANEL_PADDING
+      BUTTON_START_Y + (buttonCount - 1) * BUTTON_STEP_Y + BUTTON_SIZE.height + PANEL_PADDING
       + (CURRENT_SEASON_EVENT ? EVENT_LABEL_HEIGHT : 0),
     );
     const buttons = [];
@@ -43,6 +48,7 @@ export class NavigationPopup extends Popup {
           translation.getTranslation('navigation.continue', { level: savedStage }),
           () => gameService.continueFromCheckpoint(this),
           0,
+          BUTTON_SIZE,
         ),
       );
       buttons.push(
@@ -50,10 +56,11 @@ export class NavigationPopup extends Popup {
           translation.getTranslation('navigation.restart'),
           () => gameService.start(this),
           0,
+          BUTTON_SIZE,
         ),
       );
     } else {
-      buttons.push(this.addButton(translation.getTranslation('navigation.start'), () => gameService.start(this), 0));
+      buttons.push(this.addButton(translation.getTranslation('navigation.start'), () => gameService.start(this), 0, BUTTON_SIZE));
     }
 
     buttons.push(
@@ -61,6 +68,7 @@ export class NavigationPopup extends Popup {
         translation.getTranslation('navigation.hangar'),
         () => gameService.openHangar(this),
         0,
+        BUTTON_SIZE,
       ),
     );
     buttons.push(
@@ -68,6 +76,7 @@ export class NavigationPopup extends Popup {
         translation.getTranslation('navigation.highscore'),
         () => gameService.openHighscore(this),
         0,
+        BUTTON_SIZE,
       ),
     );
     buttons.push(
@@ -75,6 +84,7 @@ export class NavigationPopup extends Popup {
         translation.getTranslation('navigation.settings'),
         () => gameService.openSettings(this),
         0,
+        BUTTON_SIZE,
       ),
     );
     buttons.push(
@@ -82,6 +92,7 @@ export class NavigationPopup extends Popup {
         translation.getTranslation('navigation.achievements'),
         () => gameService.openAchievements(this),
         0,
+        BUTTON_SIZE,
       ),
     );
     buttons.push(
@@ -89,6 +100,7 @@ export class NavigationPopup extends Popup {
         translation.getTranslation('navigation.daily'),
         () => gameService.openDailyChallenges(this),
         0,
+        BUTTON_SIZE,
       ),
     );
     buttons.push(
@@ -96,6 +108,7 @@ export class NavigationPopup extends Popup {
         translation.getTranslation('navigation.library'),
         () => gameService.openLibrary(this),
         0,
+        BUTTON_SIZE,
       ),
     );
     buttons.push(
@@ -103,6 +116,7 @@ export class NavigationPopup extends Popup {
         translation.getTranslation('navigation.credits'),
         () => gameService.openCredits(this),
         0,
+        BUTTON_SIZE,
       ),
     );
 

@@ -8,8 +8,13 @@ const PANEL_TOP = -115;
 const PANEL_SLICE = { leftWidth: 12, rightWidth: 12, topHeight: 50, bottomHeight: 12 };
 const SCREEN_FILL = 0.92;
 const MAX_SCALE = 2;
+const BUTTON_SIZE = { width: 190, height: 49, fontSize: 14 };
+const BUTTON_LABEL_PADDING = 16;
 
 export abstract class Popup extends Container {
+  // subclasses may shrink the panel on screen
+  protected readonly screenFill: number = SCREEN_FILL;
+  protected readonly maxScale: number = MAX_SCALE;
   private readonly container: Container;
   private readonly panelHeight: number;
   private readonly background: Sprite;
@@ -62,7 +67,11 @@ export abstract class Popup extends Container {
     this.background.width = width;
     this.background.height = height;
     // fit the whole panel on screen (phones shrink it, large screens enlarge it)
-    const scale = Math.min(MAX_SCALE, (width * SCREEN_FILL) / PANEL_WIDTH, (height * SCREEN_FILL) / this.panelHeight);
+    const scale = Math.min(
+      this.maxScale,
+      (width * this.screenFill) / PANEL_WIDTH,
+      (height * this.screenFill) / this.panelHeight,
+    );
     this.container.scale.set(scale);
     // eslint-disable-next-line no-magic-numbers
     this.container.x = width * 0.5;
@@ -93,11 +102,17 @@ export abstract class Popup extends Container {
     return text;
   }
 
-  protected addButton(textContent: string, callback: () => void, index: number): LabeledButton {
+  protected addButton(
+    textContent: string,
+    callback: () => void,
+    index: number,
+    size: { width: number; height: number; fontSize: number } = BUTTON_SIZE,
+  ): LabeledButton {
     const button = new ButtonContainer(Sprite.from(Texture.from('button')));
-    button.width = 190;
-    button.height = 49;
-    button.x = -95;
+    button.width = size.width;
+    button.height = size.height;
+    // eslint-disable-next-line no-magic-numbers
+    button.x = -size.width / 2;
     // eslint-disable-next-line no-magic-numbers
     button.y = -70 + index * 52;
 
@@ -105,7 +120,7 @@ export abstract class Popup extends Container {
       text: textContent,
       style: {
         fontFamily: 'DefaultFont',
-        fontSize: 14,
+        fontSize: size.fontSize,
       },
     });
     // eslint-disable-next-line no-magic-numbers
@@ -113,10 +128,19 @@ export abstract class Popup extends Container {
     label.x = 100;
     label.y = 22;
     button.addChild(label);
-
+    Popup.fitLabel({ button, label });
     button.onPress.connect(callback);
     this.container.addChild(button);
     return { button, label };
+  }
+
+  /** Undo the button's stretch on its label and shrink the text until it fits inside the button. */
+  protected static fitLabel({ button, label }: LabeledButton): void {
+    // the button texture is BUTTON_SIZE.width wide, so its on-screen width follows from the scale
+    const buttonWidth = BUTTON_SIZE.width * button.scale.x;
+    label.scale.set(1);
+    const fit = label.width > 0 ? Math.min(1, (buttonWidth - BUTTON_LABEL_PADDING) / label.width) : 1;
+    label.scale.set(fit / button.scale.x, fit / button.scale.y);
   }
 
   protected addToContent(displayObject: Container): void {
