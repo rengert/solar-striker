@@ -495,6 +495,17 @@ describe('GameService', () => {
       expect(service.stage()).toBe(STAGE_TWO);
     });
 
+    it('should end the boss fight and advance the stage when a meteor destroys the boss', () => {
+      triggerStageBoss(1, playerRocket);
+      objectService.triggerCallbacks(
+        createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }),
+        createMockObject(ObjectType.meteor),
+      );
+
+      expect(enemyMock.bossFightActive).toBeFalse();
+      expect(service.stage()).toBe(STAGE_TWO);
+    });
+
     it('should show a stage announcement when boss is killed and game is started', () => {
       const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
       objectService.triggerCallbacks(bossEnemy, playerRocket);

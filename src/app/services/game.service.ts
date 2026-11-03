@@ -166,7 +166,12 @@ export class GameService {
     });
 
     this.object.onDestroyed(ObjectType.enemy, (destroyedEnemy, by) => {
-      if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+      // a boss shot down by a meteor or another enemy must still end the boss fight, otherwise no enemies spawn anymore
+      if (!isShipDestroyer(by) && (destroyedEnemy as AnimatedGameSprite).isBoss) {
+        this.onBossDefeated();
+        return;
+      }
+      if (isShipDestroyer(by)) {
         this.kills.update((value) => value + 1);
         const newKills = this.kills();
         // increase combo on player kill
