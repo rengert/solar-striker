@@ -6,15 +6,17 @@ import { LabeledButton } from '../models/pixijs/labeled-button.model';
 const PANEL_WIDTH = 265;
 const PANEL_TOP = -115;
 const PANEL_SLICE = { leftWidth: 12, rightWidth: 12, topHeight: 50, bottomHeight: 12 };
-const SCREEN_FILL = 0.92;
-const MAX_SCALE = 2;
-const BUTTON_SIZE = { width: 190, height: 49, fontSize: 14 };
+// same panel scale as the main menu, so buttons and text match on every screen
+const SCREEN_FILL = 0.8;
+const MAX_SCALE = 1.5;
+// native size of the button texture; index slots below are spaced for it
+const BUTTON_TEXTURE = { width: 190, height: 49 };
+const BUTTON_SLOT_STEP = 52;
+/** Shared button size for every screen, matching the main menu. */
+export const BUTTON_SIZE = { width: 160, height: 36, fontSize: 12 };
 const BUTTON_LABEL_PADDING = 16;
 
 export abstract class Popup extends Container {
-  // subclasses may shrink the panel on screen
-  protected readonly screenFill: number = SCREEN_FILL;
-  protected readonly maxScale: number = MAX_SCALE;
   private readonly container: Container;
   private readonly panelHeight: number;
   private readonly background: Sprite;
@@ -68,9 +70,9 @@ export abstract class Popup extends Container {
     this.background.height = height;
     // fit the whole panel on screen (phones shrink it, large screens enlarge it)
     const scale = Math.min(
-      this.maxScale,
-      (width * this.screenFill) / PANEL_WIDTH,
-      (height * this.screenFill) / this.panelHeight,
+      MAX_SCALE,
+      (width * SCREEN_FILL) / PANEL_WIDTH,
+      (height * SCREEN_FILL) / this.panelHeight,
     );
     this.container.scale.set(scale);
     // eslint-disable-next-line no-magic-numbers
@@ -102,19 +104,16 @@ export abstract class Popup extends Container {
     return text;
   }
 
-  protected addButton(
-    textContent: string,
-    callback: () => void,
-    index: number,
-    size: { width: number; height: number; fontSize: number } = BUTTON_SIZE,
-  ): LabeledButton {
+  protected addButton(textContent: string, callback: () => void, index: number): LabeledButton {
+    const size = BUTTON_SIZE;
     const button = new ButtonContainer(Sprite.from(Texture.from('button')));
     button.width = size.width;
     button.height = size.height;
     // eslint-disable-next-line no-magic-numbers
     button.x = -size.width / 2;
+    // centre the button in its slot so layouts built on the texture height keep their spacing
     // eslint-disable-next-line no-magic-numbers
-    button.y = -70 + index * 52;
+    button.y = -70 + index * BUTTON_SLOT_STEP + (BUTTON_TEXTURE.height - size.height) / 2;
 
     const label = new Text({
       text: textContent,
@@ -136,8 +135,8 @@ export abstract class Popup extends Container {
 
   /** Undo the button's stretch on its label and shrink the text until it fits inside the button. */
   protected static fitLabel({ button, label }: LabeledButton): void {
-    // the button texture is BUTTON_SIZE.width wide, so its on-screen width follows from the scale
-    const buttonWidth = BUTTON_SIZE.width * button.scale.x;
+    // the button texture is BUTTON_TEXTURE.width wide, so its on-screen width follows from the scale
+    const buttonWidth = BUTTON_TEXTURE.width * button.scale.x;
     label.scale.set(1);
     const fit = label.width > 0 ? Math.min(1, (buttonWidth - BUTTON_LABEL_PADDING) / label.width) : 1;
     label.scale.set(fit / button.scale.x, fit / button.scale.y);
