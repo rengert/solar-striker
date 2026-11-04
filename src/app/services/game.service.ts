@@ -490,6 +490,13 @@ export class GameService {
     window.location.reload();
   }
 
+  async resetProgress(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.storage.clearAll();
+    // a fresh start reloads every service from the now empty storage
+    window.location.reload();
+  }
+
   async openHighscore(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(HighscorePopup);
