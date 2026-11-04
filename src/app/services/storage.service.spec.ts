@@ -6,6 +6,9 @@ describe('StorageService', () => {
     // eslint-disable-next-line no-magic-numbers
     await storage.setCoins(42);
     await storage.setShipUpgrades({ speed: 2 });
+    // eslint-disable-next-line no-magic-numbers
+    expect(await storage.getCoins()).toBe(42);
+    expect(await storage.getShipUpgrades()).toEqual({ speed: 2 });
 
     await storage.clearAll();
 

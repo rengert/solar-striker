@@ -75,22 +75,18 @@ export class StorageService {
 
       dbRequest.onsuccess = function (event: Event): void {
         const database = (event.currentTarget as IDBOpenDBRequest).result;
-        const objectStore = database.transaction([storeName], 'readwrite').objectStore(storeName);
+        const transaction = database.transaction([storeName], 'readwrite');
+        const objectStore = transaction.objectStore(storeName);
 
         if (clear) {
-          objectStore.clear().onsuccess = (): void => {
-            // ignore the on success
-          };
+          objectStore.clear();
         }
 
-        data.forEach((item) => {
-          const objectRequest = objectStore.put(item); // Overwrite if exists
-          objectRequest.onerror = (): void => reject();
-          objectRequest.onsuccess = (): void => resolve();
-        });
+        data.forEach((item) => objectStore.put(item)); // Overwrite if exists
+        // resolve only once committed, so a following clearAll() cannot be overtaken
+        transaction.oncomplete = (): void => resolve();
+        transaction.onerror = (): void => reject(Error('IndexedDB write error'));
       };
-
-      resolve();
     });
   }
 
