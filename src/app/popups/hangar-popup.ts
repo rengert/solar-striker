@@ -1,17 +1,49 @@
-import { ButtonContainer, ScrollBox } from '@pixi/ui';
+import { ButtonContainer } from '@pixi/ui';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 import { PlayerShipClass, PlayerShipDefinition } from '../models/player-ship-class.model';
-import { ShipUpgradeDefinition, ShipUpgradeType } from '../models/ship-upgrade.model';
+import { ShipUpgradeBranch, ShipUpgradeDefinition, ShipUpgradeType } from '../models/ship-upgrade.model';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
-import { Popup } from './popup';
+import { BUTTON_SIZE, Popup } from './popup';
 
-const POPUP_HEIGHT = 505;
+const POPUP_HEIGHT = 470;
 const HALF = 0.5;
-const SCROLL_BOX_WIDTH = 240;
-const SCROLL_BOX_HEIGHT = 240;
-const SCROLL_BOX_X = -(SCROLL_BOX_WIDTH * HALF);
-const SCROLL_BOX_Y = 70;
+const TREE_TOP = 70;
+const BRANCHES = [ShipUpgradeBranch.weapons, ShipUpgradeBranch.armor, ShipUpgradeBranch.tech];
+const BRANCH_TITLE_KEYS = {
+  [ShipUpgradeBranch.weapons]: 'hangar.branch.weapons',
+  [ShipUpgradeBranch.armor]: 'hangar.branch.armor',
+  [ShipUpgradeBranch.tech]: 'hangar.branch.tech',
+} as const;
+const COLUMN_STEP = 82;
+const NODE_WIDTH = 74;
+const NODE_HEIGHT = 34;
+const NODE_ROW_STEP = 44;
+const BRANCH_TITLE_GAP = 14;
+const NODE_TOP = TREE_TOP + BRANCH_TITLE_GAP;
+const NODE_PADDING = 6;
+const NODE_LEVEL_Y = 24;
+const CONNECTOR_WIDTH = 3;
+const NODE_COLOR = 0xe8dcc8;
+const NODE_SELECTED_COLOR = 0xffe08a;
+const NODE_MAXED_COLOR = 0xb9e4a6;
+const LOCKED_ALPHA = 0.4;
+const NODE_ALPHA = 0.8;
+const DISABLED_BUTTON_ALPHA = 0.5;
+const TEXT_COLOR = 0x3c2f1e;
+const TREE_ROWS = 3;
+const DETAIL_TOP = NODE_TOP + TREE_ROWS * NODE_ROW_STEP;
+const DETAIL_LINE_STEP = 14;
+const DETAIL_WRAP_WIDTH = 240;
+const DETAIL_TITLE_Y = DETAIL_TOP;
+const DETAIL_DESCRIPTION_Y = DETAIL_TOP + DETAIL_LINE_STEP;
+const DETAIL_STATUS_Y = DETAIL_DESCRIPTION_Y + DETAIL_LINE_STEP;
+const DETAIL_BUTTON_Y = DETAIL_STATUS_Y + DETAIL_LINE_STEP + NODE_PADDING;
+const NODE_FONT_SIZE = 9;
+const NODE_TITLE_Y = 10;
+const TEXT_FONT_SIZE = 10;
+const DETAIL_TITLE_FONT_SIZE = 12;
+const BACK_BUTTON_Y = DETAIL_BUTTON_Y + BUTTON_SIZE.height + NODE_PADDING + NODE_PADDING;
 
 // Ship selection section constants
 const SHIP_SECTION_Y = -70;
@@ -32,24 +64,18 @@ const SHIP_CARD_STATS_Y = 62;
 const SHIP_BUTTON_Y = 85;
 const SHIP_BUTTON_WIDTH = 66;
 const SHIP_BUTTON_HEIGHT = 24;
-const ROW_CENTER_X = SCROLL_BOX_WIDTH * HALF;
-const ROW_TITLE_X = -110;
-const ROW_TITLE_Y = 10;
-const DESCRIPTION_Y = 22;
-const LINE_GAP = 10;
-const COST_LINE_OFFSET = 18;
-const BUTTON_LINE_OFFSET = 12;
-const DESCRIPTION_WORD_WRAP_WIDTH = 220;
-const BUTTON_X = 0;
-const BUTTON_WIDTH = 120;
-const BUTTON_HEIGHT = 30;
-const BACK_BUTTON_PADDING = 15;
-const BACK_BUTTON_Y = SCROLL_BOX_Y + SCROLL_BOX_HEIGHT + BACK_BUTTON_PADDING;
 
-interface UpgradeRow {
+interface TreeNode {
   definition: ShipUpgradeDefinition;
+  background: Sprite;
   levelText: Text;
-  costText: Text;
+  container: Container;
+}
+
+interface UpgradeDetail {
+  title: Text;
+  description: Text;
+  status: Text;
   button: ButtonContainer;
 }
 
@@ -60,8 +86,10 @@ interface ShipCard {
 }
 
 export class HangarPopup extends Popup {
-  private readonly upgradeRows = new Map<ShipUpgradeType, UpgradeRow>();
+  private readonly treeNodes = new Map<ShipUpgradeType, TreeNode>();
   private readonly shipCards: ShipCard[] = [];
+  private readonly detail: UpgradeDetail;
+  private selectedUpgrade: ShipUpgradeType;
 
   constructor(
     private readonly gameService: GameService,
@@ -71,21 +99,9 @@ export class HangarPopup extends Popup {
 
     this.createShipSelectionSection();
 
-    const scrollBox = new ScrollBox({
-      width: SCROLL_BOX_WIDTH,
-      height: SCROLL_BOX_HEIGHT,
-      disableDynamicRendering: true,
-      globalScroll: false,
-      vertPadding: 5,
-    });
-    scrollBox.x = SCROLL_BOX_X;
-    scrollBox.y = SCROLL_BOX_Y;
-    this.addToContent(scrollBox);
-
-    this.gameService.shipUpgrades.definitions.forEach((definition) => {
-      const row = this.createUpgradeRow(definition, scrollBox);
-      this.upgradeRows.set(definition.type, row);
-    });
+    this.selectedUpgrade = this.gameService.shipUpgrades.definitions[0].type;
+    this.createSkillTree();
+    this.detail = this.createDetail();
 
     const button = this.addButton(
       this.translation.getTranslation('common.back'),
@@ -96,96 +112,90 @@ export class HangarPopup extends Popup {
     this.updateView();
   }
 
-  private createUpgradeRow(definition: ShipUpgradeDefinition, scrollBox: ScrollBox): UpgradeRow {
-    const itemWrapper = new Container();
-    const rowContainer = new Container();
-    rowContainer.x = ROW_CENTER_X;
-    itemWrapper.addChild(rowContainer);
-
-    const title = new Text({
-      text: this.translation.getTranslation(definition.titleKey),
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 14,
-        fill: 0x3c2f1e,
-      },
+  /** One column per branch; each node sits below the node it requires, joined by a connector. */
+  private createSkillTree(): void {
+    BRANCHES.forEach((branch, column) => {
+      const centerX = (column - 1) * COLUMN_STEP;
+      this.addTreeText(this.translation.getTranslation(BRANCH_TITLE_KEYS[branch]), { x: centerX, y: TREE_TOP }, NODE_WIDTH);
+      this.gameService.shipUpgrades.definitions
+        .filter((definition) => definition.branch === branch)
+        .forEach((definition, row) => {
+          const y = NODE_TOP + row * NODE_ROW_STEP;
+          if (row > 0) {
+            const connector = new Sprite(Texture.WHITE);
+            connector.tint = TEXT_COLOR;
+            connector.width = CONNECTOR_WIDTH;
+            connector.height = NODE_ROW_STEP - NODE_HEIGHT;
+            connector.x = centerX - CONNECTOR_WIDTH * HALF;
+            connector.y = y - connector.height;
+            this.addToContent(connector);
+          }
+          this.treeNodes.set(definition.type, this.createTreeNode(definition, centerX, y));
+        });
     });
-    title.anchor.set(0, HALF);
-    title.x = ROW_TITLE_X;
-    title.y = ROW_TITLE_Y;
-    rowContainer.addChild(title);
+  }
 
-    const description = new Text({
-      text: this.translation.getTranslation(definition.descriptionKey),
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 10,
-        fill: 0x3c2f1e,
-        wordWrap: true,
-        wordWrapWidth: DESCRIPTION_WORD_WRAP_WIDTH,
-      },
+  private createTreeNode(definition: ShipUpgradeDefinition, centerX: number, y: number): TreeNode {
+    const container = new Container();
+    container.x = centerX - NODE_WIDTH * HALF;
+    container.y = y;
+
+    const background = new Sprite(Texture.WHITE);
+    background.width = NODE_WIDTH;
+    background.height = NODE_HEIGHT;
+    container.addChild(background);
+
+    const title = this.createFittedText(this.translation.getTranslation(definition.titleKey), NODE_FONT_SIZE, NODE_WIDTH - NODE_PADDING);
+    title.x = NODE_WIDTH * HALF;
+    title.y = NODE_TITLE_Y;
+    container.addChild(title);
+
+    const levelText = this.createFittedText('', NODE_FONT_SIZE, NODE_WIDTH - NODE_PADDING);
+    levelText.x = NODE_WIDTH * HALF;
+    levelText.y = NODE_LEVEL_Y;
+    container.addChild(levelText);
+
+    const button = new ButtonContainer(container);
+    button.onPress.connect(() => {
+      this.selectedUpgrade = definition.type;
+      this.updateUpgradeView();
     });
-    description.anchor.set(0, 0);
-    description.x = ROW_TITLE_X;
-    description.y = DESCRIPTION_Y;
-    rowContainer.addChild(description);
+    this.addToContent(button);
 
-    const levelText = new Text({
-      text: '',
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 12,
-        fill: 0x3c2f1e,
-      },
-    });
-    levelText.anchor.set(0, HALF);
-    levelText.x = ROW_TITLE_X;
-    levelText.y = description.y + description.height + LINE_GAP;
-    rowContainer.addChild(levelText);
+    return { definition, background, levelText, container };
+  }
 
-    const costText = new Text({
-      text: '',
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 12,
-        fill: 0x3c2f1e,
-      },
-    });
-    costText.anchor.set(0, HALF);
-    costText.x = ROW_TITLE_X;
-    costText.y = levelText.y + COST_LINE_OFFSET;
-    rowContainer.addChild(costText);
+  private createDetail(): UpgradeDetail {
+    const title = this.addTreeText('', { x: 0, y: DETAIL_TITLE_Y }, DETAIL_WRAP_WIDTH, DETAIL_TITLE_FONT_SIZE);
+    const description = this.addTreeText('', { x: 0, y: DETAIL_DESCRIPTION_Y }, DETAIL_WRAP_WIDTH);
+    const status = this.addTreeText('', { x: 0, y: DETAIL_STATUS_Y }, DETAIL_WRAP_WIDTH);
 
-    const button = new ButtonContainer(Sprite.from(Texture.from('button')));
-    button.width = BUTTON_WIDTH;
-    button.height = BUTTON_HEIGHT;
-    button.x = BUTTON_X;
-    button.y = costText.y + BUTTON_LINE_OFFSET;
+    const { button } = this.addButton(
+      this.translation.getTranslation('hangar.upgrade'),
+      () => void this.handleUpgrade(this.selectedUpgrade),
+      0,
+    );
+    button.y = DETAIL_BUTTON_Y;
 
-    const buttonText = new Text({
-      text: this.translation.getTranslation('hangar.upgrade'),
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 12,
-        fill: 0x000000,
-      },
-    });
-    buttonText.anchor.set(HALF, HALF);
-    buttonText.x = (BUTTON_WIDTH * HALF) / button.scale.x;
-    buttonText.y = (BUTTON_HEIGHT * HALF) / button.scale.y;
-    button.addChild(buttonText);
+    return { title, description, status, button };
+  }
 
-    button.onPress.connect(() => void this.handleUpgrade(definition.type));
-    rowContainer.addChild(button);
+  private addTreeText(content: string, position: { x: number; y: number }, maxWidth: number, fontSize = TEXT_FONT_SIZE): Text {
+    const text = this.createFittedText(content, fontSize, maxWidth);
+    text.position.set(position.x, position.y);
+    this.addToContent(text);
+    return text;
+  }
 
-    scrollBox.addItem(itemWrapper);
-
-    return {
-      definition,
-      levelText,
-      costText,
-      button,
+  /** Centered text that shrinks (never wraps) so long names in any language stay inside their box. */
+  private createFittedText(content: string, fontSize: number, maxWidth: number): Text {
+    const text = new Text({ text: content, style: { fontFamily: 'DefaultFont', fontSize, fill: TEXT_COLOR } });
+    text.anchor.set(HALF, HALF);
+    text.onRender = (): void => {
+      text.scale.set(1);
+      text.scale.set(Math.min(1, maxWidth / Math.max(1, text.width)));
     };
+    return text;
   }
 
   private createShipSelectionSection(): void {
@@ -309,7 +319,7 @@ export class HangarPopup extends Popup {
 
   private updateView(): void {
     this.updateShipCards();
-    this.updateUpgradeRows();
+    this.updateUpgradeView();
   }
 
   private updateShipCards(): void {
@@ -335,25 +345,40 @@ export class HangarPopup extends Popup {
     }
   }
 
-  private updateUpgradeRows(): void {
-    for (const [type, row] of this.upgradeRows) {
-      const level = this.gameService.shipUpgrades.getLevel(type);
-      row.levelText.text = this.translation.getTranslation('hangar.level', {
-        level,
-        max: row.definition.maxLevel,
-      });
-
-      const cost = this.gameService.shipUpgrades.getUpgradeCost(type);
-
-      if (cost === null) {
-        row.costText.text = this.translation.getTranslation('hangar.maxLevel');
-        row.button.enabled = false;
-      } else {
-        const hasCoins = this.gameService.coins() >= cost;
-        const key = hasCoins ? 'hangar.cost' : 'hangar.costInsufficient';
-        row.costText.text = this.translation.getTranslation(key, { cost });
-        row.button.enabled = hasCoins;
+  private updateUpgradeView(): void {
+    const upgrades = this.gameService.shipUpgrades;
+    for (const [type, node] of this.treeNodes) {
+      const level = upgrades.getLevel(type);
+      const maxed = level >= node.definition.maxLevel;
+      node.levelText.text = `${level} / ${node.definition.maxLevel}`;
+      node.container.alpha = upgrades.isUnlocked(type) || level > 0 ? 1 : LOCKED_ALPHA;
+      node.background.alpha = NODE_ALPHA;
+      node.background.tint = maxed ? NODE_MAXED_COLOR : NODE_COLOR;
+      if (type === this.selectedUpgrade) {
+        node.background.tint = NODE_SELECTED_COLOR;
       }
     }
+
+    const definition = upgrades.getDefinition(this.selectedUpgrade);
+    const level = upgrades.getLevel(definition.type);
+    this.detail.title.text = `${this.translation.getTranslation(definition.titleKey)} – ${this.translation.getTranslation('hangar.level', { level, max: definition.maxLevel })}`;
+    this.detail.description.text = this.translation.getTranslation(definition.descriptionKey);
+
+    const cost = upgrades.getUpgradeCost(definition.type);
+    if (cost === null) {
+      this.detail.status.text = this.translation.getTranslation('hangar.maxLevel');
+      this.detail.button.enabled = false;
+    } else if (!upgrades.isUnlocked(definition.type) && definition.requires) {
+      this.detail.status.text = this.translation.getTranslation('hangar.requires', {
+        name: this.translation.getTranslation(upgrades.getDefinition(definition.requires.type).titleKey),
+        level: definition.requires.level,
+      });
+      this.detail.button.enabled = false;
+    } else {
+      const hasCoins = this.gameService.coins() >= cost;
+      this.detail.status.text = this.translation.getTranslation(hasCoins ? 'hangar.cost' : 'hangar.costInsufficient', { cost });
+      this.detail.button.enabled = hasCoins;
+    }
+    this.detail.button.alpha = this.detail.button.enabled ? 1 : DISABLED_BUTTON_ALPHA;
   }
 }

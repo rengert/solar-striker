@@ -306,6 +306,7 @@ describe('GameService', () => {
       });
       Object.assign(service.shipUpgrades, {
         getUpgradeCost: (): number => UPGRADE_COST,
+        isUnlocked: (): boolean => true,
         levelUp: (): Promise<boolean> => Promise.resolve(true),
       });
       service.storedCoins.set(STORED_COINS);
