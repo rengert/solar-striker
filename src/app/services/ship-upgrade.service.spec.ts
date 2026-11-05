@@ -29,4 +29,30 @@ describe('ShipUpgradeService', () => {
 
     expect(ship.shotPower).toBe(MAX_SHOT_POWER);
   });
+
+  it('locks a skill tree node until the node above reaches the required level', async () => {
+    const stored: Record<string, number> = { [ShipUpgradeType.targeting]: 1 };
+    TestBed.configureTestingModule({
+      providers: [
+        ShipUpgradeService,
+        {
+          provide: StorageService,
+          useValue: {
+            getShipUpgrades: (): Promise<Record<string, number>> => Promise.resolve(stored),
+            setShipUpgrades: (): Promise<void> => Promise.resolve(),
+          },
+        },
+      ],
+    });
+    const service = TestBed.inject(ShipUpgradeService);
+    await service.init();
+
+    expect(service.isUnlocked(ShipUpgradeType.cannons)).toBeFalse();
+    expect(await service.levelUp(ShipUpgradeType.cannons)).toBeFalse();
+
+    await service.levelUp(ShipUpgradeType.targeting);
+
+    expect(service.isUnlocked(ShipUpgradeType.cannons)).toBeTrue();
+    expect(await service.levelUp(ShipUpgradeType.cannons)).toBeTrue();
+  });
 });

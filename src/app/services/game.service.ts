@@ -645,7 +645,7 @@ export class GameService {
   async handleUpgradePurchase(type: ShipUpgradeType): Promise<boolean> {
     const cost = this.shipUpgrades.getUpgradeCost(type);
 
-    if (cost === null) {
+    if (cost === null || !this.shipUpgrades.isUnlocked(type)) {
       return false;
     }
 

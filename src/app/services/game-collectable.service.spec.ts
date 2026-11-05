@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Ticker } from 'pixi.js';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -10,6 +11,7 @@ import { MAX_SHOT_POWER, OFF_SCREEN_BUFFER, SHIELD_DURATION_MS, SLOW_MOTION_DURA
 
 const MOCK_SCREEN_HEIGHT = 600;
 const MOCK_SCREEN_WIDTH = 400;
+const TICK = { deltaMS: 16 } as unknown as Ticker;
 
 function createMockShip(overrides: Record<string, unknown> = {}): ObjectModelType {
   return {
@@ -22,6 +24,7 @@ function createMockShip(overrides: Record<string, unknown> = {}): ObjectModelTyp
     shotSpeed: 1.5,
     shotPower: 1,
     shieldTicks: 0,
+    shieldBonusMs: 0,
     spreadShotTicks: 0,
     ...overrides,
   } as unknown as ObjectModelType;
@@ -121,6 +124,16 @@ describe('GameCollectableService - collectPowerUp', () => {
     objectService = TestBed.inject(ObjectService);
     // Instantiate service so it registers its onDestroyed callbacks
     TestBed.inject(GameCollectableService);
+  });
+
+  it('should add the shield generator bonus to every shield power-up', () => {
+    const bonus = 2000;
+    const ship = createMockShip({ shieldBonusMs: bonus });
+
+    objectService.triggerCallbacks(createMockPowerUp({ speed: 0, shot: 0, energy: 0, shield: SHIELD_DURATION_MS }), ship);
+    objectService.triggerCallbacks(createMockPowerUp({ speed: 0, shot: 0, energy: 0 }), ship);
+
+    expect((ship as unknown as { shieldTicks: number }).shieldTicks).toBe(SHIELD_DURATION_MS + bonus);
   });
 
   it('should increase ship.shotSpeed via the speed config field', () => {
@@ -416,11 +429,27 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
     return collectable as unknown as ObjectModelType;
   }
 
+  /* eslint-disable no-magic-numbers */
+  it('should pull power-ups within the tractor beam range towards the ship', () => {
+    const ship = createMockShip({ x: 100, y: 500, magnetRange: 120 });
+    const near = { type: ObjectType.collectable, destroyed: false, destroying: false, config: {}, x: 100, y: 400 } as unknown as ObjectModelType;
+    const far = { type: ObjectType.collectable, destroyed: false, destroying: false, config: {}, x: 100, y: 100 } as unknown as ObjectModelType;
+    objectService.add(ship);
+    objectService.add(near);
+    objectService.add(far);
+
+    collectableService.update({ deltaMS: 40 } as unknown as Ticker);
+
+    expect(near.y).toBe(410);
+    expect(far.y).toBe(100);
+  });
+  /* eslint-enable no-magic-numbers */
+
   it('should destroy a collectable that has fallen below the screen (y > screenHeight + OFF_SCREEN_BUFFER)', () => {
     const collectable = createMockCollectable(MOCK_SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1);
     objectService.add(collectable as never);
 
-    collectableService.update();
+    collectableService.update(TICK);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((collectable as any).destroy).toHaveBeenCalled();
@@ -431,7 +460,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
     const collectable = createMockCollectable(300);
     objectService.add(collectable as never);
 
-    collectableService.update();
+    collectableService.update(TICK);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((collectable as any).destroy).not.toHaveBeenCalled();
@@ -441,7 +470,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
     const collectable = createMockCollectable(MOCK_SCREEN_HEIGHT + OFF_SCREEN_BUFFER);
     objectService.add(collectable as never);
 
-    collectableService.update();
+    collectableService.update(TICK);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((collectable as any).destroy).not.toHaveBeenCalled();
@@ -454,7 +483,7 @@ describe('GameCollectableService - update (off-screen cleanup)', () => {
     objectService.add(offScreen as never);
     objectService.add(onScreen as never);
 
-    collectableService.update();
+    collectableService.update(TICK);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((offScreen as any).destroy).toHaveBeenCalled();

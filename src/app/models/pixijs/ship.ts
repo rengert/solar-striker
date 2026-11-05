@@ -16,6 +16,10 @@ export class Ship extends AnimatedGameSprite {
   shieldTicks = 0;
   /** While > 0 every volley adds two diagonal shots. */
   spreadShotTicks = 0;
+  /** Extra shield time per shield power-up, from the hangar skill tree. */
+  shieldBonusMs = 0;
+  /** Power-ups closer than this (px) fly to the ship, from the hangar skill tree. */
+  magnetRange = 0;
 
   /** Base stat used by ShipUpgradeService to add upgrade bonuses idempotently. */
   baseMaxEnergy: number;
