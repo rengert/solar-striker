@@ -5,6 +5,7 @@ import { ExplosionService } from '../../services/explosion.service';
 import { GameCollectableService } from '../../services/game-collectable.service';
 import { GameEnemyService } from '../../services/game-enemy.service';
 import { GameLandscapeService } from '../../services/game-landscape.service';
+import { GameBaseService } from '../../services/game-base.service';
 import { GameMeteorService } from '../../services/game-meteor.service';
 import { GameScreenService } from '../../services/game-screen.service';
 import { GameShipService } from '../../services/game-ship.service';
@@ -20,6 +21,7 @@ import { ShipUpgradeService } from '../../services/ship-upgrade.service';
   template: '',
   providers: [
     ApplicationService,
+    GameBaseService,
     GameCollectableService,
     GameEnemyService,
     GameLandscapeService,

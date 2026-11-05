@@ -205,6 +205,8 @@ export class GameEnemyService extends UpdatableService {
   // separate from movementStates because those are reset when an enemy is recycled
   private readonly enemyKinds = new WeakMap<ObjectModelType, EnemyKind>();
   private glowTexture?: Texture;
+  /** Called for every enemy that flew past the bottom edge, right before it re-enters at the top. */
+  onEnemyPassed?: (enemy: ObjectModelType) => void;
 
   async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
@@ -230,6 +232,9 @@ export class GameEnemyService extends UpdatableService {
         return enemy.y > this.application.screen.height + OFF_SCREEN_BUFFER;
       })
       .forEach((enemy) => {
+        if (!(enemy as AnimatedGameSprite).isBoss) {
+          this.onEnemyPassed?.(enemy);
+        }
         if (enemy instanceof AnimatedGameSprite && enemy.orbitData !== undefined) {
           enemy.orbitData.centerX = Math.random() * this.application.screen.width;
           enemy.orbitData.centerY = -enemy.orbitData.radius;
