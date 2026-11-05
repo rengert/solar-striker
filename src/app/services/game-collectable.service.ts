@@ -92,7 +92,8 @@ export class GameCollectableService extends UpdatableService {
     if (!ship || range <= 0 || ship.destroying) {
       return;
     }
-    const step = MAGNET_PULL_PX_PER_MS * ticker.deltaMS;
+    // collectables are world objects, so the pull slows down with them during slow motion
+    const step = MAGNET_PULL_PX_PER_MS * this.object.getScaledTicker(ticker).deltaMS;
     for (const collectable of this.object.collectables()) {
       const dx = ship.x - collectable.x;
       const dy = ship.y - collectable.y;
