@@ -22,6 +22,7 @@ import { handleMouseMove } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
+import { GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -58,6 +59,7 @@ const BOSS_FLASH_COLOR = 0xffffff;
 const BOSS_FLASH_ALPHA = 0.6;
 const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
+const BASE_HIT_FLASH_ALPHA = 0.15;
 
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
@@ -93,6 +95,7 @@ export class GameService {
   private readonly enemy = inject(GameEnemyService);
   private readonly ship = inject(GameShipService);
   private readonly meteor = inject(GameMeteorService);
+  private readonly base = inject(GameBaseService);
   private readonly gameScreen = inject(GameScreenService);
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
@@ -250,6 +253,11 @@ export class GameService {
     });
   }
 
+  /** True when the run ended because the home base was destroyed rather than the player ship. */
+  get baseDestroyed(): boolean {
+    return this.base.energy() === 0;
+  }
+
   get canContinue(): boolean {
     return this.savedStage() !== null;
   }
@@ -307,6 +315,7 @@ export class GameService {
       this.stage.set(nextStage);
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
+      this.base.repair();
       void this.saveStageCheckpoint(nextStage);
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
@@ -342,6 +351,7 @@ export class GameService {
       this.shotService.init(),
     ]);
     this.landscape.setup();
+    this.base.init();
     this.gameScreen.init();
 
     await this.shipUpgrades.init();
@@ -416,6 +426,7 @@ export class GameService {
     this.sessionCoins.set(0);
     this.ship.applyUpgrades();
     this.kills.set(0);
+    this.base.repair();
     this.ship.instance.autoFire = false;
     this.#paused.set(false);
     this.started.set(true);
@@ -513,6 +524,14 @@ export class GameService {
     this.setupInteractions(this.ship);
     this.gameScreen.onPause = (): void => void this.pause();
     window.addEventListener('keydown', (event) => event.key === 'Escape' && void this.pause());
+    this.enemy.onEnemyPassed = (enemy): void => {
+      if (!this.started()) {
+        return;
+      }
+      this.base.attack(enemy.x);
+      this.gameScreen.applyScreenShake(LARGE_ENEMY_SHAKE_AMPLITUDE);
+      this.gameScreen.flashScreen(DAMAGE_FLASH_COLOR, BASE_HIT_FLASH_ALPHA);
+    };
 
     this.application.ticker.add((delta) => {
       if (!this.started() || this.#paused()) {
@@ -547,7 +566,7 @@ export class GameService {
       }
       this.lastShipEnergy = currentEnergy;
 
-      if (this.ship.instance.energy === 0) {
+      if (this.ship.instance.energy === 0 || this.base.energy() === 0) {
         void this.finishRun(YouAreDeadPopup);
         this.ship.instance.autoFire = false;
         this.started.set(false);

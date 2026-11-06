@@ -92,6 +92,21 @@ describe('GameEnemyService - enemy recycling', () => {
     expect(enemy.energy).toBe(ENEMY_MAX_ENERGY);
   });
 
+  it('should report an enemy that got past the bottom edge, but not one still on screen', () => {
+    const passed = createEnemy();
+    passed.y = MOCK_SCREEN_HEIGHT + OFF_SCREEN_BUFFER + 1;
+    const onScreen = createEnemy();
+    // eslint-disable-next-line no-magic-numbers
+    onScreen.y = 300;
+    objectService.add(passed);
+    objectService.add(onScreen);
+    service.onEnemyPassed = jasmine.createSpy('onEnemyPassed');
+
+    service.update(createMockTicker(), 1);
+
+    expect(service.onEnemyPassed).toHaveBeenCalledOnceWith(passed);
+  });
+
   it('should reset rotation to 0 when an enemy goes off-screen', () => {
     const enemy = createEnemy();
     // eslint-disable-next-line no-magic-numbers

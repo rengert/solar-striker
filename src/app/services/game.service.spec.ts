@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { GameService } from './game.service';
@@ -9,6 +10,7 @@ import { GameCollectableService } from './game-collectable.service';
 import { EnemyKind, GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
+import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
@@ -72,6 +74,10 @@ describe('GameService', () => {
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
         { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss'), getKind: (): undefined => undefined } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update'), setStage: jasmine.createSpy('setStage') } },
+        {
+          provide: GameBaseService,
+          useValue: { energy: signal(BASE_MAX_ENERGY), init: jasmine.createSpy('init'), repair: jasmine.createSpy('repair'), attack: jasmine.createSpy('attack') },
+        },
         { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update'), splitMeteors: { has: (): boolean => false } } },
         {
           provide: GameScreenService,
