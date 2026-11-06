@@ -6,7 +6,7 @@ import { SoundService } from './sound.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { AppScreen } from '../models/pixijs/app-screen';
 import { GameCollectableService } from './game-collectable.service';
-import { GameEnemyService } from './game-enemy.service';
+import { EnemyKind, GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { GameScreenService } from './game-screen.service';
@@ -70,7 +70,7 @@ describe('GameService', () => {
           },
         },
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
-        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss') } },
+        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss'), getKind: (): undefined => undefined } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update'), setStage: jasmine.createSpy('setStage') } },
         { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update'), splitMeteors: { has: (): boolean => false } } },
         {
@@ -476,6 +476,16 @@ describe('GameService', () => {
       // Kill more enemies while boss fight is active
       objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
       expect(enemyMock.spawnStageBoss).toHaveBeenCalledTimes(1);
+    });
+
+    it('should count kills of special enemy kinds and bosses towards their badges', () => {
+      const achievements = TestBed.inject(AchievementService) as unknown as { addCumulative: jasmine.Spy };
+      spyOn(TestBed.inject(GameEnemyService), 'getKind').and.returnValue(EnemyKind.sniper);
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(achievements.addCumulative).toHaveBeenCalledWith('sniper_hunter', 1);
+      expect(achievements.addCumulative).toHaveBeenCalledWith('boss_slayer', 1);
     });
 
     it('should advance stage when boss is killed', () => {

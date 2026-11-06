@@ -8,7 +8,11 @@ export type AchievementId =
   | 'level_20'
   | 'boss_hunter'
   | 'nuke_deployed'
-  | 'rich_pilot';
+  | 'rich_pilot'
+  | 'boss_slayer'
+  | 'diver_hunter'
+  | 'weaver_hunter'
+  | 'sniper_hunter';
 
 export interface AchievementDefinition {
   id: AchievementId;
@@ -36,6 +40,9 @@ const LEVEL_20_THRESHOLD = 20;
 const BOSS_HUNTER_THRESHOLD = 1;
 const NUKE_THRESHOLD = 1;
 const RICH_PILOT_THRESHOLD = 50;
+const BOSS_SLAYER_THRESHOLD = 10;
+const KIND_HUNTER_THRESHOLD = 25;
+const SNIPER_HUNTER_THRESHOLD = 10;
 
 const REWARD_XS = 5;
 const REWARD_S = 10;
@@ -55,4 +62,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   { id: 'boss_hunter', icon: '👾', threshold: BOSS_HUNTER_THRESHOLD, reward: REWARD_S, cumulative: false },
   { id: 'nuke_deployed', icon: '☢', threshold: NUKE_THRESHOLD, reward: REWARD_XS, cumulative: false },
   { id: 'rich_pilot', icon: '💰', threshold: RICH_PILOT_THRESHOLD, reward: REWARD_M, cumulative: false },
+  { id: 'boss_slayer', icon: '👑', threshold: BOSS_SLAYER_THRESHOLD, reward: REWARD_XL, cumulative: true },
+  { id: 'diver_hunter', icon: '🔻', threshold: KIND_HUNTER_THRESHOLD, reward: REWARD_M, cumulative: true },
+  { id: 'weaver_hunter', icon: '〰', threshold: KIND_HUNTER_THRESHOLD, reward: REWARD_M, cumulative: true },
+  { id: 'sniper_hunter', icon: '🔭', threshold: SNIPER_HUNTER_THRESHOLD, reward: REWARD_L, cumulative: true },
 ];

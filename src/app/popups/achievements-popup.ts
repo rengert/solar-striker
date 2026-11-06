@@ -3,15 +3,19 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const ACHIEVEMENT_POPUP_HEIGHT = 380;
-const ACHIEVEMENT_ROW_SPACING = 17;
+const ACHIEVEMENT_POPUP_HEIGHT = 445;
+const ACHIEVEMENT_ROW_SPACING = 23;
 const ACHIEVEMENT_START_Y = -65;
+const ACHIEVEMENT_DESCRIPTION_OFFSET = 10;
 const ACHIEVEMENT_TITLE_X = -115;
 const ACHIEVEMENT_STATUS_X = 115;
 const ALIGN_LEFT = 0;
 const ALIGN_RIGHT = 1;
 const ACHIEVEMENT_LABEL_SIZE = 10;
-const CLOSE_BUTTON_INDEX = 5;
+const DESCRIPTION_LABEL_SIZE = 8;
+const DESCRIPTION_COLOR = 0x444444;
+const LOCKED_ALPHA = 0.55;
+const CLOSE_BUTTON_INDEX = 6.5;
 const PROGRESS_LABEL_SIZE = 9;
 
 interface AchievementRowContext {
@@ -23,9 +27,9 @@ interface AchievementRowContext {
 
 export class AchievementsPopup extends Popup {
   constructor(gameService: GameService, translation: TranslationService) {
-    super(translation.getTranslation('achievements.title'), ACHIEVEMENT_POPUP_HEIGHT);
-
     const states = gameService.achievementService.getAll();
+    const unlocked = states.filter((state) => state.unlocked).length;
+    super(`${translation.getTranslation('achievements.title')} ${unlocked}/${states.length}`, ACHIEVEMENT_POPUP_HEIGHT);
 
     for (let i = 0; i < ACHIEVEMENTS.length; i++) {
       const rowY = ACHIEVEMENT_START_Y + i * ACHIEVEMENT_ROW_SPACING;
@@ -40,9 +44,15 @@ export class AchievementsPopup extends Popup {
   }
 
   private addAchievementRow({ def, state, translation, rowY }: AchievementRowContext): void {
-    const titleKey = `achievement.${def.id}.title` as Parameters<typeof translation.getTranslation>[0];
-    const title = `${def.icon} ${translation.getTranslation(titleKey)}`;
-    this.addText(title, { size: ACHIEVEMENT_LABEL_SIZE, anchorX: ALIGN_LEFT }, { y: rowY, x: ACHIEVEMENT_TITLE_X });
+    type Key = Parameters<typeof translation.getTranslation>[0];
+    const title = `${def.icon} ${translation.getTranslation(`achievement.${def.id}.title` as Key)}`;
+    const alpha = state.unlocked ? 1 : LOCKED_ALPHA;
+    this.addText(title, { size: ACHIEVEMENT_LABEL_SIZE, anchorX: ALIGN_LEFT }, { y: rowY, x: ACHIEVEMENT_TITLE_X }).alpha = alpha;
+    this.addText(
+      translation.getTranslation(`achievement.${def.id}.description` as Key),
+      { size: DESCRIPTION_LABEL_SIZE, anchorX: ALIGN_LEFT, fill: DESCRIPTION_COLOR },
+      { y: rowY + ACHIEVEMENT_DESCRIPTION_OFFSET, x: ACHIEVEMENT_TITLE_X },
+    ).alpha = alpha;
 
     if (state.unlocked) {
       this.addText('✓', { size: ACHIEVEMENT_LABEL_SIZE, anchorX: ALIGN_RIGHT }, { y: rowY, x: ACHIEVEMENT_STATUS_X });

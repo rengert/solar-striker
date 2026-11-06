@@ -206,6 +206,10 @@ export class GameEnemyService extends UpdatableService {
   private readonly enemyKinds = new WeakMap<ObjectModelType, EnemyKind>();
   private glowTexture?: Texture;
 
+  getKind(enemy: ObjectModelType): EnemyKind | undefined {
+    return this.enemyKinds.get(enemy);
+  }
+
   async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
   }
