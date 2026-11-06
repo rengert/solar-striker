@@ -1,7 +1,12 @@
 import { ButtonContainer } from '@pixi/ui';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
+import { LabeledButton } from '../models/pixijs/labeled-button.model';
 import { PlayerShipClass, PlayerShipDefinition } from '../models/player-ship-class.model';
-import { ShipUpgradeBranch, ShipUpgradeDefinition, ShipUpgradeType } from '../models/ship-upgrade.model';
+import {
+  ShipUpgradeBranch,
+  ShipUpgradeDefinition,
+  ShipUpgradeType,
+} from '../models/ship-upgrade.model';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { BUTTON_SIZE, Popup } from './popup';
@@ -51,19 +56,21 @@ const SHIP_SECTION_TITLE_Y = SHIP_SECTION_Y;
 const SHIP_CARD_WIDTH = 72;
 const SHIP_CARD_GAP = 5;
 const SHIP_CARDS_TOTAL = 3;
-const SHIP_CARDS_TOTAL_WIDTH = SHIP_CARDS_TOTAL * SHIP_CARD_WIDTH + (SHIP_CARDS_TOTAL - 1) * SHIP_CARD_GAP;
+const SHIP_CARDS_TOTAL_WIDTH =
+  SHIP_CARDS_TOTAL * SHIP_CARD_WIDTH + (SHIP_CARDS_TOTAL - 1) * SHIP_CARD_GAP;
 const SHIP_CARD_START_X = -(SHIP_CARDS_TOTAL_WIDTH * HALF);
 const SHIP_CARD_INNER_HALF = SHIP_CARD_WIDTH * HALF;
 const SHIP_CARD_Y_OFFSET = 14;
 const SHIP_CARD_Y = SHIP_SECTION_Y + SHIP_CARD_Y_OFFSET;
-const SHIP_CARD_HEIGHT = 115;
+const SHIP_CARD_HEIGHT = 80;
 const SHIP_CARD_PADDING = 4;
 const SHIP_CARD_TITLE_Y = 4;
 const SHIP_CARD_DESC_Y = 22;
 const SHIP_CARD_STATS_Y = 62;
-const SHIP_BUTTON_Y = 85;
-const SHIP_BUTTON_WIDTH = 66;
-const SHIP_BUTTON_HEIGHT = 24;
+const SHIP_STATUS_Y = 72;
+const SHIP_CARD_COLOR = 0xe8dcc8;
+const SHIP_CARD_ALPHA = 0.6;
+const SHIP_ACTION_BUTTON_Y = SHIP_CARD_Y + SHIP_CARD_HEIGHT + SHIP_CARD_PADDING;
 
 interface TreeNode {
   definition: ShipUpgradeDefinition;
@@ -81,15 +88,17 @@ interface UpgradeDetail {
 
 interface ShipCard {
   definition: PlayerShipDefinition;
-  button: ButtonContainer;
-  buttonText: Text;
+  background: Sprite;
+  status: Text;
 }
 
 export class HangarPopup extends Popup {
   private readonly treeNodes = new Map<ShipUpgradeType, TreeNode>();
   private readonly shipCards: ShipCard[] = [];
   private readonly detail: UpgradeDetail;
+  private readonly shipAction: LabeledButton;
   private selectedUpgrade: ShipUpgradeType;
+  private selectedShip: PlayerShipClass;
 
   constructor(
     private readonly gameService: GameService,
@@ -97,7 +106,14 @@ export class HangarPopup extends Popup {
   ) {
     super(translation.getTranslation('hangar.title'), POPUP_HEIGHT);
 
+    this.selectedShip = this.gameService.playerShipService.getSelectedClass();
     this.createShipSelectionSection();
+    this.shipAction = this.addButton(
+      '',
+      () => void this.handleShipClassAction(this.selectedShip),
+      0,
+    );
+    this.shipAction.button.y = SHIP_ACTION_BUTTON_Y;
 
     this.selectedUpgrade = this.gameService.shipUpgrades.definitions[0].type;
     this.createSkillTree();
@@ -116,7 +132,11 @@ export class HangarPopup extends Popup {
   private createSkillTree(): void {
     BRANCHES.forEach((branch, column) => {
       const centerX = (column - 1) * COLUMN_STEP;
-      this.addTreeText(this.translation.getTranslation(BRANCH_TITLE_KEYS[branch]), { x: centerX, y: TREE_TOP }, NODE_WIDTH);
+      this.addTreeText(
+        this.translation.getTranslation(BRANCH_TITLE_KEYS[branch]),
+        { x: centerX, y: TREE_TOP },
+        NODE_WIDTH,
+      );
       this.gameService.shipUpgrades.definitions
         .filter((definition) => definition.branch === branch)
         .forEach((definition, row) => {
@@ -145,7 +165,11 @@ export class HangarPopup extends Popup {
     background.height = NODE_HEIGHT;
     container.addChild(background);
 
-    const title = this.createFittedText(this.translation.getTranslation(definition.titleKey), NODE_FONT_SIZE, NODE_WIDTH - NODE_PADDING);
+    const title = this.createFittedText(
+      this.translation.getTranslation(definition.titleKey),
+      NODE_FONT_SIZE,
+      NODE_WIDTH - NODE_PADDING,
+    );
     title.x = NODE_WIDTH * HALF;
     title.y = NODE_TITLE_Y;
     container.addChild(title);
@@ -166,7 +190,12 @@ export class HangarPopup extends Popup {
   }
 
   private createDetail(): UpgradeDetail {
-    const title = this.addTreeText('', { x: 0, y: DETAIL_TITLE_Y }, DETAIL_WRAP_WIDTH, DETAIL_TITLE_FONT_SIZE);
+    const title = this.addTreeText(
+      '',
+      { x: 0, y: DETAIL_TITLE_Y },
+      DETAIL_WRAP_WIDTH,
+      DETAIL_TITLE_FONT_SIZE,
+    );
     const description = this.addTreeText('', { x: 0, y: DETAIL_DESCRIPTION_Y }, DETAIL_WRAP_WIDTH);
     const status = this.addTreeText('', { x: 0, y: DETAIL_STATUS_Y }, DETAIL_WRAP_WIDTH);
 
@@ -180,7 +209,12 @@ export class HangarPopup extends Popup {
     return { title, description, status, button };
   }
 
-  private addTreeText(content: string, position: { x: number; y: number }, maxWidth: number, fontSize = TEXT_FONT_SIZE): Text {
+  private addTreeText(
+    content: string,
+    position: { x: number; y: number },
+    maxWidth: number,
+    fontSize = TEXT_FONT_SIZE,
+  ): Text {
     const text = this.createFittedText(content, fontSize, maxWidth);
     text.position.set(position.x, position.y);
     this.addToContent(text);
@@ -189,7 +223,10 @@ export class HangarPopup extends Popup {
 
   /** Centered text that shrinks (never wraps) so long names in any language stay inside their box. */
   private createFittedText(content: string, fontSize: number, maxWidth: number): Text {
-    const text = new Text({ text: content, style: { fontFamily: 'DefaultFont', fontSize, fill: TEXT_COLOR } });
+    const text = new Text({
+      text: content,
+      style: { fontFamily: 'DefaultFont', fontSize, fill: TEXT_COLOR },
+    });
     text.anchor.set(HALF, HALF);
     text.onRender = (): void => {
       text.scale.set(1);
@@ -224,14 +261,11 @@ export class HangarPopup extends Popup {
     const cardContainer = new Container();
     cardContainer.x = cardX;
     cardContainer.y = SHIP_CARD_Y;
-    this.addToContent(cardContainer);
 
     const bg = new Sprite(Texture.WHITE);
     bg.width = SHIP_CARD_WIDTH;
     bg.height = SHIP_CARD_HEIGHT;
-    // eslint-disable-next-line no-magic-numbers
-    bg.tint = 0xe8dcc8;
-    bg.alpha = 0.6;
+    bg.alpha = SHIP_CARD_ALPHA;
     cardContainer.addChild(bg);
 
     const title = new Text({
@@ -282,29 +316,20 @@ export class HangarPopup extends Popup {
     stats.y = SHIP_CARD_STATS_Y;
     cardContainer.addChild(stats);
 
-    const button = new ButtonContainer(Sprite.from(Texture.from('button')));
-    button.width = SHIP_BUTTON_WIDTH;
-    button.height = SHIP_BUTTON_HEIGHT;
-    button.x = (SHIP_CARD_WIDTH - SHIP_BUTTON_WIDTH) * HALF;
-    button.y = SHIP_BUTTON_Y;
+    const status = this.createFittedText('', NODE_FONT_SIZE, SHIP_CARD_WIDTH - SHIP_CARD_PADDING);
+    status.x = SHIP_CARD_INNER_HALF;
+    status.y = SHIP_STATUS_Y;
+    cardContainer.addChild(status);
 
-    const buttonText = new Text({
-      text: '',
-      style: {
-        fontFamily: 'DefaultFont',
-        fontSize: 8,
-        fill: 0x000000,
-      },
+    // the whole card selects the ship; the full-size action button below buys or activates it
+    const button = new ButtonContainer(cardContainer);
+    button.onPress.connect(() => {
+      this.selectedShip = definition.type;
+      this.updateShipCards();
     });
-    buttonText.anchor.set(HALF, HALF);
-    buttonText.x = (SHIP_BUTTON_WIDTH * HALF) / button.scale.x;
-    buttonText.y = (SHIP_BUTTON_HEIGHT * HALF) / button.scale.y;
-    button.addChild(buttonText);
+    this.addToContent(button);
 
-    button.onPress.connect(() => void this.handleShipClassAction(definition.type));
-    cardContainer.addChild(button);
-
-    return { definition, button, buttonText };
+    return { definition, background: bg, status };
   }
 
   private async handleShipClassAction(cls: PlayerShipClass): Promise<void> {
@@ -323,26 +348,38 @@ export class HangarPopup extends Popup {
   }
 
   private updateShipCards(): void {
-    const selectedClass = this.gameService.playerShipService.getSelectedClass();
+    const ships = this.gameService.playerShipService;
+    const activeClass = ships.getSelectedClass();
 
     for (const card of this.shipCards) {
-      const isSelected = card.definition.type === selectedClass;
-      const isUnlocked = this.gameService.playerShipService.isUnlocked(card.definition.type);
-
-      if (isSelected) {
-        card.buttonText.text = this.translation.getTranslation('hangar.selected');
-        card.button.enabled = false;
-      } else if (isUnlocked) {
-        card.buttonText.text = this.translation.getTranslation('hangar.select');
-        card.button.enabled = true;
-      } else {
-        const canAfford = this.gameService.coins() >= card.definition.cost;
-        card.buttonText.text = this.translation.getTranslation('hangar.buy', {
-          cost: card.definition.cost,
-        });
-        card.button.enabled = canAfford;
+      const { type, cost } = card.definition;
+      const isActive = type === activeClass;
+      card.background.tint = isActive ? NODE_MAXED_COLOR : SHIP_CARD_COLOR;
+      if (type === this.selectedShip) {
+        card.background.tint = NODE_SELECTED_COLOR;
+      }
+      card.status.text = '';
+      if (isActive) {
+        card.status.text = this.translation.getTranslation('hangar.selected');
+      } else if (!ships.isUnlocked(type)) {
+        card.status.text = this.translation.getTranslation('hangar.buy', { cost });
       }
     }
+
+    const { button, label } = this.shipAction;
+    const definition = ships.getDefinition(this.selectedShip);
+    if (definition.type === activeClass) {
+      label.text = this.translation.getTranslation('hangar.selected');
+      button.enabled = false;
+    } else if (ships.isUnlocked(definition.type)) {
+      label.text = this.translation.getTranslation('hangar.select');
+      button.enabled = true;
+    } else {
+      label.text = this.translation.getTranslation('hangar.buy', { cost: definition.cost });
+      button.enabled = this.gameService.coins() >= definition.cost;
+    }
+    button.alpha = button.enabled ? 1 : DISABLED_BUTTON_ALPHA;
+    Popup.fitLabel(this.shipAction);
   }
 
   private updateUpgradeView(): void {
@@ -370,13 +407,18 @@ export class HangarPopup extends Popup {
       this.detail.button.enabled = false;
     } else if (!upgrades.isUnlocked(definition.type) && definition.requires) {
       this.detail.status.text = this.translation.getTranslation('hangar.requires', {
-        name: this.translation.getTranslation(upgrades.getDefinition(definition.requires.type).titleKey),
+        name: this.translation.getTranslation(
+          upgrades.getDefinition(definition.requires.type).titleKey,
+        ),
         level: definition.requires.level,
       });
       this.detail.button.enabled = false;
     } else {
       const hasCoins = this.gameService.coins() >= cost;
-      this.detail.status.text = this.translation.getTranslation(hasCoins ? 'hangar.cost' : 'hangar.costInsufficient', { cost });
+      this.detail.status.text = this.translation.getTranslation(
+        hasCoins ? 'hangar.cost' : 'hangar.costInsufficient',
+        { cost },
+      );
       this.detail.button.enabled = hasCoins;
     }
     this.detail.button.alpha = this.detail.button.enabled ? 1 : DISABLED_BUTTON_ALPHA;
