@@ -9,6 +9,7 @@ import { PlayerShipClass } from '../models/player-ship-class.model';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
 import { getBossDebriefing, getStageBriefing } from '../models/story.model';
 import { AchievementsPopup } from '../popups/achievements-popup';
+import { CampaignPopup } from '../popups/campaign-popup';
 import { CreditsPopup } from '../popups/credits-popup';
 import { DailyChallengesPopup } from '../popups/daily-challenges-popup';
 import { HangarPopup } from '../popups/hangar-popup';
@@ -491,6 +492,11 @@ export class GameService {
   async openNavigation(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(NavigationPopup);
+  }
+
+  async openCampaign(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(CampaignPopup);
   }
 
   async openHangar(requester: AppScreen): Promise<void> {
