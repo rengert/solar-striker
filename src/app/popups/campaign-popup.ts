@@ -4,7 +4,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 355;
+const POPUP_HEIGHT = 405;
 const PROGRESS_Y = -66;
 const START_Y = -38;
 const ROW_SPACING = 23;
@@ -17,7 +17,9 @@ const ALIGN_LEFT = 0;
 const ALIGN_RIGHT = 1;
 const CURRENT_COLOR = 0x1166cc;
 const LOCKED_ALPHA = 0.55;
-const BACK_BUTTON_Y = 196;
+const ENDLESS_TEXT_Y = 186;
+const ENDLESS_BUTTON_Y = 202;
+const BACK_BUTTON_Y = 246;
 
 /** Chapters of the story with what the player has cleared so far. */
 export class CampaignPopup extends Popup {
@@ -51,6 +53,21 @@ export class CampaignPopup extends Popup {
       ];
       texts.forEach((text) => (text.alpha = unlocked ? 1 : LOCKED_ALPHA));
     });
+
+    const unlocked = cleared >= MAX_STAGE;
+    const record = gameService.endlessRecord();
+    let endlessText = translation.getTranslation('campaign.endless.hint', { total: MAX_STAGE });
+    if (unlocked) {
+      endlessText = record > 0 ? translation.getTranslation('campaign.endless.record', { level: record }) : '';
+    }
+    this.addText(endlessText, { size: ROW_SIZE }, { y: ENDLESS_TEXT_Y });
+    const endless = this.addButton(
+      translation.getTranslation(unlocked ? 'campaign.endless' : 'campaign.endless.locked'),
+      () => unlocked && void gameService.startEndless(this),
+      0,
+    );
+    endless.button.y = ENDLESS_BUTTON_Y;
+    endless.button.alpha = unlocked ? 1 : LOCKED_ALPHA;
 
     const back = this.addButton(translation.getTranslation('common.back'), () => gameService.openNavigation(this), 0);
     back.button.y = BACK_BUTTON_Y;
