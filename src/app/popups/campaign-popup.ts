@@ -4,7 +4,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 405;
+const POPUP_HEIGHT = 410;
 const PROGRESS_Y = -66;
 const START_Y = -38;
 const ROW_SPACING = 23;
@@ -17,9 +17,9 @@ const ALIGN_LEFT = 0;
 const ALIGN_RIGHT = 1;
 const CURRENT_COLOR = 0x1166cc;
 const LOCKED_ALPHA = 0.55;
-const ENDLESS_TEXT_Y = 186;
-const ENDLESS_BUTTON_Y = 202;
-const BACK_BUTTON_Y = 246;
+const ENDLESS_TEXT_Y = 191;
+const ENDLESS_BUTTON_Y = 207;
+const BACK_BUTTON_Y = 251;
 
 /** Chapters of the story with what the player has cleared so far. */
 export class CampaignPopup extends Popup {
