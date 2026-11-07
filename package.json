@@ -8,7 +8,9 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false --browsers=ChromeHeadless",
     "lint": "ng lint",
-    "build:ios": "ng build && npx cap sync ios && npx cap open ios"
+    "build:ios": "ng build && npx cap sync ios && npx cap open ios",
+    "build:android": "ng build && npx cap sync android && npx cap open android",
+    "build:apps": "ng build && npx cap sync"
   },
   "private": true,
   "dependencies": {
@@ -20,8 +22,9 @@
     "@angular/platform-browser": "^22.2.3",
     "@angular/platform-browser-dynamic": "^22.2.3",
     "@angular/router": "^22.2.3",
-    "@capacitor/core": "^8.2.0",
-    "@capacitor/ios": "^8.2.0",
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/ios": "^8.6.0",
     "@capacitor/splash-screen": "^8.0.1",
     "@fortawesome/angular-fontawesome": "^5.1.0",
     "@fortawesome/fontawesome-free": "^7.2.0",
@@ -44,7 +47,7 @@
     "@angular/build": "^22.2.5",
     "@angular/cli": "^22.2.5",
     "@angular/compiler-cli": "^22.2.3",
-    "@capacitor/cli": "^8.2.0",
+    "@capacitor/cli": "^8.6.0",
     "@types/jasmine": "~5.1.15",
     "@types/node": "^22.19.15",
     "angular-cli-ghpages": "^3.1.2",

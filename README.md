@@ -24,13 +24,14 @@ SolarStriker ist ein vertikal scrollender Arcade-Shooter im Retro-Stil, inspirie
 - **Sammelbare Upgrades:** Coins und Power-ups steigern die Fähigkeiten des Schiffs. Persistente Upgrades werden lokal gespeichert.
 - **Level-Fortschritt speichern:** Erreichte Level werden lokal als Checkpoint gesichert und lassen sich später direkt fortsetzen.
 - **Highscore-Verwaltung:** Spielstände werden in IndexedDB abgelegt und können jederzeit im Highscore-Bildschirm eingesehen werden.
-- **Capacitor-Integration:** Dank Capacitor lässt sich der Build nahtlos als iOS-App verpacken.
+- **Capacitor-Integration:** Dank Capacitor lässt sich der Build nahtlos als iOS- und Android-App verpacken.
 
 ## Voraussetzungen
 
 - Node.js >= 20.x (inklusive npm)
 - Optional: Angular CLI global installiert (`npm install -g @angular/cli`)
 - Für iOS-Builds: Xcode, CocoaPods und ein macOS-System
+- Für Android-Builds: Android Studio (enthält JDK 21 und Android SDK)
 
 ## Installation
 
@@ -53,6 +54,7 @@ npm install
 | `npm test`          | Führt die Unit-Tests im Headless-Chrome aus. |
 | `npm run lint`      | Prüft den Code mit ESLint auf Stil- und Qualitätsfehler. |
 | `npm run build:ios` | Baut die Web-App, synchronisiert Capacitor und öffnet das iOS-Projekt in Xcode. |
+| `npm run build:android` | Baut die Web-App, synchronisiert Capacitor und öffnet das Android-Projekt in Android Studio. |
 
 ## Lokale Entwicklung
 
@@ -74,6 +76,8 @@ npm install
 - **Produktions-Build:** `npm run build` erzeugt einen optimierten Output unter `dist/solar-striker/browser`.
 - **GitHub Pages:** Mit `npx angular-cli-ghpages --dir=dist/solar-striker/browser` lässt sich der Build auf GitHub Pages veröffentlichen.
 - **iOS:** `npm run build:ios` erzeugt den Web-Build, synchronisiert das Capacitor-Projekt (`npx cap sync ios`) und öffnet es in Xcode (`npx cap open ios`).
+- **Android:** `npm run build:android` macht dasselbe für Android Studio.
+- **App Store & Google Play:** Schritt-für-Schritt-Anleitung in [docs/app-stores.md](docs/app-stores.md).
 
 ## Projektstruktur
 
