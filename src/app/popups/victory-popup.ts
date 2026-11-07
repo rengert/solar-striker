@@ -15,7 +15,7 @@ export class VictoryPopup extends Popup {
   constructor(gameService: GameService, translation: TranslationService) {
     super(translation.getTranslation('victory.title'), RESULT_POPUP_HEIGHT);
 
-    this.addText(translation.getTranslation('victory.subtitle'), { size: 14 }, { y: -66 });
+    this.addText(translation.getTranslation('victory.subtitle'), { size: 11 }, { y: -66 });
     this.addText(translation.getTranslation('victory.message'), { size: 12 }, { y: -38 });
 
     // the run ends before the radio could play it, so the last words of the story live here
