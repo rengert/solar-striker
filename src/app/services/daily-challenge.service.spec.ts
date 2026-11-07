@@ -140,7 +140,8 @@ describe('DailyChallengeService', () => {
       fail('Expected at least one cumulative challenge in today selection');
       return;
     }
-    const progressToAdd = 2;
+    // a boss mission needs only one kill and stops counting once completed, so stay at or below every threshold
+    const progressToAdd = 1;
     addCumulativeProgress(service, cumulativeEntry, progressToAdd);
     const updated = service.getToday().find((e) => e.def.id === cumulativeEntry.def.id);
     expect(updated?.progress).toBe(progressToAdd);
