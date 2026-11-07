@@ -272,6 +272,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     // add floating popup container to the stage (for +score popups)
     this.addToStage(this.floatingContainer);
     this.radioLayer.eventMode = 'none';
+    // a non-zero zIndex makes Pixi 8 turn on sortableChildren for the whole stage, so the layer stays on top
     this.radioLayer.zIndex = 1;
     this.addToStage(this.radioLayer);
 
