@@ -10,7 +10,7 @@ const DAILY_SURPRISE_ICONS = ['✨', '🚀', '☄️'] as const;
 const BUTTON_START_Y = -74;
 const BUTTON_STEP_Y = 40;
 const PANEL_PADDING = 120;
-const BASE_BUTTON_COUNT = 8;
+const BASE_BUTTON_COUNT = 9;
 const EVENT_LABEL_HEIGHT = 20;
 const EVENT_LABEL_OFFSET = 10;
 
@@ -55,6 +55,13 @@ export class NavigationPopup extends Popup {
       buttons.push(this.addButton(translation.getTranslation('navigation.start'), () => gameService.start(this), 0));
     }
 
+    buttons.push(
+      this.addButton(
+        translation.getTranslation('navigation.campaign'),
+        () => gameService.openCampaign(this),
+        0,
+      ),
+    );
     buttons.push(
       this.addButton(
         translation.getTranslation('navigation.hangar'),

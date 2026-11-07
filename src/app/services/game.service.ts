@@ -7,7 +7,9 @@ import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
+import { getBossDebriefing, getStageBriefing } from '../models/story.model';
 import { AchievementsPopup } from '../popups/achievements-popup';
+import { CampaignPopup } from '../popups/campaign-popup';
 import { CreditsPopup } from '../popups/credits-popup';
 import { DailyChallengesPopup } from '../popups/daily-challenges-popup';
 import { HangarPopup } from '../popups/hangar-popup';
@@ -82,6 +84,8 @@ export class GameService {
   lastRun?: RunResult;
   readonly stage = signal(1);
   readonly savedStage = signal<number | null>(null);
+  /** Highest stage whose boss the player has ever beaten. */
+  readonly clearedStage = signal(0);
 
   private comboTimer?: number;
 
@@ -155,6 +159,7 @@ export class GameService {
     );
 
     effect(() => this.landscape.setStage(this.stage()));
+    effect(() => (this.gameScreen.radioVisible = !this.#paused()));
 
     // Achievement: track level milestones
     effect(() => {
@@ -302,6 +307,10 @@ export class GameService {
 
   private onBossDefeated(): void {
     const currentStage = this.stage();
+    if (currentStage > this.clearedStage()) {
+      this.clearedStage.set(currentStage);
+      void this.storage.setCampaignProgress(currentStage);
+    }
     if (currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
       void this.resetSavedStage();
@@ -320,6 +329,7 @@ export class GameService {
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
         this.gameScreen.showStageAnnouncement(nextStage);
+        this.gameScreen.showRadioMessages([...getBossDebriefing(currentStage), ...getStageBriefing(nextStage)]);
       }
     }
   }
@@ -362,6 +372,8 @@ export class GameService {
     const savedStage = await this.storage.getLevelCheckpoint();
     this.storedCoins.set(storedCoins);
     this.savedStage.set(savedStage);
+    // a checkpoint from before the campaign existed still counts as progress
+    this.clearedStage.set(Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1));
 
     // Wire achievement unlock notification
     this.achievementService.onUnlocked = (def): void => {
@@ -443,6 +455,7 @@ export class GameService {
     if (this.stage() > 1) {
       this.gameScreen.showStageAnnouncement(this.stage());
     }
+    this.gameScreen.showRadioMessages(getStageBriefing(this.stage()));
   }
 
   async openCredits(requester: AppScreen): Promise<void> {
@@ -479,6 +492,11 @@ export class GameService {
   async openNavigation(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(NavigationPopup);
+  }
+
+  async openCampaign(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(CampaignPopup);
   }
 
   async openHangar(requester: AppScreen): Promise<void> {
@@ -597,6 +615,7 @@ export class GameService {
 
   // ranks the run before the result popup opens, so the popup can show rank and record
   private async finishRun(popup: AppScreenConstructor): Promise<void> {
+    this.gameScreen.clearRadioMessages();
     const entry: HighscoreEntry = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),

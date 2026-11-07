@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+import { STORY_DE, STORY_EN, STORY_FR } from './story-translations';
+
 export const SUPPORTED_LANGUAGES = ['de', 'en', 'fr'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -194,6 +196,7 @@ const baseTranslation = {
   'daily.dc_coins_30.description': '30 Münzen heute verdienen',
   'daily.dc_coins_60.description': '60 Münzen heute verdienen',
   'daily.dc_boss_1.description': '1 Boss heute besiegen',
+  ...STORY_DE,
 } as const;
 
 export type TranslationKey = keyof typeof baseTranslation;
@@ -388,6 +391,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'daily.dc_coins_30.description': 'Earn 30 coins today',
     'daily.dc_coins_60.description': 'Earn 60 coins today',
     'daily.dc_boss_1.description': 'Defeat 1 boss today',
+    ...STORY_EN,
   } satisfies TranslationDictionary,
   fr: {
     'app.title': 'Solar Striker',
@@ -576,6 +580,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'daily.dc_coins_30.description': 'Gagner 30 pièces aujourd\'hui',
     'daily.dc_coins_60.description': 'Gagner 60 pièces aujourd\'hui',
     'daily.dc_boss_1.description': 'Vaincre 1 boss aujourd\'hui',
+    ...STORY_FR,
   } satisfies TranslationDictionary,
 };
 

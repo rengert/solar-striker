@@ -1,8 +1,10 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle } from 'pixi.js';
+import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle, Ticker } from 'pixi.js';
 import { gsap } from 'gsap';
+import { RadioLine, SPEAKER_COLORS } from '../models/story.model';
 import { fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
+import { TranslationService } from './translation.service';
 import { UpdatableService } from './updatable.service';
 
 const HEADER_TOP_PADDING = 20;
@@ -64,6 +66,22 @@ const SHAKE_REPEAT_COUNT = 5;
 const SHAKE_DECAY = 0.7;
 const FLASH_DURATION_S = 0.25;
 const ITEM_NOT_FOUND_INDEX = -1;
+// Radio message constants
+const RADIO_MAX_WIDTH = 320;
+const RADIO_PADDING = 8;
+// one line below the health bar
+const RADIO_TOP = HEADER_TOP_PADDING + HEADER_LINE_SPACING * (TRIPPLE + 1);
+const RADIO_RADIUS = 8;
+const RADIO_SPEAKER_SIZE = 11;
+const RADIO_TEXT_SIZE = 13;
+const RADIO_LINE_GAP = 2;
+const RADIO_BORDER_WIDTH = 2;
+const RADIO_BG_COLOR = 0x0a0f1e;
+const RADIO_BG_ALPHA = 0.85;
+const RADIO_FADE_S = 0.3;
+// long lines stay up longer, so they can be read while dodging
+const RADIO_MIN_DISPLAY_MS = 2500;
+const RADIO_MS_PER_CHAR = 50;
 
 // combo x1..x5 runs from white over yellow and orange to red
 // eslint-disable-next-line no-magic-numbers
@@ -76,6 +94,7 @@ export function getComboColor(combo: number): number {
 @Injectable()
 export class GameScreenService extends UpdatableService implements OnDestroy {
   readonly #ship = inject(GameShipService);
+  readonly #translation = inject(TranslationService);
 
   // health animation fields
   // inferred from previous width (100px / 10)
@@ -105,6 +124,13 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     align: 'center',
   });
 
+
+  // radio banners live in their own layer above enemies and meteors spawned later
+  private readonly radioLayer = new Container();
+  private readonly radioQueue: RadioLine[] = [];
+  private radioBanner?: Container;
+  // counted down in update(), which only runs while the game is not paused
+  private radioRemainingMs = 0;
 
   private lifesLabel: Graphics | undefined;
   private pauseButton?: Text;
@@ -144,6 +170,11 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   // highestCombo is received but not displayed in HUD; setter kept for compatibility
   set highestCombo(_value: number) {
     // no-op for now
+  }
+
+  /** Hidden while paused, since the layer would otherwise sit above the pause menu. */
+  set radioVisible(visible: boolean) {
+    this.radioLayer.visible = visible;
   }
 
   set pauseButtonVisible(visible: boolean) {
@@ -240,6 +271,10 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.addToStage(this.comboLabel);
     // add floating popup container to the stage (for +score popups)
     this.addToStage(this.floatingContainer);
+    this.radioLayer.eventMode = 'none';
+    // a non-zero zIndex makes Pixi 8 turn on sortableChildren for the whole stage, so the layer stays on top
+    this.radioLayer.zIndex = 1;
+    this.addToStage(this.radioLayer);
 
     this.pauseButton = new Text({
       text: icons.pause,
@@ -266,7 +301,13 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.addToStage(this.pauseButton);
   }
 
-  update(): void {
+  update(ticker: Ticker): void {
+    if (this.radioBanner && this.radioRemainingMs > 0) {
+      this.radioRemainingMs -= ticker.deltaMS;
+      if (this.radioRemainingMs <= 0) {
+        this.hideRadioBanner(this.radioBanner);
+      }
+    }
     this.lifes = this.#ship.instance.energy;
   }
 
@@ -327,6 +368,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       text.destroy();
     }
     this.pendingAnnouncements.length = 0;
+    this.clearRadioMessages();
     try {
       // kill any running tweens to avoid running after destroy
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -449,6 +491,77 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
       });
     }, STAGE_ANNOUNCEMENT_DISPLAY_MS);
     this.pendingAnnouncements.push({ handle, text });
+  }
+
+  /** Queues radio lines; they show one after another in a banner below the HUD. */
+  showRadioMessages(lines: RadioLine[]): void {
+    this.radioQueue.push(...lines);
+    if (!this.radioBanner) {
+      this.showNextRadioMessage();
+    }
+  }
+
+  clearRadioMessages(): void {
+    this.radioQueue.length = 0;
+    this.radioRemainingMs = 0;
+    if (this.radioBanner) {
+      gsap.killTweensOf(this.radioBanner);
+      this.radioBanner.destroy({ children: true });
+      this.radioBanner = undefined;
+    }
+  }
+
+  private showNextRadioMessage(): void {
+    const line = this.radioQueue.shift();
+    if (!line) {
+      this.radioBanner = undefined;
+      return;
+    }
+
+    const width = Math.min(RADIO_MAX_WIDTH, this.application.screen.width - HEADER_SIDE_PADDING * DOUBLE);
+    const color = SPEAKER_COLORS[line.speaker];
+    const speaker = new Text({
+      text: `📡 ${this.#translation.getTranslation(`story.speaker.${line.speaker}`)}`,
+      style: { fontFamily: 'Arial', fontSize: RADIO_SPEAKER_SIZE, fontWeight: 'bold', fill: color },
+    });
+    speaker.position.set(RADIO_PADDING);
+    const text = this.#translation.getTranslation(line.text);
+    const message = new Text({
+      text,
+      style: {
+        fontFamily: 'Arial',
+        fontSize: RADIO_TEXT_SIZE,
+        fill: 0xffffff,
+        wordWrap: true,
+        wordWrapWidth: width - RADIO_PADDING * DOUBLE,
+      },
+    });
+    message.position.set(RADIO_PADDING, speaker.y + speaker.height + RADIO_LINE_GAP);
+    const background = new Graphics()
+      .roundRect(0, 0, width, message.y + message.height + RADIO_PADDING, RADIO_RADIUS)
+      .fill({ color: RADIO_BG_COLOR, alpha: RADIO_BG_ALPHA })
+      .stroke({ color, width: RADIO_BORDER_WIDTH });
+
+    const banner = new Container();
+    banner.addChild(background, speaker, message);
+    banner.position.set((this.application.screen.width - width) / SCREEN_CENTER_DIVIDER, RADIO_TOP);
+    banner.alpha = 0;
+    this.radioLayer.addChild(banner);
+    this.radioBanner = banner;
+
+    void gsap.to(banner, { alpha: 1, duration: RADIO_FADE_S });
+    this.radioRemainingMs = Math.max(RADIO_MIN_DISPLAY_MS, text.length * RADIO_MS_PER_CHAR);
+  }
+
+  private hideRadioBanner(banner: Container): void {
+    void gsap.to(banner, {
+      alpha: 0,
+      duration: RADIO_FADE_S,
+      onComplete: () => {
+        banner.destroy({ children: true });
+        this.showNextRadioMessage();
+      },
+    });
   }
 
   /** Briefly shakes the game stage in a random, decaying direction; amplitude in px. */
