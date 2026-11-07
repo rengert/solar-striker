@@ -23,6 +23,7 @@ import { DailyChallengeService } from './daily-challenge.service';
 import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
 import { PausePopup } from '../popups/pause-popup';
+import { getBossDebriefing, getStageBriefing } from '../models/story.model';
 
 const STAGE_TWO = 2;
 const STAGE_THREE = 3;
@@ -92,6 +93,8 @@ describe('GameService', () => {
             applyScreenShake: jasmine.createSpy('applyScreenShake'),
             flashScreen: jasmine.createSpy('flashScreen'),
             showFloatingText: jasmine.createSpy('showFloatingText'),
+            showRadioMessages: jasmine.createSpy('showRadioMessages'),
+            clearRadioMessages: jasmine.createSpy('clearRadioMessages'),
             update: jasmine.createSpy('update'),
           },
         },
@@ -611,6 +614,14 @@ describe('GameService', () => {
       expect(storage.setLevelCheckpoint).toHaveBeenCalledWith(STAGE_TWO);
     });
 
+    it('should play the boss debriefing and the next stage briefing when a boss is killed', () => {
+      const radio = (TestBed.inject(GameScreenService) as unknown as { showRadioMessages: jasmine.Spy }).showRadioMessages;
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(radio).toHaveBeenCalledOnceWith([...getBossDebriefing(1), ...getStageBriefing(STAGE_TWO)]);
+    });
+
     it('should remember the highest cleared stage for the campaign', () => {
       const storage = TestBed.inject(StorageService) as unknown as { setCampaignProgress: jasmine.Spy };
       service.stage.set(STAGE_THREE);
@@ -640,6 +651,15 @@ describe('GameService', () => {
 
       expect(service.stage()).toBe(SAVED_STAGE_SEVEN);
       expect(storage.setLevelCheckpoint).toHaveBeenCalledWith(SAVED_STAGE_SEVEN);
+    });
+
+    it('should play the briefing of the stage the run starts on', async () => {
+      const radio = (TestBed.inject(GameScreenService) as unknown as { showRadioMessages: jasmine.Spy }).showRadioMessages;
+      service.savedStage.set(SAVED_STAGE_SEVEN);
+
+      await service.continueFromCheckpoint({} as AppScreen);
+
+      expect(radio).toHaveBeenCalledOnceWith(getStageBriefing(SAVED_STAGE_SEVEN));
     });
   });
 

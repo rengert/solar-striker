@@ -7,6 +7,7 @@ import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
+import { getBossDebriefing, getStageBriefing } from '../models/story.model';
 import { AchievementsPopup } from '../popups/achievements-popup';
 import { CreditsPopup } from '../popups/credits-popup';
 import { DailyChallengesPopup } from '../popups/daily-challenges-popup';
@@ -326,6 +327,7 @@ export class GameService {
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
         this.gameScreen.showStageAnnouncement(nextStage);
+        this.gameScreen.showRadioMessages([...getBossDebriefing(currentStage), ...getStageBriefing(nextStage)]);
       }
     }
   }
@@ -451,6 +453,7 @@ export class GameService {
     if (this.stage() > 1) {
       this.gameScreen.showStageAnnouncement(this.stage());
     }
+    this.gameScreen.showRadioMessages(getStageBriefing(this.stage()));
   }
 
   async openCredits(requester: AppScreen): Promise<void> {
@@ -605,6 +608,7 @@ export class GameService {
 
   // ranks the run before the result popup opens, so the popup can show rank and record
   private async finishRun(popup: AppScreenConstructor): Promise<void> {
+    this.gameScreen.clearRadioMessages();
     const entry: HighscoreEntry = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
