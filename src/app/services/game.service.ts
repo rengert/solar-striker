@@ -24,7 +24,7 @@ import { handleMouseMove } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
-import { GameBaseService } from './game-base.service';
+import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -307,7 +307,11 @@ export class GameService {
 
   private onBossDefeated(): void {
     const currentStage = this.stage();
+    if (this.base.energy() === BASE_MAX_ENERGY) {
+      this.dailyChallengeService.addFlawlessStage();
+    }
     if (currentStage > this.clearedStage()) {
+      this.dailyChallengeService.addNewStage();
       this.clearedStage.set(currentStage);
       void this.storage.setCampaignProgress(currentStage);
     }
@@ -367,13 +371,13 @@ export class GameService {
     await this.shipUpgrades.init();
     await this.playerShipService.init();
     await this.achievementService.init();
-    await this.dailyChallengeService.init();
     const storedCoins = await this.storage.getCoins();
     const savedStage = await this.storage.getLevelCheckpoint();
     this.storedCoins.set(storedCoins);
     this.savedStage.set(savedStage);
     // a checkpoint from before the campaign existed still counts as progress
     this.clearedStage.set(Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1));
+    await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);
 
     // Wire achievement unlock notification
     this.achievementService.onUnlocked = (def): void => {

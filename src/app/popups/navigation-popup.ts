@@ -20,6 +20,12 @@ export function getDailySurpriseIcon(now: Date = new Date()): string {
   return DAILY_SURPRISE_ICONS[index];
 }
 
+/** Open missions as a count so players see at a glance that today still has rewards waiting. */
+export function getDailyBadge(gameService: GameService): string {
+  const open = gameService.dailyChallengeService.getToday().filter((entry) => !entry.completed).length;
+  return open === 0 ? '✓' : `(${open})`;
+}
+
 export class NavigationPopup extends Popup {
   constructor(gameService: GameService, translation: TranslationService) {
     const savedStage = gameService.savedStage();
@@ -92,7 +98,7 @@ export class NavigationPopup extends Popup {
     );
     buttons.push(
       this.addButton(
-        translation.getTranslation('navigation.daily'),
+        `${translation.getTranslation('navigation.daily')} ${getDailyBadge(gameService)}`,
         () => gameService.openDailyChallenges(this),
         0,
       ),

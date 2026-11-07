@@ -26,7 +26,10 @@ export class DailyChallengeService {
   /** Called when a challenge is completed; wired by GameService */
   onCompleted?: (challenge: DailyChallengeDefinition) => void;
 
-  async init(): Promise<void> {
+  private campaignFinished = false;
+
+  async init(campaignFinished = false): Promise<void> {
+    this.campaignFinished = campaignFinished;
     this.todayKey = getTodayDateKey();
     const savedState = await this.storage.getDailyChallenges();
 
@@ -37,7 +40,7 @@ export class DailyChallengeService {
       await this.storage.setDailyChallenges(this.state);
     }
 
-    this.today = getDailyChallenges(getDayIndex(this.todayKey));
+    this.today = getDailyChallenges(getDayIndex(this.todayKey), this.campaignFinished);
   }
 
   getToday(): DailyChallengeEntry[] {
@@ -72,6 +75,21 @@ export class DailyChallengeService {
   /** Increment cumulative daily boss defeats. */
   addBoss(): void {
     this.addProgressForType('boss', 1);
+  }
+
+  /** Increment cumulative daily power-up pickups. */
+  addPowerUp(): void {
+    this.addProgressForType('powerups', 1);
+  }
+
+  /** Count a stage cleared while the home base still had full energy. */
+  addFlawlessStage(): void {
+    this.addProgressForType('flawless', 1);
+  }
+
+  /** Count a campaign stage cleared for the very first time. */
+  addNewStage(): void {
+    this.addProgressForType('newStage', 1);
   }
 
   private addProgressForType(type: DailyChallengeType, amount: number): void {
@@ -122,7 +140,7 @@ export class DailyChallengeService {
       return;
     }
     this.todayKey = key;
-    this.today = getDailyChallenges(getDayIndex(key));
+    this.today = getDailyChallenges(getDayIndex(key), this.campaignFinished);
     this.state = { date: key, progress: {}, completed: {} };
     void this.storage.setDailyChallenges(this.state);
   }

@@ -145,6 +145,8 @@ describe('GameService', () => {
             checkLevel: jasmine.createSpy('checkLevel'),
             addCoins: jasmine.createSpy('addCoins'),
             addBoss: jasmine.createSpy('addBoss'),
+            addFlawlessStage: jasmine.createSpy('addFlawlessStage'),
+            addNewStage: jasmine.createSpy('addNewStage'),
             getToday: jasmine.createSpy('getToday').and.returnValue([]),
           },
         },
@@ -504,6 +506,21 @@ describe('GameService', () => {
       objectService.triggerCallbacks(bossEnemy, playerRocket);
 
       expect(service.stage()).toBe(STAGE_TWO);
+    });
+
+    it('should count a first-time stage clear at full base energy towards daily missions', () => {
+      const daily = TestBed.inject(DailyChallengeService);
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(daily.addFlawlessStage).toHaveBeenCalledTimes(1);
+      expect(daily.addNewStage).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not count a damaged base as a flawless stage', () => {
+      TestBed.inject(GameBaseService).energy.set(BASE_MAX_ENERGY - 1);
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(TestBed.inject(DailyChallengeService).addFlawlessStage).not.toHaveBeenCalled();
     });
 
     it('should reset stageKills and clear bossFightActive when boss is killed', () => {

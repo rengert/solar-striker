@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { DAILY_CHALLENGE_POOL, getDailyChallenges, getDayIndex, getTodayDateKey } from '../models/daily-challenge.model';
+import { DAILY_CHALLENGE_POOL, DailyChallengeType, getDailyChallenges, getDayIndex, getTodayDateKey } from '../models/daily-challenge.model';
 import { StorageService } from './storage.service';
 import { DailyChallengeEntry, DailyChallengeService } from './daily-challenge.service';
 
@@ -12,8 +12,16 @@ const SAMPLE_DATE_MONTH = 4;
 const SAMPLE_DATE_DAY = 25;
 const SAMPLE_DATE_HOUR = 12;
 
+const CUMULATIVE_TYPES: DailyChallengeType[] = ['kills', 'coins', 'boss', 'powerups', 'flawless', 'newStage'];
+
+function repeat(amount: number, action: () => void): void {
+  for (let i = 0; i < amount; i++) {
+    action();
+  }
+}
+
 function getAnyCumulativeChallenge(entries: DailyChallengeEntry[]): DailyChallengeEntry | undefined {
-  return entries.find((entry) => entry.def.type === 'kills' || entry.def.type === 'coins' || entry.def.type === 'boss');
+  return entries.find((entry) => CUMULATIVE_TYPES.includes(entry.def.type));
 }
 
 function addCumulativeProgress(service: DailyChallengeService, entry: DailyChallengeEntry, amount: number): void {
@@ -25,9 +33,16 @@ function addCumulativeProgress(service: DailyChallengeService, entry: DailyChall
       service.addCoins(amount);
       break;
     case 'boss':
-      for (let i = 0; i < amount; i++) {
-        service.addBoss();
-      }
+      repeat(amount, () => service.addBoss());
+      break;
+    case 'powerups':
+      repeat(amount, () => service.addPowerUp());
+      break;
+    case 'flawless':
+      repeat(amount, () => service.addFlawlessStage());
+      break;
+    case 'newStage':
+      repeat(amount, () => service.addNewStage());
       break;
     default:
       fail(`Unsupported cumulative challenge type: ${entry.def.type}`);
@@ -56,7 +71,7 @@ function getAnyUniqueTypeChallenge(entries: DailyChallengeEntry[]): DailyChallen
 }
 
 function advanceChallengeToThreshold(service: DailyChallengeService, entry: DailyChallengeEntry): void {
-  if (entry.def.type === 'kills' || entry.def.type === 'coins' || entry.def.type === 'boss') {
+  if (CUMULATIVE_TYPES.includes(entry.def.type)) {
     addCumulativeProgress(service, entry, entry.def.threshold);
     return;
   }
@@ -86,7 +101,7 @@ describe('daily-challenge model helpers', () => {
     expect(ids.size).toBe(EXPECTED_CHALLENGES_PER_DAY);
   });
 
-  it('getDailyChallenges provides 12 unique daily sets before repeating', () => {
+  it('getDailyChallenges provides one unique daily set per pool entry before repeating', () => {
     const uniqueSets = new Set<string>();
     for (let i = 0; i < DAILY_CHALLENGE_POOL.length; i++) {
       const normalizedSet = getDailyChallenges(i)
@@ -96,6 +111,13 @@ describe('daily-challenge model helpers', () => {
       uniqueSets.add(normalizedSet);
     }
     expect(uniqueSets.size).toBe(DAILY_CHALLENGE_POOL.length);
+  });
+
+  it('getDailyChallenges never offers a new campaign level once the campaign is finished', () => {
+    for (let day = 0; day < DAILY_CHALLENGE_POOL.length; day++) {
+      expect(getDailyChallenges(day, true).some((def) => def.type === 'newStage')).toBeFalse();
+      expect(getDailyChallenges(day, true).length).toBe(EXPECTED_CHALLENGES_PER_DAY);
+    }
   });
 });
 
@@ -140,7 +162,8 @@ describe('DailyChallengeService', () => {
       fail('Expected at least one cumulative challenge in today selection');
       return;
     }
-    const progressToAdd = 2;
+    // a boss mission needs only one kill and stops counting once completed, so stay at or below every threshold
+    const progressToAdd = 1;
     addCumulativeProgress(service, cumulativeEntry, progressToAdd);
     const updated = service.getToday().find((e) => e.def.id === cumulativeEntry.def.id);
     expect(updated?.progress).toBe(progressToAdd);

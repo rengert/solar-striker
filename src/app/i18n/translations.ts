@@ -196,6 +196,10 @@ const baseTranslation = {
   'daily.dc_coins_30.description': '30 Münzen heute verdienen',
   'daily.dc_coins_60.description': '60 Münzen heute verdienen',
   'daily.dc_boss_1.description': '1 Boss heute besiegen',
+  'daily.dc_powerups_3.description': '3 Power-ups einsammeln',
+  'daily.dc_powerups_8.description': '8 Power-ups einsammeln',
+  'daily.dc_flawless_1.description': 'Level ohne Basisschaden',
+  'daily.dc_newstage_1.description': 'Neues Kampagnen-Level',
   ...STORY_DE,
 } as const;
 
@@ -391,6 +395,10 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'daily.dc_coins_30.description': 'Earn 30 coins today',
     'daily.dc_coins_60.description': 'Earn 60 coins today',
     'daily.dc_boss_1.description': 'Defeat 1 boss today',
+    'daily.dc_powerups_3.description': 'Collect 3 power-ups',
+    'daily.dc_powerups_8.description': 'Collect 8 power-ups',
+    'daily.dc_flawless_1.description': 'Clear a level, base unharmed',
+    'daily.dc_newstage_1.description': 'Clear a new campaign level',
     ...STORY_EN,
   } satisfies TranslationDictionary,
   fr: {
@@ -580,6 +588,10 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'daily.dc_coins_30.description': 'Gagner 30 pièces aujourd\'hui',
     'daily.dc_coins_60.description': 'Gagner 60 pièces aujourd\'hui',
     'daily.dc_boss_1.description': 'Vaincre 1 boss aujourd\'hui',
+    'daily.dc_powerups_3.description': 'Ramasser 3 bonus',
+    'daily.dc_powerups_8.description': 'Ramasser 8 bonus',
+    'daily.dc_flawless_1.description': 'Niveau sans dégâts à la base',
+    'daily.dc_newstage_1.description': 'Nouveau niveau de campagne',
     ...STORY_FR,
   } satisfies TranslationDictionary,
 };
