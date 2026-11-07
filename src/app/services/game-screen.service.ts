@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle } from 'pixi.js';
+import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle, Ticker } from 'pixi.js';
 import { gsap } from 'gsap';
 import { RadioLine, SPEAKER_COLORS } from '../models/story.model';
 import { fontAwesomeStyle, icons } from '../style-constants';
@@ -129,7 +129,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   private readonly radioLayer = new Container();
   private readonly radioQueue: RadioLine[] = [];
   private radioBanner?: Container;
-  private radioTimer?: ReturnType<typeof setTimeout>;
+  // counted down in update(), which only runs while the game is not paused
+  private radioRemainingMs = 0;
 
   private lifesLabel: Graphics | undefined;
   private pauseButton?: Text;
@@ -299,7 +300,13 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.addToStage(this.pauseButton);
   }
 
-  update(): void {
+  update(ticker: Ticker): void {
+    if (this.radioBanner && this.radioRemainingMs > 0) {
+      this.radioRemainingMs -= ticker.deltaMS;
+      if (this.radioRemainingMs <= 0) {
+        this.hideRadioBanner(this.radioBanner);
+      }
+    }
     this.lifes = this.#ship.instance.energy;
   }
 
@@ -495,7 +502,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
 
   clearRadioMessages(): void {
     this.radioQueue.length = 0;
-    clearTimeout(this.radioTimer);
+    this.radioRemainingMs = 0;
     if (this.radioBanner) {
       gsap.killTweensOf(this.radioBanner);
       this.radioBanner.destroy({ children: true });
@@ -542,16 +549,18 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     this.radioBanner = banner;
 
     void gsap.to(banner, { alpha: 1, duration: RADIO_FADE_S });
-    this.radioTimer = setTimeout(() => {
-      void gsap.to(banner, {
-        alpha: 0,
-        duration: RADIO_FADE_S,
-        onComplete: () => {
-          banner.destroy({ children: true });
-          this.showNextRadioMessage();
-        },
-      });
-    }, Math.max(RADIO_MIN_DISPLAY_MS, text.length * RADIO_MS_PER_CHAR));
+    this.radioRemainingMs = Math.max(RADIO_MIN_DISPLAY_MS, text.length * RADIO_MS_PER_CHAR);
+  }
+
+  private hideRadioBanner(banner: Container): void {
+    void gsap.to(banner, {
+      alpha: 0,
+      duration: RADIO_FADE_S,
+      onComplete: () => {
+        banner.destroy({ children: true });
+        this.showNextRadioMessage();
+      },
+    });
   }
 
   /** Briefly shakes the game stage in a random, decaying direction; amplitude in px. */
