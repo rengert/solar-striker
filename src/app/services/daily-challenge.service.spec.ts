@@ -112,6 +112,13 @@ describe('daily-challenge model helpers', () => {
     }
     expect(uniqueSets.size).toBe(DAILY_CHALLENGE_POOL.length);
   });
+
+  it('getDailyChallenges never offers a new campaign level once the campaign is finished', () => {
+    for (let day = 0; day < DAILY_CHALLENGE_POOL.length; day++) {
+      expect(getDailyChallenges(day, true).some((def) => def.type === 'newStage')).toBeFalse();
+      expect(getDailyChallenges(day, true).length).toBe(EXPECTED_CHALLENGES_PER_DAY);
+    }
+  });
 });
 
 describe('DailyChallengeService', () => {

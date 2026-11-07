@@ -371,13 +371,13 @@ export class GameService {
     await this.shipUpgrades.init();
     await this.playerShipService.init();
     await this.achievementService.init();
-    await this.dailyChallengeService.init();
     const storedCoins = await this.storage.getCoins();
     const savedStage = await this.storage.getLevelCheckpoint();
     this.storedCoins.set(storedCoins);
     this.savedStage.set(savedStage);
     // a checkpoint from before the campaign existed still counts as progress
     this.clearedStage.set(Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1));
+    await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);
 
     // Wire achievement unlock notification
     this.achievementService.onUnlocked = (def): void => {

@@ -46,11 +46,14 @@ const CHALLENGES_PER_DAY = 3;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const DATE_COMPONENT_PAD_LENGTH = 2;
 
-export function getDailyChallenges(dayIndex: number): DailyChallengeDefinition[] {
-  const size = DAILY_CHALLENGE_POOL.length;
+export function getDailyChallenges(dayIndex: number, campaignFinished = false): DailyChallengeDefinition[] {
+  // a finished campaign has no new level left to clear, so that mission would stay open forever
+  const pool = campaignFinished
+    ? DAILY_CHALLENGE_POOL.filter((def) => def.type !== 'newStage')
+    : DAILY_CHALLENGE_POOL;
   const result: DailyChallengeDefinition[] = [];
   for (let i = 0; i < CHALLENGES_PER_DAY; i++) {
-    result.push(DAILY_CHALLENGE_POOL[(dayIndex + i) % size]);
+    result.push(pool[(dayIndex + i) % pool.length]);
   }
   return result;
 }
