@@ -605,7 +605,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     });
   }
 
-  /** Shows a brief achievement-unlocked banner in the bottom-right corner. */
+  /** Shows a brief achievement-unlocked banner in the top-right corner, below the HUD. */
   showAchievementBanner(icon: string, titleLine: string, rewardLine: string): void {
     const banner = new Container();
 
@@ -643,11 +643,12 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     rewardText.y = ACHIEVEMENT_BANNER_PADDING + ACHIEVEMENT_BANNER_TITLE_SIZE + ACHIEVEMENT_BANNER_SUBTITLE_SPACER;
     banner.addChild(rewardText);
 
-    // Position: slide in from right, bottom area
+    // Position: slide in from right, below the HUD (and below a radio banner, if one is showing)
     const screenWidth = this.application.screen.width;
-    const screenHeight = this.application.screen.height;
     banner.x = screenWidth;
-    banner.y = screenHeight - ACHIEVEMENT_BANNER_HEIGHT - ACHIEVEMENT_BANNER_PADDING * DOUBLE;
+    banner.y = this.radioBanner
+      ? this.radioBanner.y + this.radioBanner.height + ACHIEVEMENT_BANNER_PADDING
+      : RADIO_TOP;
     this.addToStage(banner);
 
     // Slide in
