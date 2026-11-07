@@ -179,6 +179,12 @@ interface EnemyMovementState {
   leaveAt?: number;
 }
 
+/** Frames between enemy spawns; never below 1, otherwise endless stages past ~600 would stop spawning. */
+export function getSpawnInterval(level: number): number {
+  // eslint-disable-next-line no-magic-numbers
+  return Math.max(1, Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + 0.1 * (level - 1))));
+}
+
 export function getBossPattern(stage: number): BossPattern {
   return BOSS_PATTERNS[(Math.max(1, stage) - 1) % BOSS_PATTERNS.length];
 }
@@ -266,8 +272,7 @@ export class GameEnemyService extends UpdatableService {
     if (
       !this.bossFightActive &&
       this.object.enemies().length < GAME_CONFIG.enemy.maxCount &&
-      // eslint-disable-next-line no-magic-numbers
-      check % Math.floor(60 / (GAME_CONFIG.enemy.autoSpawnSpeed + 0.1 * (level - 1))) === 0 &&
+      check % getSpawnInterval(level) === 0 &&
       check !== this.lastEnemySpawn
     ) {
       this.lastEnemySpawn = check;
