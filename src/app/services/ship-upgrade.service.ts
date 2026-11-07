@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { MAX_SHOT_POWER } from '../game-constants';
 import { Ship } from '../models/pixijs/ship';
 import {
   DEFAULT_SHIP_UPGRADE_LEVELS,
@@ -13,6 +14,8 @@ interface ShipUpgradeBonusSummary {
   energy: number;
   shotPower: number;
   shotSpeed: number;
+  shieldMs: number;
+  magnetRange: number;
 }
 
 @Injectable()
@@ -37,6 +40,12 @@ export class ShipUpgradeService {
     return this.levels()[type];
   }
 
+  /** True once the node above this one in the skill tree has reached the required level. */
+  isUnlocked(type: ShipUpgradeType): boolean {
+    const requirement = this.getDefinition(type).requires;
+    return !requirement || this.getLevel(requirement.type) >= requirement.level;
+  }
+
   getUpgradeCost(type: ShipUpgradeType): number | null {
     const definition = this.getDefinition(type);
     const level = this.getLevel(type);
@@ -53,7 +62,7 @@ export class ShipUpgradeService {
     const definition = this.getDefinition(type);
     const level = this.getLevel(type);
 
-    if (level >= definition.maxLevel) {
+    if (level >= definition.maxLevel || !this.isUnlocked(type)) {
       return false;
     }
 
@@ -75,8 +84,11 @@ export class ShipUpgradeService {
 
     ship.maxEnergy = newMaxEnergy;
     ship.energy = Math.min(ship.energy + energyGain, ship.maxEnergy);
-    ship.shotPower = ship.baseShotPower + bonus.shotPower;
+    // the shot pattern only exists up to MAX_SHOT_POWER cannons; more crashes the game loop on the first shot
+    ship.shotPower = Math.min(ship.baseShotPower + bonus.shotPower, MAX_SHOT_POWER);
     ship.shotSpeed = ship.baseShotSpeed + bonus.shotSpeed;
+    ship.shieldBonusMs = bonus.shieldMs;
+    ship.magnetRange = bonus.magnetRange;
   }
 
   private getBonusSummary(shipType: Ship['shipType']): ShipUpgradeBonusSummary {
@@ -84,6 +96,8 @@ export class ShipUpgradeService {
       energy: 0,
       shotPower: 0,
       shotSpeed: 0,
+      shieldMs: 0,
+      magnetRange: 0,
     };
 
     for (const definition of this.definitions) {
@@ -95,12 +109,14 @@ export class ShipUpgradeService {
       summary.energy += (definition.bonusPerLevel.energy ?? 0) * level;
       summary.shotPower += (definition.bonusPerLevel.shotPower ?? 0) * level;
       summary.shotSpeed += (definition.bonusPerLevel.shotSpeed ?? 0) * level;
+      summary.shieldMs += (definition.bonusPerLevel.shieldMs ?? 0) * level;
+      summary.magnetRange += (definition.bonusPerLevel.magnetRange ?? 0) * level;
     }
 
     return summary;
   }
 
-  private getDefinition(type: ShipUpgradeType): ShipUpgradeDefinition {
+  getDefinition(type: ShipUpgradeType): ShipUpgradeDefinition {
     const definition = this.definitions.find((item) => item.type === type);
 
     if (!definition) {

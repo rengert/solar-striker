@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { gsap } from 'gsap';
 import { Container, Sprite, Texture, Ticker } from 'pixi.js';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
+import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
 import {
   createAsteroidTexture,
   createDustTexture,
@@ -15,6 +16,7 @@ import { UpdatableService } from './updatable.service';
 
 const THEME_COUNT = 4;
 const THEME_FADE_S = 1.5;
+const AMBIENCE_INTERVAL_MS = { fall: 120, rise: 160, burst: 1400 } as const;
 
 @Injectable()
 export class GameLandscapeService extends UpdatableService {
@@ -23,6 +25,7 @@ export class GameLandscapeService extends UpdatableService {
   /** desert, nebula, asteroid field, planet; one per stage, cycling */
   private readonly themes: Container[] = [];
   private themeIndex = 0;
+  private ambienceMs = 0;
 
   setup(): void {
     if (this.landscapes.length) {
@@ -74,6 +77,7 @@ export class GameLandscapeService extends UpdatableService {
 
   update(ticker: Ticker): void {
     this.landscapes.forEach((item) => item.update(ticker));
+    this.updateAmbience(ticker.deltaMS);
   }
 
   private setupBackground(): void {
@@ -183,8 +187,53 @@ export class GameLandscapeService extends UpdatableService {
       this.application.stage.addChild(dust);
     }
 
+    if (CURRENT_SEASON_EVENT) {
+      const wash = new Sprite(Texture.WHITE);
+      wash.setSize(width, height);
+      wash.tint = CURRENT_SEASON_EVENT.backgroundTint;
+      wash.alpha = CURRENT_SEASON_EVENT.backgroundAlpha;
+      this.application.stage.addChild(wash);
+    }
+
     const vignette = new Sprite(createVignetteTexture(width, height));
     this.application.stage.addChild(vignette);
+  }
+
+  /** Seasonal snow/petals, rising embers or fireworks on top of the background. */
+  private updateAmbience(deltaMs: number): void {
+    if (!CURRENT_SEASON_EVENT) {
+      return;
+    }
+    const { ambience, colors } = CURRENT_SEASON_EVENT;
+    this.ambienceMs += deltaMs;
+    if (this.ambienceMs < AMBIENCE_INTERVAL_MS[ambience]) {
+      return;
+    }
+    this.ambienceMs = 0;
+    const { width, height } = this.application.screen;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const x = Math.random() * width;
+    if (ambience === 'burst') {
+      const y = height * (0.1 + Math.random() * 0.4);
+      this.particles.emit({ x, y, color, ring: true, life: 900, scale: 0.2, endScale: 2.5, alpha: 0.5 });
+      this.particles.emit({
+        x, y, color, count: 32, speed: 0.22, life: 1800, scale: 0.45, endScale: 0.05, drag: 0.97, alpha: 0.8,
+      });
+      return;
+    }
+    const falling = ambience === 'fall';
+    this.particles.emit({
+      x,
+      y: falling ? -10 : height + 10,
+      color,
+      speed: 0.06,
+      angle: falling ? Math.PI / 2 : -Math.PI / 2,
+      spread: 0.6,
+      life: height / 0.04,
+      scale: 0.3 + Math.random() * 0.3,
+      endScale: 0.2,
+      alpha: 0.8,
+    });
   }
   /* eslint-enable no-magic-numbers */
 }

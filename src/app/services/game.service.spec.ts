@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
 import { GameService } from './game.service';
@@ -6,9 +7,10 @@ import { SoundService } from './sound.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { AppScreen } from '../models/pixijs/app-screen';
 import { GameCollectableService } from './game-collectable.service';
-import { GameEnemyService } from './game-enemy.service';
+import { EnemyKind, GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
+import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShipService } from './game-ship.service';
 import { GameShotService } from './game-shot.service';
@@ -20,6 +22,7 @@ import { AchievementService } from './achievement.service';
 import { DailyChallengeService } from './daily-challenge.service';
 import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
+import { PausePopup } from '../popups/pause-popup';
 
 const STAGE_TWO = 2;
 const STAGE_THREE = 3;
@@ -69,8 +72,12 @@ describe('GameService', () => {
           },
         },
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
-        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss') } },
+        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss'), getKind: (): undefined => undefined } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update'), setStage: jasmine.createSpy('setStage') } },
+        {
+          provide: GameBaseService,
+          useValue: { energy: signal(BASE_MAX_ENERGY), init: jasmine.createSpy('init'), repair: jasmine.createSpy('repair'), attack: jasmine.createSpy('attack') },
+        },
         { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update'), splitMeteors: { has: (): boolean => false } } },
         {
           provide: GameScreenService,
@@ -143,6 +150,7 @@ describe('GameService', () => {
           useValue: {
             getCoins: jasmine.createSpy('getCoins').and.returnValue(Promise.resolve(0)),
             setCoins: jasmine.createSpy('setCoins').and.returnValue(Promise.resolve()),
+            getHighscore: jasmine.createSpy('getHighscore').and.returnValue(Promise.resolve([])),
             setHighscore: jasmine.createSpy('setHighscore').and.returnValue(Promise.resolve()),
             getLevelCheckpoint: jasmine.createSpy('getLevelCheckpoint').and.returnValue(Promise.resolve(null)),
             setLevelCheckpoint: jasmine.createSpy('setLevelCheckpoint').and.returnValue(Promise.resolve()),
@@ -290,6 +298,32 @@ describe('GameService', () => {
     });
   });
 
+  describe('hangar purchases', () => {
+    const STORED_COINS = 100;
+    const UPGRADE_COST = 30;
+
+    it('should persist the reduced balance so continuing does not restore spent coins', async () => {
+      const storage = TestBed.inject(StorageService) as unknown as { getCoins: jasmine.Spy; setCoins: jasmine.Spy };
+      let persisted = STORED_COINS;
+      storage.getCoins.and.callFake(() => Promise.resolve(persisted));
+      storage.setCoins.and.callFake((amount: number) => {
+        persisted = amount;
+        return Promise.resolve();
+      });
+      Object.assign(service.shipUpgrades, {
+        getUpgradeCost: (): number => UPGRADE_COST,
+        isUnlocked: (): boolean => true,
+        levelUp: (): Promise<boolean> => Promise.resolve(true),
+      });
+      service.storedCoins.set(STORED_COINS);
+
+      expect(await service.handleUpgradePurchase('fireRate' as never)).toBeTrue();
+      await service.continueFromCheckpoint({} as AppScreen);
+
+      expect(service.coins()).toBe(STORED_COINS - UPGRADE_COST);
+    });
+  });
+
   describe('pause state', () => {
     let presentPopupSpy: jasmine.Spy;
     let tickerMock: { add: jasmine.Spy; remove: jasmine.Spy; stop: jasmine.Spy; start: jasmine.Spy };
@@ -335,22 +369,20 @@ describe('GameService', () => {
       expect(service.paused()).toBe(false);
     });
 
-    it('should stop the ticker when pause() is called during an active game', async () => {
+    it('should keep the ticker running while paused so the pause menu renders', async () => {
       await service.start({} as AppScreen);
-      await service.pause();
-      expect(tickerMock.stop).toHaveBeenCalledTimes(1);
-    });
-
-    it('should not stop the ticker when game is not started', async () => {
       await service.pause();
       expect(tickerMock.stop).not.toHaveBeenCalled();
     });
 
-    it('should start the ticker when resume() is called', async () => {
+    it('should stay paused when returning from settings to the pause menu', async () => {
       await service.start({} as AppScreen);
       await service.pause();
-      await service.resume({} as AppScreen);
-      expect(tickerMock.start).toHaveBeenCalledTimes(1);
+      await service.openSettings({} as AppScreen);
+      await service.openPause({} as AppScreen);
+
+      expect(presentPopupSpy).toHaveBeenCalledWith(PausePopup);
+      expect(service.paused()).toBe(true);
     });
   });
 
@@ -452,6 +484,16 @@ describe('GameService', () => {
       expect(enemyMock.spawnStageBoss).toHaveBeenCalledTimes(1);
     });
 
+    it('should count kills of special enemy kinds and bosses towards their badges', () => {
+      const achievements = TestBed.inject(AchievementService) as unknown as { addCumulative: jasmine.Spy };
+      spyOn(TestBed.inject(GameEnemyService), 'getKind').and.returnValue(EnemyKind.sniper);
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(achievements.addCumulative).toHaveBeenCalledWith('sniper_hunter', 1);
+      expect(achievements.addCumulative).toHaveBeenCalledWith('boss_slayer', 1);
+    });
+
     it('should advance stage when boss is killed', () => {
       const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
       objectService.triggerCallbacks(bossEnemy, playerRocket);
@@ -464,6 +506,17 @@ describe('GameService', () => {
       triggerStageBoss(1, playerRocket);
       // Kill boss
       objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(enemyMock.bossFightActive).toBeFalse();
+      expect(service.stage()).toBe(STAGE_TWO);
+    });
+
+    it('should end the boss fight and advance the stage when a meteor destroys the boss', () => {
+      triggerStageBoss(1, playerRocket);
+      objectService.triggerCallbacks(
+        createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }),
+        createMockObject(ObjectType.meteor),
+      );
 
       expect(enemyMock.bossFightActive).toBeFalse();
       expect(service.stage()).toBe(STAGE_TWO);
@@ -488,7 +541,7 @@ describe('GameService', () => {
       );
     });
 
-    it('should trigger victory after the final stage boss is defeated', () => {
+    it('should trigger victory after the final stage boss is defeated', async () => {
       const presentPopupSpy = spyOn(
         service as unknown as { presentPopup: () => Promise<void> },
         'presentPopup',
@@ -497,6 +550,8 @@ describe('GameService', () => {
       service.stage.set(MAX_STAGE);
       const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
       objectService.triggerCallbacks(bossEnemy, playerRocket);
+      // the run is ranked against stored scores before the popup opens
+      await new Promise((resolve) => setTimeout(resolve));
 
       expect(presentPopupSpy).toHaveBeenCalledTimes(1);
       expect(service.stage()).toBe(MAX_STAGE); // stage should not advance beyond max

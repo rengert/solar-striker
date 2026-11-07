@@ -14,6 +14,11 @@ export function hit(spriteA: ObjectModelType, spriteB: ObjectModelType): boolean
     return false;
   }
 
+  // shots from the same shooter must not destroy each other (radial bursts spawn on one spot)
+  if (spriteA.reference !== undefined && spriteA.reference === spriteB.reference) {
+    return false;
+  }
+
   const bounds1 = spriteA.getBounds();
   const bounds2 = spriteB.getBounds();
 

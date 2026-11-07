@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { Assets, Graphics, Spritesheet, Text, TextStyle, Texture } from 'pixi.js';
+import { Assets, Graphics, Spritesheet, Text, TextStyle, Texture, Ticker } from 'pixi.js';
 import { gsap } from 'gsap';
 import { GAME_CONFIG, MAX_SHOT_POWER, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
@@ -36,6 +36,7 @@ const SLOW_MOTION_TEXT_COLOR = 0x118833;
 const POWER_UP_GLOW_LIFE_MS = 350;
 const POWER_UP_GLOW_SCALE = 2.2;
 const POWER_UP_GLOW_ALPHA = 0.5;
+const MAGNET_PULL_PX_PER_MS = 0.25;
 
 @Injectable()
 export class GameCollectableService extends UpdatableService {
@@ -56,15 +57,16 @@ export class GameCollectableService extends UpdatableService {
 
   async init(): Promise<void> {
     if (Object.values(this.animations).length === 0) {
+      const sheets = await Assets.load<Spritesheet>(GAME_CONFIG.powerUpConfig.map((config) => config.assetUrl));
       for (const config of GAME_CONFIG.powerUpConfig) {
-        const powerUp = await Assets.load<Spritesheet>(config.assetUrl);
-        const animations: Record<string, Texture[]> = powerUp.animations;
+        const animations: Record<string, Texture[]> = sheets[config.assetUrl].animations;
         this.animations[config.type] = animations[config.animationName];
       }
     }
   }
 
-  update(): void {
+  update(ticker: Ticker): void {
+    this.pullToShip(ticker);
     // pulsing halo so power-ups stand out against the background
     this.object.collectables().forEach((collectable) =>
       this.particles.emit({
@@ -83,6 +85,28 @@ export class GameCollectableService extends UpdatableService {
       .forEach((collectable) => collectable.destroy());
   }
 
+  /** Tractor beam upgrade: power-ups within the ship's magnet range drift towards it. */
+  private pullToShip(ticker: Ticker): void {
+    const ship = this.object.objects().find((item) => item.type === ObjectType.ship) as Ship | undefined;
+    const range = ship?.magnetRange ?? 0;
+    if (!ship || range <= 0 || ship.destroying) {
+      return;
+    }
+    // collectables are world objects, so the pull slows down with them during slow motion
+    const step = MAGNET_PULL_PX_PER_MS * this.object.getScaledTicker(ticker).deltaMS;
+    for (const collectable of this.object.collectables()) {
+      const dx = ship.x - collectable.x;
+      const dy = ship.y - collectable.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > range || distance === 0) {
+        continue;
+      }
+      const move = Math.min(step, distance);
+      collectable.x += (dx / distance) * move;
+      collectable.y += (dy / distance) * move;
+    }
+  }
+
   private collectPowerUp(object: ObjectModelType, by: ObjectModelType): void {
     if (by.type !== ObjectType.ship) {
       return;
@@ -93,7 +117,9 @@ export class GameCollectableService extends UpdatableService {
     ship.shotSpeed += powerUp.config.powerUp.speed;
     ship.shotPower = Math.min(ship.shotPower + powerUp.config.powerUp.shot, MAX_SHOT_POWER);
     ship.energy += powerUp.config.powerUp.energy;
-    ship.shieldTicks += powerUp.config.powerUp.shield ?? 0;
+    const shield = powerUp.config.powerUp.shield ?? 0;
+    ship.shieldTicks += shield > 0 ? shield + ship.shieldBonusMs : 0;
+    ship.spreadShotTicks += powerUp.config.powerUp.spreadShot ?? 0;
 
     if (powerUp.config.powerUp.nuke === true) {
       this.applyNuke(by);

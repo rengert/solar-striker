@@ -1,7 +1,9 @@
 import { inject, Injectable } from '@angular/core';
-import { Assets, Container, Graphics, Spritesheet, Texture, Ticker } from 'pixi.js';
+import { Assets, Container, Graphics, Rectangle, Sprite, Spritesheet, Text, Texture, Ticker } from 'pixi.js';
 import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { AnimatedGameSprite, LoopData, OrbitData } from '../models/pixijs/animated-game-sprite';
+import { ObjectType } from '../models/pixijs/object-type.enum';
+import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
 import { Ship } from '../models/pixijs/ship';
 import { ShipType } from '../models/pixijs/ship-type.enum';
 import { ExplosionService } from './explosion.service';
@@ -9,6 +11,7 @@ import { GameScreenService } from './game-screen.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
+import { createGlowTexture } from '../utils/texture.util';
 
 const halfWidth = 10;
 const MOVEMENT_TARGET_SNAP_DISTANCE = 5;
@@ -58,15 +61,52 @@ const ORBITER_SHOT_SPEED = 0.5;
 // eslint-disable-next-line no-magic-numbers
 const ORBITER_TINT = 0x88ffff;
 
+/** Regular enemies with their own flight style; each also gets its own colour, size and glow. */
+export enum EnemyKind {
+  diver = 'diver',
+  weaver = 'weaver',
+  sniper = 'sniper',
+}
+
+interface EnemyKindDefinition {
+  readonly spawnChance: number;
+  readonly tint: number;
+  readonly scale: number;
+  readonly energyMultiplier: number;
+  readonly speed: number;
+  readonly autoFire: boolean;
+}
+
+/* eslint-disable no-magic-numbers */
+const ENEMY_KIND_DEFINITIONS: Record<EnemyKind, EnemyKindDefinition> = {
+  // drifts in slowly, then locks onto the player and rams them
+  [EnemyKind.diver]: { spawnChance: 0.1, tint: 0xff5533, scale: 0.85, energyMultiplier: 1, speed: 0.3, autoFire: false },
+  // snakes down in wide sine waves while shooting
+  [EnemyKind.weaver]: { spawnChance: 0.1, tint: 0x66ff88, scale: 1, energyMultiplier: 1, speed: 0.45, autoFire: true },
+  // parks near the top, fires aimed shots, then leaves
+  [EnemyKind.sniper]: { spawnChance: 0.08, tint: 0xffee44, scale: 1.4, energyMultiplier: 2, speed: 0.5, autoFire: false },
+};
+/* eslint-enable no-magic-numbers */
+const ENEMY_KINDS = Object.values(EnemyKind);
+const ENEMY_GLOW_SIZE_FACTOR = 1.8;
+const ENEMY_GLOW_ALPHA = 0.45;
+const DIVER_TRIGGER_Y_RATIO = 0.3;
+const DIVER_DIVE_SPEED = 0.45;
+const KIND_XSPEED = 0.15;
+const WEAVER_AMPLITUDE = 60;
+// eslint-disable-next-line no-magic-numbers
+const WEAVER_ANGULAR_SPEED = (Math.PI * 2) / 1800;
+const SNIPER_HOLD_Y_RATIO = 0.2;
+const SNIPER_HOLD_MS = 5000;
+const SNIPER_SHOT_INTERVAL_MS = 1400;
+const SNIPER_SHOT_SPEED = 0.7;
+
 const BOSS_ENERGY_BASE = 30;
 const BOSS_ENERGY_LEVEL_STEP = 5;
 const BOSS_SCALE = 3;
 const BOSS_SPEED = 0.12;
 const BOSS_SHOT_SPEED = 0.8;
 const BOSS_SHOT_POWER = 3;
-const BOSS_XSPEED = 0.035;
-// eslint-disable-next-line no-magic-numbers
-const BOSS_TINT = 0xff3333;
 const BOSS_SWEEP_MARGIN = 30;
 const BOSS_SWEEP_INTERVAL_MS = 3000;
 const BOSS_SCREEN_CENTER_DIVIDER = 2;
@@ -78,13 +118,69 @@ const BOSS_BAR_HEIGHT = 8;
 const BOSS_BAR_Y = 100;
 const BOSS_BAR_BORDER = 2;
 const BOSS_BAR_BACKGROUND = 0x330000;
-const BOSS_BAR_COLOR = 0xff3333;
 const BOSS_BAR_BORDER_COLOR = 0xffffff;
 const ENEMY_ANIMATION_SPEED = 0.167;
+
+/** Each stage boss uses one of these, in turn: sweeper (stage 1, 4, ...), orbiter (2, 5, ...), hunter (3, 6, ...). */
+export enum BossPattern {
+  sweeper = 'sweeper',
+  orbiter = 'orbiter',
+  hunter = 'hunter',
+}
+
+interface BossDefinition {
+  readonly tint: number;
+  /** The normal 3-shot autofire runs alongside the special attack. */
+  readonly autoFire: boolean;
+  readonly attackIntervalMs: number;
+  readonly xSpeed: number;
+}
+
+const BOSS_PATTERNS = [BossPattern.sweeper, BossPattern.orbiter, BossPattern.hunter] as const;
+/* eslint-disable no-magic-numbers */
+const BOSS_DEFINITIONS: Record<BossPattern, BossDefinition> = {
+  [BossPattern.sweeper]: { tint: 0xff3333, autoFire: true, attackIntervalMs: 2600, xSpeed: 0.035 },
+  [BossPattern.orbiter]: { tint: 0xcc55ff, autoFire: false, attackIntervalMs: 2200, xSpeed: 0 },
+  [BossPattern.hunter]: { tint: 0xffaa22, autoFire: false, attackIntervalMs: 1600, xSpeed: 0.06 },
+};
+/* eslint-enable no-magic-numbers */
+const BOSS_HOVER_Y_RATIO = 0.25;
+const BOSS_HOVER_Y_MIN = 170;
+/** Below this share of energy the boss attacks faster. */
+const BOSS_ENRAGE_RATIO = 0.5;
+const BOSS_ENRAGE_INTERVAL_FACTOR = 0.6;
+const BOSS_RADIAL_SHOT_SPEED = 0.6;
+const BOSS_FAN_COUNT = 5;
+// eslint-disable-next-line no-magic-numbers
+const BOSS_FAN_ARC = Math.PI / 3;
+const BOSS_RING_COUNT = 12;
+const BOSS_AIMED_COUNT = 3;
+// eslint-disable-next-line no-magic-numbers
+const BOSS_AIMED_ARC = Math.PI / 12;
+const BOSS_ORBIT_RADIUS_X_RATIO = 0.3;
+const BOSS_ORBIT_RADIUS_Y = 40;
+// eslint-disable-next-line no-magic-numbers
+const BOSS_ORBIT_ANGULAR_SPEED = (Math.PI * 2) / 6000;
+// eslint-disable-next-line no-magic-numbers
+const DOWN = Math.PI / 2;
 
 interface EnemyMovementState {
   nextChange: number;
   targetX?: number;
+  bossPattern?: BossPattern;
+  nextAttack?: number;
+  orbitAngle?: number;
+  bossArrived?: boolean;
+  /** Diver only: the dive has started. */
+  diving?: boolean;
+  /** Weaver only: x the wave swings around. */
+  weaveCenterX?: number;
+  /** Sniper only: when it leaves its post. */
+  leaveAt?: number;
+}
+
+export function getBossPattern(stage: number): BossPattern {
+  return BOSS_PATTERNS[(Math.max(1, stage) - 1) % BOSS_PATTERNS.length];
 }
 
 @Injectable()
@@ -98,6 +194,7 @@ export class GameEnemyService extends UpdatableService {
   bossFightActive = false;
 
   private elapsed = 0;
+  private lastDeltaMs = 0;
   private lastEnemySpawn: number | null = null;
   private boss: Ship | null = null;
   private bossBar: Container | null = null;
@@ -105,6 +202,15 @@ export class GameEnemyService extends UpdatableService {
 
   private enemySprite!: Spritesheet;
   private readonly movementStates = new WeakMap<ObjectModelType, EnemyMovementState>();
+  // separate from movementStates because those are reset when an enemy is recycled
+  private readonly enemyKinds = new WeakMap<ObjectModelType, EnemyKind>();
+  private glowTexture?: Texture;
+  /** Called for every enemy that flew past the bottom edge, right before it re-enters at the top. */
+  onEnemyPassed?: (enemy: ObjectModelType) => void;
+
+  getKind(enemy: ObjectModelType): EnemyKind | undefined {
+    return this.enemyKinds.get(enemy);
+  }
 
   async init(): Promise<void> {
     this.enemySprite = await Assets.load<Spritesheet>('assets/game/enemies/enemy.json');
@@ -113,6 +219,7 @@ export class GameEnemyService extends UpdatableService {
   update(realTicker: Ticker, level: number): void {
     const ticker = this.object.getScaledTicker(realTicker);
     this.elapsed += ticker.deltaMS;
+    this.lastDeltaMs = ticker.deltaMS;
 
     if (this.boss?.destroying || this.boss?.destroyed) {
       this.boss = null;
@@ -129,6 +236,9 @@ export class GameEnemyService extends UpdatableService {
         return enemy.y > this.application.screen.height + OFF_SCREEN_BUFFER;
       })
       .forEach((enemy) => {
+        if (!(enemy as AnimatedGameSprite).isBoss) {
+          this.onEnemyPassed?.(enemy);
+        }
         if (enemy instanceof AnimatedGameSprite && enemy.orbitData !== undefined) {
           enemy.orbitData.centerX = Math.random() * this.application.screen.width;
           enemy.orbitData.centerY = -enemy.orbitData.radius;
@@ -178,6 +288,11 @@ export class GameEnemyService extends UpdatableService {
       this.spawnOrbiter(level, animations);
       return;
     }
+    const kind = this.pickEnemyKind();
+    if (kind) {
+      this.spawnKind(level, kind, animations);
+      return;
+    }
     const isLarge = Math.random() < LARGE_ENEMY_SPAWN_CHANCE;
     // eslint-disable-next-line no-magic-numbers
     const maxSpeed = 0.5 + 0.03 * level;
@@ -216,11 +331,124 @@ export class GameEnemyService extends UpdatableService {
     const usableWidth = Math.max(0, this.application.screen.width - enemy.width);
     enemy.x = Math.floor(Math.random() * usableWidth) + enemyHalfWidth;
     enemy.y = 0;
+    this.decorateForSeason(enemy);
     enemy.enableEnergyDisplay();
     this.object.add(enemy);
     this.application.stage.addChild(enemy);
 
     this.updateMovement(enemy, level, true);
+  }
+
+  private pickEnemyKind(): EnemyKind | undefined {
+    let roll = Math.random();
+    for (const kind of ENEMY_KINDS) {
+      roll -= ENEMY_KIND_DEFINITIONS[kind].spawnChance;
+      if (roll < 0) {
+        return kind;
+      }
+    }
+    return undefined;
+  }
+
+  /** Spawns one of the special enemy kinds, at the top of the screen. */
+  spawnKind(level: number, kind: EnemyKind, animations: Record<string, Texture[]> = this.enemySprite.animations): Ship {
+    const definition = ENEMY_KIND_DEFINITIONS[kind];
+    // eslint-disable-next-line no-magic-numbers
+    const enemy = new Ship(ShipType.enemy, this.shotService, this.explosionService, definition.speed + 0.02 * level, animations['frame']);
+    enemy.autoFire = definition.autoFire;
+    enemy.animationSpeed = ENEMY_ANIMATION_SPEED;
+    enemy.play();
+    enemy.anchor.set(THE_MIDDLE);
+    enemy.scale.set(definition.scale);
+    enemy.tint = definition.tint;
+    enemy.xSpeed = KIND_XSPEED;
+    const energy = (ENEMY_BASE_ENERGY + Math.floor((level - 1) / ENEMY_ENERGY_LEVEL_STEP)) * definition.energyMultiplier;
+    enemy.maxEnergy = energy;
+    enemy.energy = energy;
+    const usableWidth = Math.max(0, this.application.screen.width - enemy.width - WEAVER_AMPLITUDE * DOUBLE);
+    enemy.x = Math.floor(Math.random() * usableWidth) + enemy.width / DOUBLE + WEAVER_AMPLITUDE;
+    enemy.y = 0;
+    this.addGlow(enemy, definition.tint);
+    this.decorateForSeason(enemy);
+    enemy.enableEnergyDisplay();
+    this.enemyKinds.set(enemy, kind);
+    this.object.add(enemy);
+    this.application.stage.addChild(enemy);
+    return enemy;
+  }
+
+  /** Coloured halo behind the ship so the kinds are told apart at a glance. */
+  private addGlow(enemy: Ship, color: number): void {
+    const { width, height } = enemy.texture;
+    // keep the hit box at the ship's frame although the glow is larger
+    enemy.boundsArea = new Rectangle(-width * THE_MIDDLE, -height * THE_MIDDLE, width, height);
+    this.glowTexture ??= createGlowTexture();
+    const glow = new Sprite(this.glowTexture);
+    glow.anchor.set(THE_MIDDLE);
+    glow.width = Math.max(width, height) * ENEMY_GLOW_SIZE_FACTOR;
+    glow.height = glow.width;
+    glow.tint = color;
+    glow.alpha = ENEMY_GLOW_ALPHA;
+    glow.blendMode = 'add';
+    enemy.addChildAt(glow, 0);
+  }
+
+  private updateKind(enemy: Ship, kind: EnemyKind, movement: EnemyMovementState): void {
+    const screen = this.application.screen;
+    switch (kind) {
+      case EnemyKind.diver:
+        if (!movement.diving && enemy.y >= screen.height * DIVER_TRIGGER_Y_RATIO) {
+          movement.diving = true;
+          enemy.targetX = this.getPlayer()?.x ?? enemy.x;
+        }
+        if (movement.diving) {
+          enemy.y += DIVER_DIVE_SPEED * this.lastDeltaMs;
+        }
+        break;
+      case EnemyKind.weaver:
+        movement.weaveCenterX ??= enemy.x;
+        movement.orbitAngle = (movement.orbitAngle ?? 0) + WEAVER_ANGULAR_SPEED * this.lastDeltaMs;
+        enemy.targetX = undefined;
+        enemy.x = movement.weaveCenterX + WEAVER_AMPLITUDE * Math.sin(movement.orbitAngle);
+        break;
+      default: {
+        // sniper
+        const holdY = screen.height * SNIPER_HOLD_Y_RATIO;
+        if (enemy.y < holdY) {
+          break;
+        }
+        movement.leaveAt ??= this.elapsed + SNIPER_HOLD_MS;
+        if (this.elapsed >= movement.leaveAt) {
+          break;
+        }
+        enemy.y = holdY;
+        enemy.targetX = this.getPlayer()?.x ?? enemy.x;
+        if ((movement.nextAttack ??= this.elapsed + SNIPER_SHOT_INTERVAL_MS / DOUBLE) <= this.elapsed) {
+          const player = this.getPlayer();
+          const angle = player ? Math.atan2(player.y - enemy.y, player.x - enemy.x) : DOWN;
+          this.shotService.fireRadial(enemy, 1, SNIPER_SHOT_SPEED, angle, 0);
+          movement.nextAttack = this.elapsed + SNIPER_SHOT_INTERVAL_MS;
+        }
+        break;
+      }
+    }
+  }
+
+  private decorateForSeason(enemy: Ship): void {
+    if (!CURRENT_SEASON_EVENT) {
+      return;
+    }
+    const { enemyIcons } = CURRENT_SEASON_EVENT;
+    const { width, height } = enemy.texture;
+    // keep the hit box at the ship's frame although the icon is drawn larger
+    enemy.boundsArea = new Rectangle(-width * THE_MIDDLE, -height * THE_MIDDLE, width, height);
+    const icon = new Text({
+      text: enemyIcons[Math.floor(Math.random() * enemyIcons.length)],
+      // eslint-disable-next-line no-magic-numbers
+      style: { fontSize: Math.round(height * 1.4) },
+    });
+    icon.anchor.set(THE_MIDDLE);
+    enemy.addChild(icon);
   }
 
   private spawnOrbiter(level: number, animations: Record<string, Texture[]>): void {
@@ -264,8 +492,8 @@ export class GameEnemyService extends UpdatableService {
   }
 
   private updateMovement(enemy: ObjectModelType, level: number, force = false): void {
-    if (enemy instanceof AnimatedGameSprite && enemy.isBoss) {
-      this.updateBossMovement(enemy);
+    if (enemy instanceof Ship && enemy.isBoss) {
+      this.updateBoss(enemy);
       return;
     }
 
@@ -276,6 +504,11 @@ export class GameEnemyService extends UpdatableService {
 
     const screenWidth = this.application.screen.width;
     const movement = this.getMovementState(enemy);
+    const kind = this.enemyKinds.get(enemy);
+    if (kind && enemy instanceof Ship) {
+      this.updateKind(enemy, kind, movement);
+      return;
+    }
 
     if (enemy instanceof AnimatedGameSprite && enemy.loopData) {
       return;
@@ -320,6 +553,8 @@ export class GameEnemyService extends UpdatableService {
   private spawnBoss(stage: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
     const bossEnergy = BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (stage - 1);
+    const pattern = getBossPattern(stage);
+    const definition = BOSS_DEFINITIONS[pattern];
 
     const boss = new Ship(
       ShipType.enemy,
@@ -329,7 +564,7 @@ export class GameEnemyService extends UpdatableService {
       animations['frame'],
     );
     boss.isBoss = true;
-    boss.autoFire = true;
+    boss.autoFire = definition.autoFire;
     boss.animationSpeed = ENEMY_ANIMATION_SPEED;
     boss.play();
     boss.anchor.set(THE_MIDDLE);
@@ -338,22 +573,24 @@ export class GameEnemyService extends UpdatableService {
     boss.energy = bossEnergy;
     boss.shotSpeed = BOSS_SHOT_SPEED;
     boss.shotPower = BOSS_SHOT_POWER;
-    boss.xSpeed = BOSS_XSPEED;
+    boss.xSpeed = definition.xSpeed;
     boss.explosionCount = BOSS_EXPLOSION_COUNT;
     boss.explosionScale = BOSS_EXPLOSION_SCALE;
-    // eslint-disable-next-line no-magic-numbers
-    boss.tint = BOSS_TINT;
+    boss.tint = definition.tint;
     boss.x = this.application.screen.width / BOSS_SCREEN_CENTER_DIVIDER;
     boss.y = 0;
     this.object.add(boss);
     this.application.stage.addChild(boss);
     this.boss = boss;
-    this.createBossBar();
+    this.createBossBar(definition.tint);
 
-    this.updateBossMovement(boss);
+    const movement = this.getMovementState(boss);
+    movement.bossPattern = pattern;
+    movement.nextAttack = this.elapsed + definition.attackIntervalMs;
+    this.updateBoss(boss);
   }
 
-  private createBossBar(): void {
+  private createBossBar(color: number): void {
     this.bossBar?.destroy({ children: true });
     const width = this.application.screen.width * BOSS_BAR_WIDTH_RATIO;
     this.bossBar = new Container();
@@ -364,7 +601,7 @@ export class GameEnemyService extends UpdatableService {
         .rect(0, 0, width, BOSS_BAR_HEIGHT)
         .fill(BOSS_BAR_BACKGROUND),
     );
-    this.bossBarFill = new Graphics().rect(0, 0, width, BOSS_BAR_HEIGHT).fill(BOSS_BAR_COLOR);
+    this.bossBarFill = new Graphics().rect(0, 0, width, BOSS_BAR_HEIGHT).fill(color);
     this.bossBar.addChild(this.bossBarFill);
     this.bossBar.x = (this.application.screen.width - width) / DOUBLE;
     this.bossBar.y = BOSS_BAR_Y;
@@ -384,8 +621,69 @@ export class GameEnemyService extends UpdatableService {
     this.bossBarFill!.scale.x = Math.max(0, this.boss.energy / this.boss.maxEnergy);
   }
 
-  private updateBossMovement(boss: AnimatedGameSprite): void {
+  private updateBoss(boss: Ship): void {
     const movement = this.getMovementState(boss);
+    const pattern = movement.bossPattern ?? BossPattern.sweeper;
+    const hoverY = Math.max(BOSS_HOVER_Y_MIN, this.application.screen.height * BOSS_HOVER_Y_RATIO);
+    movement.bossArrived ||= boss.y >= hoverY;
+    const arrived = movement.bossArrived;
+    // bosses fly in from the top and then hold their altitude (the orbiter places itself)
+    if (!arrived || pattern !== BossPattern.orbiter) {
+      boss.y = Math.min(boss.y, hoverY);
+    }
+
+    if (pattern === BossPattern.orbiter && arrived) {
+      this.updateOrbitMovement(boss, movement, hoverY);
+    } else if (pattern === BossPattern.hunter) {
+      boss.targetX = this.getPlayer()?.x ?? boss.x;
+    } else {
+      this.updateSweepMovement(boss, movement);
+    }
+
+    if (arrived && movement.nextAttack !== undefined && movement.nextAttack <= this.elapsed) {
+      this.fireBossAttack(boss, pattern);
+      const enraged = boss.energy <= boss.maxEnergy * BOSS_ENRAGE_RATIO;
+      const interval = BOSS_DEFINITIONS[pattern].attackIntervalMs;
+      movement.nextAttack = this.elapsed + (enraged ? interval * BOSS_ENRAGE_INTERVAL_FACTOR : interval);
+    }
+  }
+
+  private fireBossAttack(boss: Ship, pattern: BossPattern): void {
+    switch (pattern) {
+      case BossPattern.orbiter:
+        // full ring in all directions
+        this.shotService.fireRadial(boss, BOSS_RING_COUNT, BOSS_RADIAL_SHOT_SPEED);
+        break;
+      case BossPattern.hunter: {
+        // tight volley aimed at the player
+        const player = this.getPlayer();
+        const angle = player ? Math.atan2(player.y - boss.y, player.x - boss.x) : DOWN;
+        this.shotService.fireRadial(boss, BOSS_AIMED_COUNT, BOSS_RADIAL_SHOT_SPEED, angle - BOSS_AIMED_ARC / DOUBLE, BOSS_AIMED_ARC);
+        break;
+      }
+      default:
+        // sweeper: fan of shots spreading downwards
+        this.shotService.fireRadial(boss, BOSS_FAN_COUNT, BOSS_RADIAL_SHOT_SPEED, DOWN - BOSS_FAN_ARC / DOUBLE, BOSS_FAN_ARC);
+    }
+  }
+
+  /** Lying figure eight around the top centre of the screen. */
+  private updateOrbitMovement(boss: Ship, movement: EnemyMovementState, hoverY: number): void {
+    movement.orbitAngle = (movement.orbitAngle ?? 0) + BOSS_ORBIT_ANGULAR_SPEED * this.lastDeltaMs;
+    const angle = movement.orbitAngle;
+    const centerX = this.application.screen.width / DOUBLE;
+    const radiusX = this.application.screen.width * BOSS_ORBIT_RADIUS_X_RATIO;
+    boss.targetX = undefined;
+    boss.x = centerX + radiusX * Math.sin(angle);
+    // starts and stays at hoverY on average, dips below and above it
+    boss.y = hoverY + BOSS_ORBIT_RADIUS_Y * Math.sin(angle * DOUBLE);
+  }
+
+  private getPlayer(): ObjectModelType | undefined {
+    return this.object.objects().find((object) => object.type === ObjectType.ship);
+  }
+
+  private updateSweepMovement(boss: Ship, movement: EnemyMovementState): void {
     const screenWidth = this.application.screen.width;
     const bossHalfWidth = boss.width / BOSS_SCREEN_CENTER_DIVIDER;
     const margin = bossHalfWidth + BOSS_SWEEP_MARGIN;

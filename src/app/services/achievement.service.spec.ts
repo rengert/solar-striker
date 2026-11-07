@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { AchievementService } from './achievement.service';
 import { StorageService } from './storage.service';
 import { ACHIEVEMENTS } from '../models/achievement.model';
+import { SUPPORTED_LANGUAGES, TRANSLATIONS } from '../i18n/translations';
 
 describe('AchievementService', () => {
   let service: AchievementService;
@@ -123,5 +124,12 @@ describe('AchievementService', () => {
     const states = newService.getAll();
     const firstKill = states.find((s) => s.id === 'first_kill');
     expect(firstKill?.unlocked).toBe(true);
+  });
+
+  SUPPORTED_LANGUAGES.forEach((language) => {
+    it(`should have a title and description for every achievement in ${language}`, () => {
+      const keys = ACHIEVEMENTS.flatMap(({ id }) => [`achievement.${id}.title`, `achievement.${id}.description`]);
+      expect(keys.filter((key) => !(key in TRANSLATIONS[language]))).toEqual([]);
+    });
   });
 });

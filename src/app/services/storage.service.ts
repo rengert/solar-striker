@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AchievementState } from '../models/achievement.model';
 import { DailyChallengeState } from '../models/daily-challenge.model';
+import { HighscoreEntry } from '../models/highscore.model';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 
 export interface ShipClassSelectionState {
@@ -74,36 +75,27 @@ export class StorageService {
 
       dbRequest.onsuccess = function (event: Event): void {
         const database = (event.currentTarget as IDBOpenDBRequest).result;
-        const objectStore = database.transaction([storeName], 'readwrite').objectStore(storeName);
+        const transaction = database.transaction([storeName], 'readwrite');
+        const objectStore = transaction.objectStore(storeName);
 
         if (clear) {
-          objectStore.clear().onsuccess = (): void => {
-            // ignore the on success
-          };
+          objectStore.clear();
         }
 
-        data.forEach((item) => {
-          const objectRequest = objectStore.put(item); // Overwrite if exists
-          objectRequest.onerror = (): void => reject();
-          objectRequest.onsuccess = (): void => resolve();
-        });
+        data.forEach((item) => objectStore.put(item)); // Overwrite if exists
+        // resolve only once committed, so a following clearAll() cannot be overtaken
+        transaction.oncomplete = (): void => resolve();
+        transaction.onerror = (): void => reject(Error('IndexedDB write error'));
       };
-
-      resolve();
     });
   }
 
-  getHighscore(): Promise<{ date: string; kills: number; level: number }[]> {
+  getHighscore(): Promise<HighscoreEntry[]> {
     return getManyFromStore(Store.games, () => true);
   }
 
-  setHighscore(kills: number, level: number): Promise<void> {
-    return this.toStore(Store.games, {
-      id: crypto.randomUUID(),
-      date: new Date().toISOString(),
-      kills,
-      level,
-    });
+  setHighscore(entry: HighscoreEntry): Promise<void> {
+    return this.toStore(Store.games, entry);
   }
 
   async getCoins(): Promise<number> {
@@ -227,6 +219,26 @@ export class StorageService {
 
   clearLevelCheckpoint(): Promise<void> {
     return this.deleteFromStore(Store.upgrades, 'level-checkpoint');
+  }
+
+  /** Wipes all saved progress (coins, upgrades, highscores, achievements, dailies). */
+  clearAll(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      // eslint-disable-next-line no-magic-numbers
+      const dbRequest = indexedDB.open('data', 8);
+      dbRequest.onerror = (): void => reject(Error('IndexedDB database error'));
+      dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent): void => {
+        this.migrateDatabase((event.currentTarget as IDBOpenDBRequest).result);
+      };
+      dbRequest.onsuccess = (event: Event): void => {
+        const database = (event.currentTarget as IDBOpenDBRequest).result;
+        const stores = Object.values(Store);
+        const transaction = database.transaction(stores, 'readwrite');
+        stores.forEach((store) => transaction.objectStore(store).clear());
+        transaction.oncomplete = (): void => resolve();
+        transaction.onerror = (): void => reject(Error('IndexedDB clear error'));
+      };
+    });
   }
 
   private deleteFromStore(storeName: Store, id: string): Promise<void> {

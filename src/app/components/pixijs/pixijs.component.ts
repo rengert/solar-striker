@@ -1,9 +1,11 @@
 import { Component, ElementRef, inject, NgZone } from '@angular/core';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { ApplicationService } from '../../services/application.service';
 import { ExplosionService } from '../../services/explosion.service';
 import { GameCollectableService } from '../../services/game-collectable.service';
 import { GameEnemyService } from '../../services/game-enemy.service';
 import { GameLandscapeService } from '../../services/game-landscape.service';
+import { GameBaseService } from '../../services/game-base.service';
 import { GameMeteorService } from '../../services/game-meteor.service';
 import { GameScreenService } from '../../services/game-screen.service';
 import { GameShipService } from '../../services/game-ship.service';
@@ -19,6 +21,7 @@ import { ShipUpgradeService } from '../../services/ship-upgrade.service';
   template: '',
   providers: [
     ApplicationService,
+    GameBaseService,
     GameCollectableService,
     GameEnemyService,
     GameLandscapeService,
@@ -40,6 +43,13 @@ export class PixijsComponent {
     const elementRef = inject(ElementRef);
     const ngZone = inject(NgZone);
     const pixiGame = inject(GameService);
-    void application.init(elementRef).then(() => ngZone.runOutsideAngular(() => pixiGame.init()));
+    void application
+      .init(elementRef)
+      .then(() => ngZone.runOutsideAngular(() => pixiGame.init()))
+      .finally(() => {
+        // Keep the native splash / inline loader up until the menu is drawn, so the start never shows a black screen.
+        void SplashScreen.hide();
+        document.getElementById('boot-loader')?.remove();
+      });
   }
 }

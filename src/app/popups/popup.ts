@@ -6,8 +6,15 @@ import { LabeledButton } from '../models/pixijs/labeled-button.model';
 const PANEL_WIDTH = 265;
 const PANEL_TOP = -115;
 const PANEL_SLICE = { leftWidth: 12, rightWidth: 12, topHeight: 50, bottomHeight: 12 };
-const SCREEN_FILL = 0.92;
-const MAX_SCALE = 2;
+// same panel scale as the main menu, so buttons and text match on every screen
+const SCREEN_FILL = 0.8;
+const MAX_SCALE = 1.5;
+// native size of the button texture; index slots below are spaced for it
+const BUTTON_TEXTURE = { width: 190, height: 49 };
+const BUTTON_SLOT_STEP = 52;
+/** Shared button size for every screen, matching the main menu. */
+export const BUTTON_SIZE = { width: 160, height: 36, fontSize: 12 };
+const BUTTON_LABEL_PADDING = 16;
 
 export abstract class Popup extends Container {
   private readonly container: Container;
@@ -62,7 +69,11 @@ export abstract class Popup extends Container {
     this.background.width = width;
     this.background.height = height;
     // fit the whole panel on screen (phones shrink it, large screens enlarge it)
-    const scale = Math.min(MAX_SCALE, (width * SCREEN_FILL) / PANEL_WIDTH, (height * SCREEN_FILL) / this.panelHeight);
+    const scale = Math.min(
+      MAX_SCALE,
+      (width * SCREEN_FILL) / PANEL_WIDTH,
+      (height * SCREEN_FILL) / this.panelHeight,
+    );
     this.container.scale.set(scale);
     // eslint-disable-next-line no-magic-numbers
     this.container.x = width * 0.5;
@@ -72,14 +83,15 @@ export abstract class Popup extends Container {
 
   protected addText(
     content: string,
-    appearance: { size: number; rotated?: boolean; anchorX?: number },
+    appearance: { size: number; rotated?: boolean; anchorX?: number; fill?: number },
     position: { y: number; x?: number },
-  ): void {
+  ): Text {
     const text = new Text({
       text: content,
       style: {
         fontFamily: 'DefaultFont',
         fontSize: appearance.size,
+        ...(appearance.fill === undefined ? {} : { fill: appearance.fill }),
       },
     });
     text.x = position.x ?? 0;
@@ -89,21 +101,25 @@ export abstract class Popup extends Container {
     // eslint-disable-next-line no-magic-numbers
     text.rotation = appearance.rotated ? -3.14 / 2 : 0;
     this.container.addChild(text);
+    return text;
   }
 
   protected addButton(textContent: string, callback: () => void, index: number): LabeledButton {
+    const size = BUTTON_SIZE;
     const button = new ButtonContainer(Sprite.from(Texture.from('button')));
-    button.width = 190;
-    button.height = 49;
-    button.x = -95;
+    button.width = size.width;
+    button.height = size.height;
     // eslint-disable-next-line no-magic-numbers
-    button.y = -70 + index * 52;
+    button.x = -size.width / 2;
+    // centre the button in its slot so layouts built on the texture height keep their spacing
+    // eslint-disable-next-line no-magic-numbers
+    button.y = -70 + index * BUTTON_SLOT_STEP + (BUTTON_TEXTURE.height - size.height) / 2;
 
     const label = new Text({
       text: textContent,
       style: {
         fontFamily: 'DefaultFont',
-        fontSize: 14,
+        fontSize: size.fontSize,
       },
     });
     // eslint-disable-next-line no-magic-numbers
@@ -111,10 +127,19 @@ export abstract class Popup extends Container {
     label.x = 100;
     label.y = 22;
     button.addChild(label);
-
+    Popup.fitLabel({ button, label });
     button.onPress.connect(callback);
     this.container.addChild(button);
     return { button, label };
+  }
+
+  /** Undo the button's stretch on its label and shrink the text until it fits inside the button. */
+  protected static fitLabel({ button, label }: LabeledButton): void {
+    // the button texture is BUTTON_TEXTURE.width wide, so its on-screen width follows from the scale
+    const buttonWidth = BUTTON_TEXTURE.width * button.scale.x;
+    label.scale.set(1);
+    const fit = label.width > 0 ? Math.min(1, (buttonWidth - BUTTON_LABEL_PADDING) / label.width) : 1;
+    label.scale.set(fit / button.scale.x, fit / button.scale.y);
   }
 
   protected addToContent(displayObject: Container): void {

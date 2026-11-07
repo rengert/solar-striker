@@ -6,6 +6,7 @@ export const THE_MIDDLE = 0.5;
 export const LARGE_POP_UP_HEIGHT = 420;
 export const SHIELD_DURATION_MS = 5000;
 export const SLOW_MOTION_DURATION_MS = 5000;
+export const SPREAD_SHOT_DURATION_MS = 8000;
 export const OFF_SCREEN_BUFFER = 50;
 export const MAX_SHOT_POWER = 5;
 export const MAX_STAGE = 100;
@@ -177,6 +178,19 @@ export const GAME_CONFIG: GameConfig = {
         shot: 0,
         energy: 0,
         slowMotion: SLOW_MOTION_DURATION_MS,
+      },
+    },
+    {
+      type: PowerUp.spreadShot,
+      assetUrl: 'assets/game/powerups/power-up-1.json',
+      animationName: 'power-up-1',
+      // eslint-disable-next-line no-magic-numbers
+      tint: 0xffdd00,
+      powerUp: {
+        speed: 0,
+        shot: 0,
+        energy: 0,
+        spreadShot: SPREAD_SHOT_DURATION_MS,
       },
     },
   ],

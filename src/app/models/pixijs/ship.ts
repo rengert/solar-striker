@@ -14,6 +14,12 @@ export class Ship extends AnimatedGameSprite {
   autoFire = false;
   maxEnergy: number;
   shieldTicks = 0;
+  /** While > 0 every volley adds two diagonal shots. */
+  spreadShotTicks = 0;
+  /** Extra shield time per shield power-up, from the hangar skill tree. */
+  shieldBonusMs = 0;
+  /** Power-ups closer than this (px) fly to the ship, from the hangar skill tree. */
+  magnetRange = 0;
 
   /** Base stat used by ShipUpgradeService to add upgrade bonuses idempotently. */
   baseMaxEnergy: number;
@@ -59,6 +65,9 @@ export class Ship extends AnimatedGameSprite {
 
   shot(): void {
     this.shotService.shot(this.shotPower, this, this.speed <= 0);
+    if (this.spreadShotTicks > 0) {
+      this.shotService.fireSpread(this);
+    }
   }
 
   override update(ticker: Ticker): void {
@@ -79,6 +88,7 @@ export class Ship extends AnimatedGameSprite {
     if (this.shieldTicks > 0) {
       this.shieldTicks = Math.max(0, this.shieldTicks - ticker.deltaMS);
     }
+    this.spreadShotTicks = Math.max(0, this.spreadShotTicks - ticker.deltaMS);
 
     const deltaX = this.x - previousX;
     const deltaY = this.y - previousY;

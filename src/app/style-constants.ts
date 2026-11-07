@@ -6,6 +6,7 @@ export const icons = {
   life: '\uf004',
   level: '\uf188',
   pause: '\uf04c',
+  base: '\uf57d',
 };
 
 export const textStyle = new TextStyle({

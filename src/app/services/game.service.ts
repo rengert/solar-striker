@@ -2,6 +2,7 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
+import { HighscoreEntry, calculateRunResult, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PlayerShipClass } from '../models/player-ship-class.model';
@@ -11,6 +12,7 @@ import { CreditsPopup } from '../popups/credits-popup';
 import { DailyChallengesPopup } from '../popups/daily-challenges-popup';
 import { HangarPopup } from '../popups/hangar-popup';
 import { HighscorePopup } from '../popups/highscore-popup';
+import { LibraryEnemiesPopup, LibraryPopup } from '../popups/library-popup';
 import { NavigationPopup } from '../popups/navigation-popup';
 import { PausePopup } from '../popups/pause-popup';
 import { SettingsPopup } from '../popups/settings-popup';
@@ -20,6 +22,7 @@ import { handleMouseMove } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
+import { GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -56,6 +59,7 @@ const BOSS_FLASH_COLOR = 0xffffff;
 const BOSS_FLASH_ALPHA = 0.6;
 const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
+const BASE_HIT_FLASH_ALPHA = 0.15;
 
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
@@ -75,6 +79,7 @@ export class GameService {
   readonly coins = computed(() => this.storedCoins() + this.sessionCoins());
   readonly combo = signal(1);
   readonly highestCombo = signal(1);
+  lastRun?: RunResult;
   readonly stage = signal(1);
   readonly savedStage = signal<number | null>(null);
 
@@ -90,6 +95,7 @@ export class GameService {
   private readonly enemy = inject(GameEnemyService);
   private readonly ship = inject(GameShipService);
   private readonly meteor = inject(GameMeteorService);
+  private readonly base = inject(GameBaseService);
   private readonly gameScreen = inject(GameScreenService);
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
@@ -144,7 +150,9 @@ export class GameService {
     });
 
     // music runs only while actually playing
-    effect(() => (this.started() && !this.#paused() ? this.sound.startMusic() : this.sound.stopMusic()));
+    effect(() =>
+      this.started() && !this.#paused() ? this.sound.startMusic() : this.sound.stopMusic(),
+    );
 
     effect(() => this.landscape.setStage(this.stage()));
 
@@ -163,7 +171,12 @@ export class GameService {
     });
 
     this.object.onDestroyed(ObjectType.enemy, (destroyedEnemy, by) => {
-      if (by.type === ObjectType.ship || by.reference?.type === ObjectType.ship) {
+      // a boss shot down by a meteor or another enemy must still end the boss fight, otherwise no enemies spawn anymore
+      if (!isShipDestroyer(by) && (destroyedEnemy as AnimatedGameSprite).isBoss) {
+        this.onBossDefeated();
+        return;
+      }
+      if (isShipDestroyer(by)) {
         this.kills.update((value) => value + 1);
         const newKills = this.kills();
         // increase combo on player kill
@@ -193,7 +206,10 @@ export class GameService {
         } else if (this.started()) {
           // Track kills within the current stage; trigger boss when threshold is reached
           this.stageKills++;
-          if (!this.enemy.bossFightActive && this.stageKills >= this.getKillsRequiredForStage(this.stage())) {
+          if (
+            !this.enemy.bossFightActive &&
+            this.stageKills >= this.getKillsRequiredForStage(this.stage())
+          ) {
             this.enemy.bossFightActive = true;
             this.enemy.spawnStageBoss(this.stage());
           }
@@ -204,8 +220,13 @@ export class GameService {
         this.achievementService.addCumulative('veteran', 1);
         // Daily challenge: track kills and boss
         this.dailyChallengeService.addKills(1);
+        const kind = this.enemy.getKind(destroyedEnemy);
+        if (kind) {
+          this.achievementService.addCumulative(`${kind}_hunter`, 1);
+        }
         if (isBoss) {
           this.achievementService.checkMilestone('boss_hunter', 1);
+          this.achievementService.addCumulative('boss_slayer', 1);
           this.dailyChallengeService.addBoss();
         }
       }
@@ -230,6 +251,11 @@ export class GameService {
       this.rewardedMeteors.add(meteor);
       this.addCoins(coins);
     });
+  }
+
+  /** True when the run ended because the home base was destroyed rather than the player ship. */
+  get baseDestroyed(): boolean {
+    return this.base.energy() === 0;
   }
 
   get canContinue(): boolean {
@@ -278,9 +304,8 @@ export class GameService {
     const currentStage = this.stage();
     if (currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
-      void this.storage.setHighscore(this.kills(), currentStage);
       void this.resetSavedStage();
-      void this.presentPopup(VictoryPopup);
+      void this.finishRun(VictoryPopup);
       this.ship.instance.autoFire = false;
       this.started.set(false);
       this.gameScreen.pauseButtonVisible = false;
@@ -290,6 +315,7 @@ export class GameService {
       this.stage.set(nextStage);
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
+      this.base.repair();
       void this.saveStageCheckpoint(nextStage);
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
@@ -315,13 +341,17 @@ export class GameService {
   }
 
   async init(): Promise<void> {
-    await this.translation.init();
-    await document.fonts.load('900 10px "Font Awesome 6 Free"');
-    await this.collectables.init();
-    await this.enemy.init();
-    await this.ship.init();
-    await this.shotService.init();
+    // Independent loads: run them in parallel instead of one network round trip after another.
+    await Promise.all([
+      this.translation.init(),
+      document.fonts.load('900 10px "Font Awesome 6 Free"'),
+      this.collectables.init(),
+      this.enemy.init(),
+      this.ship.init(),
+      this.shotService.init(),
+    ]);
     this.landscape.setup();
+    this.base.init();
     this.gameScreen.init();
 
     await this.shipUpgrades.init();
@@ -335,9 +365,13 @@ export class GameService {
 
     // Wire achievement unlock notification
     this.achievementService.onUnlocked = (def): void => {
-      const titleKey = `achievement.${def.id}.title` as Parameters<typeof this.translation.getTranslation>[0];
+      const titleKey = `achievement.${def.id}.title` as Parameters<
+        typeof this.translation.getTranslation
+      >[0];
       const title = this.translation.getTranslation(titleKey);
-      const rewardLine = this.translation.getTranslation('achievement.reward', { reward: String(def.reward) });
+      const rewardLine = this.translation.getTranslation('achievement.reward', {
+        reward: String(def.reward),
+      });
       this.gameScreen.showAchievementBanner(def.icon, title, rewardLine);
       this.addBonusCoins(def.reward);
     };
@@ -345,14 +379,18 @@ export class GameService {
     // Wire daily challenge completion notification
     this.dailyChallengeService.onCompleted = (challenge): void => {
       const title = this.translation.getTranslation('daily.completed');
-      const rewardLine = this.translation.getTranslation('daily.reward', { reward: String(challenge.reward) });
+      const rewardLine = this.translation.getTranslation('daily.reward', {
+        reward: String(challenge.reward),
+      });
       this.gameScreen.showAchievementBanner(challenge.icon, title, rewardLine);
       this.addBonusCoins(challenge.reward);
     };
 
     this.setup();
 
-    this.application.renderer.on('resize', (width: number, height: number) => this.currentPopup?.resize?.(width, height));
+    this.application.renderer.on('resize', (width: number, height: number) =>
+      this.currentPopup?.resize?.(width, height),
+    );
 
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden || !this.started() || this.#paused()) {
@@ -388,6 +426,7 @@ export class GameService {
     this.sessionCoins.set(0);
     this.ship.applyUpgrades();
     this.kills.set(0);
+    this.base.repair();
     this.ship.instance.autoFire = false;
     this.#paused.set(false);
     this.started.set(true);
@@ -411,6 +450,11 @@ export class GameService {
     await this.presentPopup(CreditsPopup);
   }
 
+  async openLibrary(requester: AppScreen, enemies = false): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.presentPopup(enemies ? LibraryEnemiesPopup : LibraryPopup);
+  }
+
   async pause(): Promise<void> {
     if (!this.started() || this.#paused()) {
       return;
@@ -418,7 +462,11 @@ export class GameService {
 
     this.ship.instance.autoFire = false;
     this.#paused.set(true);
-    this.application.ticker.stop();
+    await this.presentPopup(PausePopup);
+  }
+
+  async openPause(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
     await this.presentPopup(PausePopup);
   }
 
@@ -426,7 +474,6 @@ export class GameService {
     await this.hideAndRemoveScreen(requester);
     this.currentPopup = undefined;
     this.#paused.set(false);
-    this.application.ticker.start();
   }
 
   async openNavigation(requester: AppScreen): Promise<void> {
@@ -459,6 +506,13 @@ export class GameService {
     window.location.reload();
   }
 
+  async resetProgress(requester: AppScreen): Promise<void> {
+    await this.hideAndRemoveScreen(requester);
+    await this.storage.clearAll();
+    // a fresh start reloads every service from the now empty storage
+    window.location.reload();
+  }
+
   async openHighscore(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(HighscorePopup);
@@ -469,6 +523,15 @@ export class GameService {
     this.ship.spawn();
     this.setupInteractions(this.ship);
     this.gameScreen.onPause = (): void => void this.pause();
+    window.addEventListener('keydown', (event) => event.key === 'Escape' && void this.pause());
+    this.enemy.onEnemyPassed = (enemy): void => {
+      if (!this.started()) {
+        return;
+      }
+      this.base.attack(enemy.x);
+      this.gameScreen.applyScreenShake(LARGE_ENEMY_SHAKE_AMPLITUDE);
+      this.gameScreen.flashScreen(DAMAGE_FLASH_COLOR, BASE_HIT_FLASH_ALPHA);
+    };
 
     this.application.ticker.add((delta) => {
       if (!this.started() || this.#paused()) {
@@ -503,9 +566,8 @@ export class GameService {
       }
       this.lastShipEnergy = currentEnergy;
 
-      if (this.ship.instance.energy === 0) {
-        void this.storage.setHighscore(this.kills(), this.stage());
-        void this.presentPopup(YouAreDeadPopup);
+      if (this.ship.instance.energy === 0 || this.base.energy() === 0) {
+        void this.finishRun(YouAreDeadPopup);
         this.ship.instance.autoFire = false;
         this.started.set(false);
         this.gameScreen.pauseButtonVisible = false;
@@ -529,8 +591,26 @@ export class GameService {
         return;
       }
 
-      handleMouseMove(event, ship.instance);
+      handleMouseMove(event, ship.instance, this.application.screen.height);
     });
+  }
+
+  // ranks the run before the result popup opens, so the popup can show rank and record
+  private async finishRun(popup: AppScreenConstructor): Promise<void> {
+    const entry: HighscoreEntry = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString(),
+      kills: this.kills(),
+      level: this.stage(),
+      combo: this.highestCombo(),
+      coins: this.sessionCoins(),
+    };
+    this.lastRun = calculateRunResult(await this.storage.getHighscore(), entry);
+    await this.storage.setHighscore(entry);
+    if (this.lastRun.isRecord) {
+      this.sound.play('powerUp');
+    }
+    await this.presentPopup(popup);
   }
 
   private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
@@ -589,7 +669,7 @@ export class GameService {
   async handleUpgradePurchase(type: ShipUpgradeType): Promise<boolean> {
     const cost = this.shipUpgrades.getUpgradeCost(type);
 
-    if (cost === null) {
+    if (cost === null || !this.shipUpgrades.isUnlocked(type)) {
       return false;
     }
 
@@ -609,6 +689,7 @@ export class GameService {
       return false;
     }
 
+    await this.storage.setCoins(this.coins());
     this.ship.applyUpgrades();
 
     if (this.started()) {
@@ -632,6 +713,7 @@ export class GameService {
     }
 
     this.applyCoinCost(definition.cost);
+    await this.storage.setCoins(this.coins());
     await this.playerShipService.unlock(cls);
     await this.playerShipService.selectClass(cls);
     this.ship.applyUpgrades();
