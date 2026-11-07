@@ -24,7 +24,7 @@ import { handleMouseMove } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
-import { GameBaseService } from './game-base.service';
+import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
 import { GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
@@ -307,7 +307,11 @@ export class GameService {
 
   private onBossDefeated(): void {
     const currentStage = this.stage();
+    if (this.base.energy() === BASE_MAX_ENERGY) {
+      this.dailyChallengeService.addFlawlessStage();
+    }
     if (currentStage > this.clearedStage()) {
+      this.dailyChallengeService.addNewStage();
       this.clearedStage.set(currentStage);
       void this.storage.setCampaignProgress(currentStage);
     }

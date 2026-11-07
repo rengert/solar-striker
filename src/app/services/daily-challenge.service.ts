@@ -74,6 +74,21 @@ export class DailyChallengeService {
     this.addProgressForType('boss', 1);
   }
 
+  /** Increment cumulative daily power-up pickups. */
+  addPowerUp(): void {
+    this.addProgressForType('powerups', 1);
+  }
+
+  /** Count a stage cleared while the home base still had full energy. */
+  addFlawlessStage(): void {
+    this.addProgressForType('flawless', 1);
+  }
+
+  /** Count a campaign stage cleared for the very first time. */
+  addNewStage(): void {
+    this.addProgressForType('newStage', 1);
+  }
+
   private addProgressForType(type: DailyChallengeType, amount: number): void {
     this.ensureFreshDay();
     let changed = false;

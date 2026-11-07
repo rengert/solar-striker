@@ -1,4 +1,4 @@
-export type DailyChallengeType = 'kills' | 'combo' | 'level' | 'coins' | 'boss';
+export type DailyChallengeType = 'kills' | 'combo' | 'level' | 'coins' | 'boss' | 'powerups' | 'flawless' | 'newStage';
 
 export interface DailyChallengeDefinition {
   id: string;
@@ -21,18 +21,23 @@ const REWARD_XL = 20;
 const REWARD_XXL = 25;
 const REWARD_XXXL = 30;
 
+// every third entry is a combo/level mission, so each day mixes one-run goals with all-day tallies
 export const DAILY_CHALLENGE_POOL: DailyChallengeDefinition[] = [
-  { id: 'dc_kills_20', type: 'kills', threshold: 20, reward: REWARD_S, icon: '🎯' },
   { id: 'dc_combo_3', type: 'combo', threshold: 3, reward: REWARD_S, icon: '🔥' },
-  { id: 'dc_boss_1', type: 'boss', threshold: 1, reward: REWARD_S, icon: '👾' },
-  { id: 'dc_kills_50', type: 'kills', threshold: 50, reward: REWARD_L, icon: '🎯' },
-  { id: 'dc_combo_4', type: 'combo', threshold: 4, reward: REWARD_M, icon: '🔥' },
+  { id: 'dc_kills_20', type: 'kills', threshold: 20, reward: REWARD_S, icon: '🎯' },
+  { id: 'dc_powerups_3', type: 'powerups', threshold: 3, reward: REWARD_S, icon: '⚡' },
   { id: 'dc_level_10', type: 'level', threshold: 10, reward: REWARD_L, icon: '🚀' },
-  { id: 'dc_kills_100', type: 'kills', threshold: 100, reward: REWARD_XXL, icon: '🎯' },
-  { id: 'dc_combo_5', type: 'combo', threshold: 5, reward: REWARD_L, icon: '💫' },
-  { id: 'dc_level_15', type: 'level', threshold: 15, reward: REWARD_XL, icon: '🚀' },
+  { id: 'dc_boss_1', type: 'boss', threshold: 1, reward: REWARD_S, icon: '👾' },
   { id: 'dc_coins_30', type: 'coins', threshold: 30, reward: REWARD_M, icon: '💰' },
+  { id: 'dc_combo_4', type: 'combo', threshold: 4, reward: REWARD_M, icon: '🔥' },
+  { id: 'dc_kills_50', type: 'kills', threshold: 50, reward: REWARD_L, icon: '🎯' },
+  { id: 'dc_flawless_1', type: 'flawless', threshold: 1, reward: REWARD_M, icon: '🛡️' },
+  { id: 'dc_level_15', type: 'level', threshold: 15, reward: REWARD_XL, icon: '🚀' },
+  { id: 'dc_powerups_8', type: 'powerups', threshold: 8, reward: REWARD_M, icon: '⚡' },
   { id: 'dc_coins_60', type: 'coins', threshold: 60, reward: REWARD_XL, icon: '💰' },
+  { id: 'dc_combo_5', type: 'combo', threshold: 5, reward: REWARD_L, icon: '💫' },
+  { id: 'dc_kills_100', type: 'kills', threshold: 100, reward: REWARD_XXL, icon: '🎯' },
+  { id: 'dc_newstage_1', type: 'newStage', threshold: 1, reward: REWARD_L, icon: '🗺️' },
   { id: 'dc_level_20', type: 'level', threshold: 20, reward: REWARD_XXXL, icon: '🏆' },
 ];
 
