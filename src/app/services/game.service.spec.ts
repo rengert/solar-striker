@@ -155,6 +155,8 @@ describe('GameService', () => {
             getLevelCheckpoint: jasmine.createSpy('getLevelCheckpoint').and.returnValue(Promise.resolve(null)),
             setLevelCheckpoint: jasmine.createSpy('setLevelCheckpoint').and.returnValue(Promise.resolve()),
             clearLevelCheckpoint: jasmine.createSpy('clearLevelCheckpoint').and.returnValue(Promise.resolve()),
+            getCampaignProgress: jasmine.createSpy('getCampaignProgress').and.returnValue(Promise.resolve(0)),
+            setCampaignProgress: jasmine.createSpy('setCampaignProgress').and.returnValue(Promise.resolve()),
             getDailyChallenges: jasmine.createSpy('getDailyChallenges').and.returnValue(Promise.resolve(null)),
             setDailyChallenges: jasmine.createSpy('setDailyChallenges').and.returnValue(Promise.resolve()),
           },
@@ -607,6 +609,16 @@ describe('GameService', () => {
       objectService.triggerCallbacks(bossEnemy, playerRocket);
 
       expect(storage.setLevelCheckpoint).toHaveBeenCalledWith(STAGE_TWO);
+    });
+
+    it('should remember the highest cleared stage for the campaign', () => {
+      const storage = TestBed.inject(StorageService) as unknown as { setCampaignProgress: jasmine.Spy };
+      service.stage.set(STAGE_THREE);
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      expect(service.clearedStage()).toBe(STAGE_THREE);
+      expect(storage.setCampaignProgress).toHaveBeenCalledOnceWith(STAGE_THREE);
     });
   });
 

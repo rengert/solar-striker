@@ -82,6 +82,8 @@ export class GameService {
   lastRun?: RunResult;
   readonly stage = signal(1);
   readonly savedStage = signal<number | null>(null);
+  /** Highest stage whose boss the player has ever beaten. */
+  readonly clearedStage = signal(0);
 
   private comboTimer?: number;
 
@@ -302,6 +304,10 @@ export class GameService {
 
   private onBossDefeated(): void {
     const currentStage = this.stage();
+    if (currentStage > this.clearedStage()) {
+      this.clearedStage.set(currentStage);
+      void this.storage.setCampaignProgress(currentStage);
+    }
     if (currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
       void this.resetSavedStage();
@@ -362,6 +368,8 @@ export class GameService {
     const savedStage = await this.storage.getLevelCheckpoint();
     this.storedCoins.set(storedCoins);
     this.savedStage.set(savedStage);
+    // a checkpoint from before the campaign existed still counts as progress
+    this.clearedStage.set(Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1));
 
     // Wire achievement unlock notification
     this.achievementService.onUnlocked = (def): void => {

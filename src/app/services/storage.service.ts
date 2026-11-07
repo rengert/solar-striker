@@ -221,6 +221,21 @@ export class StorageService {
     return this.deleteFromStore(Store.upgrades, 'level-checkpoint');
   }
 
+  /** Highest stage whose boss was ever defeated, 0 if none; drives the campaign screen. */
+  async getCampaignProgress(): Promise<number> {
+    const entries = await getManyFromStore<{ id: string; clearedStage: number }>(
+      Store.upgrades,
+      (item) => item.id === 'campaign-progress',
+    );
+    const clearedStage = entries.at(0)?.clearedStage;
+
+    return typeof clearedStage === 'number' && Number.isFinite(clearedStage) ? Math.max(0, Math.floor(clearedStage)) : 0;
+  }
+
+  setCampaignProgress(clearedStage: number): Promise<void> {
+    return this.toStore(Store.upgrades, { id: 'campaign-progress', clearedStage });
+  }
+
   /** Wipes all saved progress (coins, upgrades, highscores, achievements, dailies). */
   clearAll(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
