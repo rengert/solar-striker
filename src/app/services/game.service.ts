@@ -86,6 +86,10 @@ export class GameService {
   readonly savedStage = signal<number | null>(null);
   /** Highest stage whose boss the player has ever beaten. */
   readonly clearedStage = signal(0);
+  /** Endless mode: stages after the campaign that never end in victory and keep no checkpoint. */
+  readonly endless = signal(false);
+  /** Highest stage whose boss was beaten in endless mode, 0 if none. */
+  readonly endlessRecord = signal(0);
 
   private comboTimer?: number;
 
@@ -310,12 +314,17 @@ export class GameService {
     if (this.base.energy() === BASE_MAX_ENERGY) {
       this.dailyChallengeService.addFlawlessStage();
     }
-    if (currentStage > this.clearedStage()) {
+    // saved per boss, so closing the app mid-run keeps the record
+    if (this.endless() && currentStage > this.endlessRecord()) {
+      this.endlessRecord.set(currentStage);
+      void this.storage.setEndlessRecord(currentStage);
+    }
+    if (!this.endless() && currentStage > this.clearedStage()) {
       this.dailyChallengeService.addNewStage();
       this.clearedStage.set(currentStage);
       void this.storage.setCampaignProgress(currentStage);
     }
-    if (currentStage >= MAX_STAGE) {
+    if (!this.endless() && currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
       void this.resetSavedStage();
       void this.finishRun(VictoryPopup);
@@ -329,7 +338,9 @@ export class GameService {
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
       this.base.repair();
-      void this.saveStageCheckpoint(nextStage);
+      if (!this.endless()) {
+        void this.saveStageCheckpoint(nextStage);
+      }
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
         this.gameScreen.showStageAnnouncement(nextStage);
@@ -377,6 +388,7 @@ export class GameService {
     this.savedStage.set(savedStage);
     // a checkpoint from before the campaign existed still counts as progress
     this.clearedStage.set(Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1));
+    this.endlessRecord.set(await this.storage.getEndlessRecord());
     await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);
 
     // Wire achievement unlock notification
@@ -434,7 +446,15 @@ export class GameService {
     await this.startSession(requester, this.savedStage() ?? 1);
   }
 
-  private async startSession(requester: AppScreen, startStage: number): Promise<void> {
+  /** Unlocked once the campaign is cleared; picks up difficulty right after the last stage. */
+  async startEndless(requester: AppScreen): Promise<void> {
+    if (this.clearedStage() < MAX_STAGE) {
+      return;
+    }
+    await this.startSession(requester, MAX_STAGE + 1, true);
+  }
+
+  private async startSession(requester: AppScreen, startStage: number, endless = false): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
@@ -448,13 +468,16 @@ export class GameService {
     this.started.set(true);
     this.gameScreen.pauseButtonVisible = true;
     // Reset stage and streak tracking for the new game session
-    this.stage.set(Math.min(MAX_STAGE, Math.max(1, Math.floor(startStage))));
+    this.endless.set(endless);
+    this.stage.set(endless ? startStage : Math.min(MAX_STAGE, Math.max(1, Math.floor(startStage))));
     this.stageKills = 0;
     this.enemy.bossFightActive = false;
     this.lastShipEnergy = this.ship.instance.energy;
     this.streakElapsedMs = 0;
     this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
-    await this.saveStageCheckpoint(this.stage());
+    if (!endless) {
+      await this.saveStageCheckpoint(this.stage());
+    }
 
     if (this.stage() > 1) {
       this.gameScreen.showStageAnnouncement(this.stage());

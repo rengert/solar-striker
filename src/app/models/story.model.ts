@@ -57,8 +57,17 @@ function getChapterLine(chapter: number, part: number, key: string): RadioLine {
   };
 }
 
+const ENDLESS_INTRO: readonly RadioLine[] = [
+  { speaker: 'vega', text: 'story.endless.1' },
+  { speaker: 'bolt', text: 'story.endless.2' },
+];
+
 /** Radio talk when a stage starts: the chapter intro on its first stage, one radio line otherwise. */
 export function getStageBriefing(stage: number): RadioLine[] {
+  // endless mode runs past the story: one intro, then silence
+  if (stage > MAX_STAGE) {
+    return stage === MAX_STAGE + 1 ? [...ENDLESS_INTRO] : [];
+  }
   const chapter = getChapter(stage);
   const position = (Math.floor(stage) - 1) % STAGES_PER_CHAPTER;
   if (position === 0) {
@@ -73,7 +82,7 @@ export function getStageBriefing(stage: number): RadioLine[] {
 
 /** Radio talk after the boss of a stage: the chapter outro after its last boss, a short reaction otherwise. */
 export function getBossDebriefing(stage: number): RadioLine[] {
-  if (Math.floor(stage) % STAGES_PER_CHAPTER === 0) {
+  if (stage <= MAX_STAGE && Math.floor(stage) % STAGES_PER_CHAPTER === 0) {
     // eslint-disable-next-line no-magic-numbers
     return [getChapterLine(getChapter(stage), 4, 'outro')];
   }

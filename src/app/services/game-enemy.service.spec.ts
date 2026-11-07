@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Texture, Ticker } from 'pixi.js';
 import { ApplicationService } from './application.service';
 import { ExplosionService } from './explosion.service';
-import { BossPattern, EnemyKind, GameEnemyService, getBossPattern } from './game-enemy.service';
+import { BossPattern, EnemyKind, GameEnemyService, getBossPattern, getSpawnInterval } from './game-enemy.service';
 import { GameScreenService } from './game-screen.service';
 import { GameShotService } from './game-shot.service';
 import { ObjectService } from './object.service';
@@ -292,5 +292,13 @@ describe('GameEnemyService - enemy kinds', () => {
     sniper.y += 10;
     service.update(createMockTicker(), 1);
     expect(sniper.y).toBeGreaterThan(MOCK_SCREEN_HEIGHT * 0.2);
+  });
+});
+
+describe('getSpawnInterval', () => {
+  it('keeps spawning enemies on very high endless levels', () => {
+    // eslint-disable-next-line no-magic-numbers
+    expect(getSpawnInterval(600)).toBe(1);
+    expect(getSpawnInterval(1)).toBeGreaterThan(1);
   });
 });

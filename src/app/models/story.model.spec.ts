@@ -29,6 +29,12 @@ describe('story', () => {
     expect(getBossDebriefing(1)[0].text).toMatch(/^story\.boss\./);
   });
 
+  it('should only play the endless intro on the first stage after the campaign', () => {
+    expect(getStageBriefing(MAX_STAGE + 1).map(({ text }) => text)).toEqual(['story.endless.1', 'story.endless.2']);
+    expect(getStageBriefing(MAX_STAGE + SECOND_STAGE)).toEqual([]);
+    expect(getBossDebriefing(MAX_STAGE + LAST_STAGE_OF_FIRST_CHAPTER)[0].text).toMatch(/^story\.boss\./);
+  });
+
   SUPPORTED_LANGUAGES.forEach((language) => {
     it(`should have every radio line and chapter title in ${language}`, () => {
       const keys = Array.from({ length: MAX_STAGE }, (_, index) => index + 1).flatMap((stage) => [
