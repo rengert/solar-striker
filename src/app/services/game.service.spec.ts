@@ -162,6 +162,8 @@ describe('GameService', () => {
             clearLevelCheckpoint: jasmine.createSpy('clearLevelCheckpoint').and.returnValue(Promise.resolve()),
             getCampaignProgress: jasmine.createSpy('getCampaignProgress').and.returnValue(Promise.resolve(0)),
             setCampaignProgress: jasmine.createSpy('setCampaignProgress').and.returnValue(Promise.resolve()),
+            getEndlessRecord: jasmine.createSpy('getEndlessRecord').and.returnValue(Promise.resolve(0)),
+            setEndlessRecord: jasmine.createSpy('setEndlessRecord').and.returnValue(Promise.resolve()),
             getDailyChallenges: jasmine.createSpy('getDailyChallenges').and.returnValue(Promise.resolve(null)),
             setDailyChallenges: jasmine.createSpy('setDailyChallenges').and.returnValue(Promise.resolve()),
           },
@@ -677,6 +679,46 @@ describe('GameService', () => {
       await service.continueFromCheckpoint({} as AppScreen);
 
       expect(radio).toHaveBeenCalledOnceWith(getStageBriefing(SAVED_STAGE_SEVEN));
+    });
+  });
+
+  describe('endless mode', () => {
+    // eslint-disable-next-line no-magic-numbers
+    const SECOND_ENDLESS_STAGE = MAX_STAGE + 2;
+    let storage: { setLevelCheckpoint: jasmine.Spy; setCampaignProgress: jasmine.Spy; setEndlessRecord: jasmine.Spy };
+
+    beforeEach(() => {
+      storage = TestBed.inject(StorageService) as unknown as typeof storage;
+      spyOn(service as unknown as { presentPopup: () => Promise<void> }, 'presentPopup').and.returnValue(Promise.resolve());
+    });
+
+    it('should stay locked until the campaign is cleared', async () => {
+      await service.startEndless({} as AppScreen);
+
+      expect(service.endless()).toBeFalse();
+    });
+
+    it('should start right after the last stage without touching the checkpoint', async () => {
+      service.clearedStage.set(MAX_STAGE);
+
+      await service.startEndless({} as AppScreen);
+
+      expect(service.endless()).toBeTrue();
+      expect(service.stage()).toBe(MAX_STAGE + 1);
+      expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
+    });
+
+    it('should keep advancing past bosses and store each cleared stage as the record', async () => {
+      service.clearedStage.set(MAX_STAGE);
+      await service.startEndless({} as AppScreen);
+      const playerShip = createMockObject(ObjectType.ship);
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerShip);
+
+      expect(service.stage()).toBe(SECOND_ENDLESS_STAGE);
+      expect(storage.setCampaignProgress).not.toHaveBeenCalled();
+      expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
+      expect(service.endlessRecord()).toBe(MAX_STAGE + 1);
+      expect(storage.setEndlessRecord).toHaveBeenCalledOnceWith(MAX_STAGE + 1);
     });
   });
 

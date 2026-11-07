@@ -236,6 +236,21 @@ export class StorageService {
     return this.toStore(Store.upgrades, { id: 'campaign-progress', clearedStage });
   }
 
+  /** Highest stage reached in endless mode, 0 if never played. */
+  async getEndlessRecord(): Promise<number> {
+    const entries = await getManyFromStore<{ id: string; stage: number }>(
+      Store.upgrades,
+      (item) => item.id === 'endless-record',
+    );
+    const stage = entries.at(0)?.stage;
+
+    return typeof stage === 'number' && Number.isFinite(stage) ? Math.max(0, Math.floor(stage)) : 0;
+  }
+
+  setEndlessRecord(stage: number): Promise<void> {
+    return this.toStore(Store.upgrades, { id: 'endless-record', stage });
+  }
+
   /** Wipes all saved progress (coins, upgrades, highscores, achievements, dailies). */
   clearAll(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
