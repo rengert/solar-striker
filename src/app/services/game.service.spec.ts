@@ -708,7 +708,7 @@ describe('GameService', () => {
       expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
     });
 
-    it('should keep advancing past bosses and store the record when the run ends', async () => {
+    it('should keep advancing past bosses and store each cleared stage as the record', async () => {
       service.clearedStage.set(MAX_STAGE);
       await service.startEndless({} as AppScreen);
       const playerShip = createMockObject(ObjectType.ship);
@@ -717,11 +717,8 @@ describe('GameService', () => {
       expect(service.stage()).toBe(SECOND_ENDLESS_STAGE);
       expect(storage.setCampaignProgress).not.toHaveBeenCalled();
       expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
-
-      await (service as unknown as { finishRun: (popup: unknown) => Promise<void> }).finishRun(undefined);
-
-      expect(service.endlessRecord()).toBe(SECOND_ENDLESS_STAGE);
-      expect(storage.setEndlessRecord).toHaveBeenCalledOnceWith(SECOND_ENDLESS_STAGE);
+      expect(service.endlessRecord()).toBe(MAX_STAGE + 1);
+      expect(storage.setEndlessRecord).toHaveBeenCalledOnceWith(MAX_STAGE + 1);
     });
   });
 

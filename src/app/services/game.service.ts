@@ -88,6 +88,7 @@ export class GameService {
   readonly clearedStage = signal(0);
   /** Endless mode: stages after the campaign that never end in victory and keep no checkpoint. */
   readonly endless = signal(false);
+  /** Highest stage whose boss was beaten in endless mode, 0 if none. */
   readonly endlessRecord = signal(0);
 
   private comboTimer?: number;
@@ -312,6 +313,11 @@ export class GameService {
     const currentStage = this.stage();
     if (this.base.energy() === BASE_MAX_ENERGY) {
       this.dailyChallengeService.addFlawlessStage();
+    }
+    // saved per boss, so closing the app mid-run keeps the record
+    if (this.endless() && currentStage > this.endlessRecord()) {
+      this.endlessRecord.set(currentStage);
+      void this.storage.setEndlessRecord(currentStage);
     }
     if (!this.endless() && currentStage > this.clearedStage()) {
       this.dailyChallengeService.addNewStage();
@@ -645,10 +651,6 @@ export class GameService {
       combo: this.highestCombo(),
       coins: this.sessionCoins(),
     };
-    if (this.endless() && entry.level > this.endlessRecord()) {
-      this.endlessRecord.set(entry.level);
-      await this.storage.setEndlessRecord(entry.level);
-    }
     this.lastRun = calculateRunResult(await this.storage.getHighscore(), entry);
     await this.storage.setHighscore(entry);
     if (this.lastRun.isRecord) {
