@@ -125,7 +125,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   });
 
 
-  // radio banners live in their own layer below popups, so pause and result screens cover them
+  // radio banners live in their own layer above enemies and meteors spawned later
   private readonly radioLayer = new Container();
   private readonly radioQueue: RadioLine[] = [];
   private radioBanner?: Container;
@@ -169,6 +169,11 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   // highestCombo is received but not displayed in HUD; setter kept for compatibility
   set highestCombo(_value: number) {
     // no-op for now
+  }
+
+  /** Hidden while paused, since the layer would otherwise sit above the pause menu. */
+  set radioVisible(visible: boolean) {
+    this.radioLayer.visible = visible;
   }
 
   set pauseButtonVisible(visible: boolean) {
@@ -266,6 +271,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     // add floating popup container to the stage (for +score popups)
     this.addToStage(this.floatingContainer);
     this.radioLayer.eventMode = 'none';
+    this.radioLayer.zIndex = 1;
     this.addToStage(this.radioLayer);
 
     this.pauseButton = new Text({

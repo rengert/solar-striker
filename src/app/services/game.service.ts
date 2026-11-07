@@ -158,6 +158,7 @@ export class GameService {
     );
 
     effect(() => this.landscape.setStage(this.stage()));
+    effect(() => (this.gameScreen.radioVisible = !this.#paused()));
 
     // Achievement: track level milestones
     effect(() => {
