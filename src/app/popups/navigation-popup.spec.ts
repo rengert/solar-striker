@@ -1,4 +1,5 @@
-import { getDailySurpriseIcon } from './navigation-popup';
+import { GameService } from '../services/game.service';
+import { getDailyBadge, getDailySurpriseIcon } from './navigation-popup';
 
 // eslint-disable-next-line no-magic-numbers
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -29,5 +30,20 @@ describe('getDailySurpriseIcon', () => {
     expect(icon1).not.toBe(icon2);
     expect(icon2).not.toBe(icon3);
     expect(icon4).toBe(icon1);
+  });
+});
+
+describe('getDailyBadge', () => {
+  function createGameWith(completed: boolean[]): GameService {
+    const entries = completed.map((done) => ({ completed: done }));
+    return { dailyChallengeService: { getToday: () => entries } } as unknown as GameService;
+  }
+
+  it('counts the missions still open today', () => {
+    expect(getDailyBadge(createGameWith([true, false, false]))).toBe('(2)');
+  });
+
+  it('shows a check mark once every mission is done', () => {
+    expect(getDailyBadge(createGameWith([true, true, true]))).toBe('✓');
   });
 });
