@@ -28,6 +28,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-modules-
 
+      - name: Set version
+        # Patch number = run number of this workflow, so every deployment shows a new version
+        run: |
+          sed -i -E "s/code: '([0-9]+\.[0-9]+)\.[0-9]+'/code: '\1.${{ github.run_number }}'/" src/app/version.ts
+          grep -q "\.${{ github.run_number }}'" src/app/version.ts
+          cat src/app/version.ts
+
       - name: Prepare and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
