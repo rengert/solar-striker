@@ -1,6 +1,6 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
-import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
+import { GAME_CONFIG, getDifficultyLevel, getStageReward, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { HighscoreEntry, calculateRunResult, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
@@ -210,7 +210,7 @@ export class GameService {
           this.gameScreen.applyScreenShake(LARGE_ENEMY_SHAKE_AMPLITUDE);
         }
         if (isBoss) {
-          this.addCoins(GAME_CONFIG.boss.coinsReward);
+          this.addCoins(getStageReward(GAME_CONFIG.boss.coinsReward, this.stage()));
           this.onBossDefeated();
         } else if (this.started()) {
           // Track kills within the current stage; trigger boss when threshold is reached
@@ -342,7 +342,7 @@ export class GameService {
         void this.saveStageCheckpoint(nextStage);
       }
       if (this.started()) {
-        this.addBonusCoins(STAGE_BONUS_COINS);
+        this.addBonusCoins(getStageReward(STAGE_BONUS_COINS, currentStage));
         this.gameScreen.showStageAnnouncement(nextStage);
         this.gameScreen.showRadioMessages([...getBossDebriefing(currentStage), ...getStageBriefing(nextStage, nextStage > this.clearedStage())]);
       }
@@ -583,7 +583,7 @@ export class GameService {
         return;
       }
 
-      this.updatables.forEach((updatable) => updatable.update(delta, this.stage()));
+      this.updatables.forEach((updatable) => updatable.update(delta, getDifficultyLevel(this.stage())));
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;

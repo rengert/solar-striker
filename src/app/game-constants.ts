@@ -11,6 +11,35 @@ export const OFF_SCREEN_BUFFER = 50;
 export const MAX_SHOT_POWER = 5;
 export const MAX_STAGE = 100;
 
+/** Up to this stage the difficulty stays linear like before; the early game was well tuned. */
+const DIFFICULTY_CURVE_KNEE = 20;
+const DIFFICULTY_CURVE_SOFTNESS = 5;
+const REWARD_GROWTH_PER_DIFFICULTY = 0.05;
+
+/**
+ * Maps a stage to the level all difficulty formulas use. Linear up to the knee, then it flattens like a square root,
+ * so the late campaign stays fair (stage 100 plays like level ~51) and endless stays playable (stage 1000 ~ level 150).
+ */
+export function getDifficultyLevel(stage: number): number {
+  const normalizedStage = Math.max(1, stage);
+  if (normalizedStage <= DIFFICULTY_CURVE_KNEE) {
+    return normalizedStage;
+  }
+  const softness = DIFFICULTY_CURVE_SOFTNESS;
+  const curve = Math.sqrt(1 + (normalizedStage - DIFFICULTY_CURVE_KNEE) / softness) - 1;
+  // eslint-disable-next-line no-magic-numbers
+  return Math.round(DIFFICULTY_CURVE_KNEE + 2 * softness * curve);
+}
+
+/**
+ * Scales a flat reward with the difficulty of the stage, so later stages pay off for the harder fight.
+ * Capped at MAX_STAGE, otherwise endless runs would become an unlimited coin source.
+ */
+export function getStageReward(baseReward: number, stage: number): number {
+  const difficulty = getDifficultyLevel(Math.min(stage, MAX_STAGE));
+  return Math.round(baseReward * (1 + (difficulty - 1) * REWARD_GROWTH_PER_DIFFICULTY));
+}
+
 interface Config {
   powerUpConfig: PowerUpConfig[];
 }

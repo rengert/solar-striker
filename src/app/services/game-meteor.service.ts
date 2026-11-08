@@ -54,7 +54,7 @@ export class GameMeteorService extends UpdatableService {
     const check = Math.floor(this.elapsed);
     if (
       // eslint-disable-next-line no-magic-numbers
-      check % Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + 0.1 * (level - 1))) === 0 &&
+      check % Math.max(1, Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + 0.1 * (level - 1)))) === 0 &&
       check !== this.lastMeteorSpawn
     ) {
       this.lastMeteorSpawn = check;
