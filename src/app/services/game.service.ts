@@ -2,7 +2,7 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG, getDifficultyLevel, getStageReward, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
-import { HighscoreEntry, calculateRunResult, RunResult } from '../models/highscore.model';
+import { HighscoreEntry, calculateRunResult, isEndlessEntry, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PlayerShipClass } from '../models/player-ship-class.model';
@@ -88,7 +88,7 @@ export class GameService {
   readonly clearedStage = signal(0);
   /** Endless mode: stages after the campaign that never end in victory and keep no checkpoint. */
   readonly endless = signal(false);
-  /** Highest stage whose boss was beaten in endless mode, 0 if none. */
+  /** Furthest stage reached in endless mode (counted like the endless highscore tab), 0 if none. */
   readonly endlessRecord = signal(0);
 
   private comboTimer?: number;
@@ -314,11 +314,6 @@ export class GameService {
     if (this.base.energy() === BASE_MAX_ENERGY) {
       this.dailyChallengeService.addFlawlessStage();
     }
-    // saved per boss, so closing the app mid-run keeps the record
-    if (this.endless() && currentStage > this.endlessRecord()) {
-      this.endlessRecord.set(currentStage);
-      void this.storage.setEndlessRecord(currentStage);
-    }
     if (!this.endless() && currentStage > this.clearedStage()) {
       this.dailyChallengeService.addNewStage();
       this.clearedStage.set(currentStage);
@@ -335,6 +330,11 @@ export class GameService {
       // Advance to the next stage
       const nextStage = currentStage + 1;
       this.stage.set(nextStage);
+      // saved per boss as the reached stage (what the endless tab would show), so closing the app mid-run keeps the record
+      if (this.endless() && nextStage > this.endlessRecord()) {
+        this.endlessRecord.set(nextStage);
+        void this.storage.setEndlessRecord(nextStage);
+      }
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
       this.base.repair();
@@ -388,7 +388,8 @@ export class GameService {
     this.savedStage.set(savedStage);
     // a checkpoint from before the campaign existed still counts as progress
     this.clearedStage.set(Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1));
-    this.endlessRecord.set(await this.storage.getEndlessRecord());
+    const endlessLevels = (await this.storage.getHighscore()).filter(isEndlessEntry).map((entry) => entry.level);
+    this.endlessRecord.set(Math.max(await this.storage.getEndlessRecord(), ...endlessLevels));
     await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);
 
     // Wire achievement unlock notification
@@ -654,6 +655,9 @@ export class GameService {
     };
     this.lastRun = calculateRunResult(await this.storage.getHighscore(), entry);
     await this.storage.setHighscore(entry);
+    if (entry.mode === 'endless') {
+      this.endlessRecord.set(Math.max(this.endlessRecord(), entry.level));
+    }
     if (this.lastRun.isRecord) {
       this.sound.play('powerUp');
     }

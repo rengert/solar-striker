@@ -17,6 +17,8 @@ const ROW_STEP = 21;
 const ROW_SIZE = 12;
 const MEDALS = ['🥇', '🥈', '🥉'];
 const COLUMNS_X = { rank: -95, kills: -42, level: 4, combo: 50, date: 96 };
+// columns are 46 apart, so long headers (fr 'Abattus') are shrunk to keep a gap
+const HEADER_MAX_WIDTH = 42;
 const TAB_X = 80;
 const TAB_Y = -43;
 const TAB_HIT_WIDTH = 80;
@@ -121,7 +123,10 @@ export class HighscorePopup extends Popup {
       [this.translation.getTranslation('highscore.combo'), COLUMNS_X.combo],
       [this.translation.getTranslation('highscore.date'), COLUMNS_X.date],
     ];
-    headerCells.forEach(([content, x]) => header.addChild(this.createText(content, { x, y: 0, fill: MUTED_COLOR, size: 10 })));
+    headerCells.forEach(([content, x]) => {
+      const text = header.addChild(this.createText(content, { x, y: 0, fill: MUTED_COLOR, size: 10 }));
+      text.scale.set(Math.min(1, HEADER_MAX_WIDTH / text.width));
+    });
     this.rows.addChild(header);
 
     const ranked: RankedEntry[] = list.map((entry, i) => ({ entry, rank: i + 1 }));

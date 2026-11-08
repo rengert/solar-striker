@@ -236,7 +236,7 @@ export class StorageService {
     return this.toStore(Store.upgrades, { id: 'campaign-progress', clearedStage });
   }
 
-  /** Highest stage reached in endless mode, 0 if never played. */
+  /** Highest stage reached in endless mode, 0 if never played (older saves hold the last beaten stage). */
   async getEndlessRecord(): Promise<number> {
     const entries = await getManyFromStore<{ id: string; stage: number }>(
       Store.upgrades,
