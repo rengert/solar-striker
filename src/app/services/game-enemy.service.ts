@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Container, Graphics, Rectangle, Sprite, Spritesheet, Text, Texture, Ticker } from 'pixi.js';
-import { GAME_CONFIG, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
+import { GAME_CONFIG, getDifficultyLevel, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { AnimatedGameSprite, LoopData, OrbitData } from '../models/pixijs/animated-game-sprite';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
@@ -557,7 +557,7 @@ export class GameEnemyService extends UpdatableService {
 
   private spawnBoss(stage: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
-    const bossEnergy = BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (stage - 1);
+    const bossEnergy = BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (getDifficultyLevel(stage) - 1);
     const pattern = getBossPattern(stage);
     const definition = BOSS_DEFINITIONS[pattern];
 

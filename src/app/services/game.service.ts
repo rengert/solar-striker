@@ -1,6 +1,6 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
-import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
+import { GAME_CONFIG, getDifficultyLevel, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { HighscoreEntry, calculateRunResult, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
@@ -583,7 +583,7 @@ export class GameService {
         return;
       }
 
-      this.updatables.forEach((updatable) => updatable.update(delta, this.stage()));
+      this.updatables.forEach((updatable) => updatable.update(delta, getDifficultyLevel(this.stage())));
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;

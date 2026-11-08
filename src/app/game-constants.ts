@@ -11,6 +11,25 @@ export const OFF_SCREEN_BUFFER = 50;
 export const MAX_SHOT_POWER = 5;
 export const MAX_STAGE = 100;
 
+const DIFFICULTY_CURVE_SOFTNESS = 5;
+const REWARD_GROWTH_PER_DIFFICULTY = 0.1;
+
+/**
+ * Maps a stage to the level all difficulty formulas use. Starts one step per stage and flattens like a square root,
+ * so the campaign ramps up evenly (stage 100 plays like level ~37) and endless stays playable (stage 1000 ~ level 133).
+ */
+export function getDifficultyLevel(stage: number): number {
+  const normalizedStage = Math.max(1, stage);
+  const softness = DIFFICULTY_CURVE_SOFTNESS;
+  // eslint-disable-next-line no-magic-numbers
+  return Math.round(1 + 2 * softness * (Math.sqrt(1 + (normalizedStage - 1) / softness) - 1));
+}
+
+/** Scales a flat reward with the difficulty of the stage, so later stages pay off for the harder fight. */
+export function getStageReward(baseReward: number, stage: number): number {
+  return Math.round(baseReward * (1 + (getDifficultyLevel(stage) - 1) * REWARD_GROWTH_PER_DIFFICULTY));
+}
+
 interface Config {
   powerUpConfig: PowerUpConfig[];
 }
