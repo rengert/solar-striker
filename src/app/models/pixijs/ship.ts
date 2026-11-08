@@ -6,6 +6,9 @@ import { AnimatedGameSprite } from './animated-game-sprite';
 import { ObjectType } from './object-type.enum';
 import { ShipType } from './ship-type.enum';
 
+const SPREAD = 2;
+const DOUBLE_SPREAD = 4;
+
 export class Ship extends AnimatedGameSprite {
   shotPower = 1;
   shotSpeed: number;
@@ -67,8 +70,10 @@ export class Ship extends AnimatedGameSprite {
 
   shot(): void {
     this.shotService.shot(this.shotPower, this, this.speed <= 0);
-    if (this.spreadShotTicks > 0 || this.permanentSpread) {
-      this.shotService.fireSpread(this);
+    const spreadPowerUp = this.spreadShotTicks > 0;
+    if (spreadPowerUp || this.permanentSpread) {
+      // a ship that always spreads gets a doubled fan from the power-up, so the pickup still counts
+      this.shotService.fireSpread(this, spreadPowerUp && this.permanentSpread ? DOUBLE_SPREAD : SPREAD);
     }
   }
 

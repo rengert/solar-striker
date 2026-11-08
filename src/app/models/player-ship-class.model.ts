@@ -100,9 +100,9 @@ export const PLAYER_SHIP_DEFINITIONS: PlayerShipDefinition[] = [
     tint: 0xcc88ff,
     xSpeed: 1.1,
     rocketSpeed: 2.5,
-    shotSpeed: 1.6,
+    shotSpeed: 1.2,
     shotPower: 1,
-    energy: 8,
+    energy: 7,
     spreadShot: true,
   },
 ];
