@@ -516,7 +516,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'credits.artAttribution': 'Kenney (www.kenney.nl)',
     'highscore.title': 'Meilleur score',
     'highscore.date': 'Date',
-    'highscore.kills': 'Éliminations',
+    'highscore.kills': 'Abattus',
     'highscore.level': 'Niveau',
     'highscore.allTime': 'Général',
     'highscore.today': 'Aujourd\'hui',

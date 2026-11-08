@@ -162,8 +162,6 @@ describe('GameService', () => {
             clearLevelCheckpoint: jasmine.createSpy('clearLevelCheckpoint').and.returnValue(Promise.resolve()),
             getCampaignProgress: jasmine.createSpy('getCampaignProgress').and.returnValue(Promise.resolve(0)),
             setCampaignProgress: jasmine.createSpy('setCampaignProgress').and.returnValue(Promise.resolve()),
-            getEndlessRecord: jasmine.createSpy('getEndlessRecord').and.returnValue(Promise.resolve(0)),
-            setEndlessRecord: jasmine.createSpy('setEndlessRecord').and.returnValue(Promise.resolve()),
             getDailyChallenges: jasmine.createSpy('getDailyChallenges').and.returnValue(Promise.resolve(null)),
             setDailyChallenges: jasmine.createSpy('setDailyChallenges').and.returnValue(Promise.resolve()),
           },
@@ -695,7 +693,7 @@ describe('GameService', () => {
   describe('endless mode', () => {
     // eslint-disable-next-line no-magic-numbers
     const SECOND_ENDLESS_STAGE = MAX_STAGE + 2;
-    let storage: { setLevelCheckpoint: jasmine.Spy; setCampaignProgress: jasmine.Spy; setEndlessRecord: jasmine.Spy };
+    let storage: { setLevelCheckpoint: jasmine.Spy; setCampaignProgress: jasmine.Spy };
 
     beforeEach(() => {
       storage = TestBed.inject(StorageService) as unknown as typeof storage;
@@ -718,7 +716,7 @@ describe('GameService', () => {
       expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
     });
 
-    it('should keep advancing past bosses and store each cleared stage as the record', async () => {
+    it('should keep advancing past bosses without touching campaign progress', async () => {
       service.clearedStage.set(MAX_STAGE);
       await service.startEndless({} as AppScreen);
       const playerShip = createMockObject(ObjectType.ship);
@@ -727,8 +725,16 @@ describe('GameService', () => {
       expect(service.stage()).toBe(SECOND_ENDLESS_STAGE);
       expect(storage.setCampaignProgress).not.toHaveBeenCalled();
       expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
-      expect(service.endlessRecord()).toBe(MAX_STAGE + 1);
-      expect(storage.setEndlessRecord).toHaveBeenCalledOnceWith(MAX_STAGE + 1);
+    });
+
+    it('should record the stage the endless run ended on, like the endless highscore tab', async () => {
+      service.clearedStage.set(MAX_STAGE);
+      await service.startEndless({} as AppScreen);
+      service.stage.set(SECOND_ENDLESS_STAGE);
+
+      await (service as unknown as { finishRun: (popup: unknown) => Promise<void> }).finishRun(null);
+
+      expect(service.endlessRecord()).toBe(SECOND_ENDLESS_STAGE);
     });
   });
 
