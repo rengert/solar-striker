@@ -62,8 +62,28 @@ const ENDLESS_INTRO: readonly RadioLine[] = [
   { speaker: 'bolt', text: 'story.endless.2' },
 ];
 
-/** Radio talk when a stage starts: the chapter intro on its first stage, one radio line otherwise. */
-export function getStageBriefing(stage: number): RadioLine[] {
+/** Tips for new players, one per stage at the start of the campaign: controls, base, hangar, missions. */
+const TUTORIAL_LINES: readonly RadioLine[] = [
+  { speaker: 'vega', text: 'story.tutorial.1' },
+  { speaker: 'vega', text: 'story.tutorial.2' },
+  { speaker: 'bolt', text: 'story.tutorial.3' },
+  { speaker: 'vega', text: 'story.tutorial.4' },
+];
+
+/**
+ * Radio talk when a stage starts: the chapter intro on its first stage, one radio line otherwise.
+ * With `tutorial`, the first stages add a tip for new players.
+ */
+export function getStageBriefing(stage: number, tutorial = false): RadioLine[] {
+  const tip = tutorial ? TUTORIAL_LINES[Math.floor(stage) - 1] : undefined;
+  if (!tip) {
+    return getStoryBriefing(stage);
+  }
+  // the controls tip comes first, enemies are already on their way during the chapter intro
+  return Math.floor(stage) === 1 ? [tip, ...getStoryBriefing(stage)] : [...getStoryBriefing(stage), tip];
+}
+
+function getStoryBriefing(stage: number): RadioLine[] {
   // endless mode runs past the story: one intro, then silence
   if (stage > MAX_STAGE) {
     return stage === MAX_STAGE + 1 ? [...ENDLESS_INTRO] : [];
