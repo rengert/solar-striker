@@ -1,8 +1,8 @@
 /* eslint-disable no-magic-numbers */
 import { HighscoreEntry, calculateRunResult } from './highscore.model';
 
-function run(kills: number, date = '2026-10-31T12:00:00.000Z'): HighscoreEntry {
-  return { id: `${kills}-${date}`, date, kills, level: 1 };
+function run(kills: number, date = '2026-10-31T12:00:00.000Z', level = 1): HighscoreEntry {
+  return { id: `${kills}-${date}-${level}`, date, kills, level };
 }
 
 describe('calculateRunResult', () => {
@@ -15,6 +15,19 @@ describe('calculateRunResult', () => {
     expect(result.total).toBe(1);
     expect(result.isRecord).toBeTrue();
     expect(result.killsToNextRank).toBeUndefined();
+  });
+
+  it('ranks endless and campaign runs separately', () => {
+    const endless = calculateRunResult([run(500, undefined, 150), run(80)], run(100, undefined, 120), now);
+
+    expect(endless.rank).toBe(2);
+    expect(endless.total).toBe(2);
+    expect(endless.previousBest).toBe(500);
+
+    const campaign = calculateRunResult([run(500, undefined, 150), run(80)], run(100), now);
+
+    expect(campaign.isRecord).toBeTrue();
+    expect(campaign.total).toBe(2);
   });
 
   it('computes rank and kills needed for the next place', () => {

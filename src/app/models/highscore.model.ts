@@ -1,3 +1,5 @@
+import { MAX_STAGE } from '../game-constants';
+
 export interface HighscoreEntry {
   id: string;
   date: string;
@@ -23,12 +25,18 @@ export function compareEntries(a: HighscoreEntry, b: HighscoreEntry): number {
   return b.kills - a.kills || b.level - a.level || b.date.localeCompare(a.date);
 }
 
+/** Endless runs start after the last campaign stage, so the stage alone tells the mode apart (also for old entries). */
+export function isEndlessEntry(entry: HighscoreEntry): boolean {
+  return entry.level > MAX_STAGE;
+}
+
 export function isSameDay(isoDate: string, now: Date): boolean {
   return new Date(isoDate).toDateString() === now.toDateString();
 }
 
-/** Ranks a finished run against the previously stored runs (which must not contain it yet). */
-export function calculateRunResult(history: HighscoreEntry[], entry: HighscoreEntry, now = new Date()): RunResult {
+/** Ranks a finished run against the previously stored runs of the same mode (which must not contain it yet). */
+export function calculateRunResult(allRuns: HighscoreEntry[], entry: HighscoreEntry, now = new Date()): RunResult {
+  const history = allRuns.filter((other) => isEndlessEntry(other) === isEndlessEntry(entry));
   const better = history.filter((other) => other.kills > entry.kills);
   const previousBest = Math.max(0, ...history.map((other) => other.kills));
   const todayBest = Math.max(0, ...history.filter((other) => isSameDay(other.date, now)).map((other) => other.kills));
