@@ -24,6 +24,7 @@ import { GAME_CONFIG, MAX_STAGE } from '../game-constants';
 import { DEFAULT_PLAYER_SHIP_CLASS, PLAYER_SHIP_DEFINITIONS } from '../models/player-ship-class.model';
 import { PausePopup } from '../popups/pause-popup';
 import { getBossDebriefing, getStageBriefing } from '../models/story.model';
+import { getWeeklyChallenge } from '../models/weekly-challenge.model';
 
 const STAGE_TWO = 2;
 const STAGE_THREE = 3;
@@ -77,7 +78,7 @@ describe('GameService', () => {
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update'), setStage: jasmine.createSpy('setStage') } },
         {
           provide: GameBaseService,
-          useValue: { energy: signal(BASE_MAX_ENERGY), init: jasmine.createSpy('init'), repair: jasmine.createSpy('repair'), attack: jasmine.createSpy('attack') },
+          useValue: { energy: signal(BASE_MAX_ENERGY), maxEnergy: BASE_MAX_ENERGY, init: jasmine.createSpy('init'), repair: jasmine.createSpy('repair'), attack: jasmine.createSpy('attack') },
         },
         { provide: GameMeteorService, useValue: { update: jasmine.createSpy('update'), splitMeteors: { has: (): boolean => false } } },
         {
@@ -729,6 +730,36 @@ describe('GameService', () => {
       expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
       expect(service.endlessRecord()).toBe(MAX_STAGE + 1);
       expect(storage.setEndlessRecord).toHaveBeenCalledOnceWith(MAX_STAGE + 1);
+    });
+  });
+
+  describe('weekly challenge', () => {
+    let storage: { setLevelCheckpoint: jasmine.Spy; setCampaignProgress: jasmine.Spy };
+
+    beforeEach(() => {
+      storage = TestBed.inject(StorageService) as unknown as typeof storage;
+      spyOn(service as unknown as { presentPopup: () => Promise<void> }, 'presentPopup').and.returnValue(Promise.resolve());
+    });
+
+    it('should start at the week\'s stage outside the campaign', async () => {
+      const challenge = getWeeklyChallenge();
+      await service.startWeekly({} as AppScreen);
+      const playerShip = createMockObject(ObjectType.ship);
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerShip);
+
+      expect(service.weekly()).toEqual(challenge);
+      expect(service.stage()).toBe(challenge.stage + 1);
+      expect(storage.setLevelCheckpoint).not.toHaveBeenCalled();
+      expect(storage.setCampaignProgress).not.toHaveBeenCalled();
+    });
+
+    it('should drop the weekly rule when a normal run starts', async () => {
+      await service.startWeekly({} as AppScreen);
+      await service.start({} as AppScreen);
+
+      expect(service.weekly()).toBeNull();
+      expect(TestBed.inject(GameCollectableService).powerUpsEnabled).toBeTrue();
+      expect(TestBed.inject(GameEnemyService).spawnFactor).toBe(1);
     });
   });
 

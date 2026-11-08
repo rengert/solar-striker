@@ -2,12 +2,13 @@ import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG, getDifficultyLevel, getStageReward, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
-import { HighscoreEntry, calculateRunResult, RunResult } from '../models/highscore.model';
+import { GameMode, HighscoreEntry, calculateRunResult, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
 import { getBossDebriefing, getStageBriefing } from '../models/story.model';
+import { FRAGILE_BASE_ENERGY, getWeeklyChallenge, SWARM_SPAWN_FACTOR, WeeklyChallenge } from '../models/weekly-challenge.model';
 import { AchievementsPopup } from '../popups/achievements-popup';
 import { CampaignPopup } from '../popups/campaign-popup';
 import { CreditsPopup } from '../popups/credits-popup';
@@ -90,6 +91,9 @@ export class GameService {
   readonly endless = signal(false);
   /** Highest stage whose boss was beaten in endless mode, 0 if none. */
   readonly endlessRecord = signal(0);
+  /** Weekly challenge being flown: a fixed start stage with a special rule, outside the campaign. */
+  readonly weekly = signal<WeeklyChallenge | null>(null);
+  private mode: GameMode = 'campaign';
 
   private comboTimer?: number;
 
@@ -311,7 +315,7 @@ export class GameService {
 
   private onBossDefeated(): void {
     const currentStage = this.stage();
-    if (this.base.energy() === BASE_MAX_ENERGY) {
+    if (this.base.energy() === this.base.maxEnergy) {
       this.dailyChallengeService.addFlawlessStage();
     }
     // saved per boss, so closing the app mid-run keeps the record
@@ -319,12 +323,13 @@ export class GameService {
       this.endlessRecord.set(currentStage);
       void this.storage.setEndlessRecord(currentStage);
     }
-    if (!this.endless() && currentStage > this.clearedStage()) {
+    const campaign = !this.endless() && !this.weekly();
+    if (campaign && currentStage > this.clearedStage()) {
       this.dailyChallengeService.addNewStage();
       this.clearedStage.set(currentStage);
       void this.storage.setCampaignProgress(currentStage);
     }
-    if (!this.endless() && currentStage >= MAX_STAGE) {
+    if (campaign && currentStage >= MAX_STAGE) {
       // Player has conquered all stages — victory!
       void this.resetSavedStage();
       void this.finishRun(VictoryPopup);
@@ -338,12 +343,15 @@ export class GameService {
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
       this.base.repair();
-      if (!this.endless()) {
+      if (campaign) {
         void this.saveStageCheckpoint(nextStage);
       }
       if (this.started()) {
         this.addBonusCoins(getStageReward(STAGE_BONUS_COINS, currentStage));
         this.gameScreen.showStageAnnouncement(nextStage);
+      }
+      // weekly runs skip the story, it would spoil chapters the player has not reached
+      if (this.started() && !this.weekly()) {
         this.gameScreen.showRadioMessages([...getBossDebriefing(currentStage), ...getStageBriefing(nextStage, nextStage > this.clearedStage())]);
       }
     }
@@ -451,10 +459,21 @@ export class GameService {
     if (this.clearedStage() < MAX_STAGE) {
       return;
     }
-    await this.startSession(requester, MAX_STAGE + 1, true);
+    await this.startSession(requester, MAX_STAGE + 1, 'endless');
   }
 
-  private async startSession(requester: AppScreen, startStage: number, endless = false): Promise<void> {
+  async startWeekly(requester: AppScreen): Promise<void> {
+    await this.startSession(requester, getWeeklyChallenge().stage, 'weekly');
+  }
+
+  private async startSession(requester: AppScreen, startStage: number, mode: GameMode = 'campaign'): Promise<void> {
+    const endless = mode === 'endless';
+    const weekly = mode === 'weekly' ? getWeeklyChallenge() : null;
+    this.mode = mode;
+    this.weekly.set(weekly);
+    this.collectables.powerUpsEnabled = weekly?.rule !== 'noPowerUps';
+    this.enemy.spawnFactor = weekly?.rule === 'swarm' ? SWARM_SPAWN_FACTOR : 1;
+    this.base.maxEnergy = weekly?.rule === 'fragileBase' ? FRAGILE_BASE_ENERGY : BASE_MAX_ENERGY;
     await this.hideAndRemoveScreen(requester);
     const storedCoins = await this.storage.getCoins();
     this.storedCoins.set(storedCoins);
@@ -475,14 +494,16 @@ export class GameService {
     this.lastShipEnergy = this.ship.instance.energy;
     this.streakElapsedMs = 0;
     this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
-    if (!endless) {
+    if (mode === 'campaign') {
       await this.saveStageCheckpoint(this.stage());
     }
 
     if (this.stage() > 1) {
       this.gameScreen.showStageAnnouncement(this.stage());
     }
-    this.gameScreen.showRadioMessages(getStageBriefing(this.stage(), this.stage() > this.clearedStage()));
+    this.gameScreen.showRadioMessages(weekly
+      ? [{ speaker: 'vega', text: weekly.ruleKey }]
+      : getStageBriefing(this.stage(), this.stage() > this.clearedStage()));
   }
 
   async openCredits(requester: AppScreen): Promise<void> {
@@ -650,7 +671,8 @@ export class GameService {
       level: this.stage(),
       combo: this.highestCombo(),
       coins: this.sessionCoins(),
-      mode: this.endless() ? 'endless' : 'campaign',
+      mode: this.mode,
+      week: this.weekly()?.week,
     };
     this.lastRun = calculateRunResult(await this.storage.getHighscore(), entry);
     await this.storage.setHighscore(entry);

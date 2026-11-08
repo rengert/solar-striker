@@ -198,6 +198,8 @@ export class GameEnemyService extends UpdatableService {
 
   /** Set to true by GameService when the stage boss is active; prevents normal enemy spawning. */
   bossFightActive = false;
+  /** Spawn rate multiplier, raised by the weekly swarm rule. */
+  spawnFactor = 1;
 
   private elapsed = 0;
   private lastDeltaMs = 0;
@@ -272,7 +274,7 @@ export class GameEnemyService extends UpdatableService {
     if (
       !this.bossFightActive &&
       this.object.enemies().length < GAME_CONFIG.enemy.maxCount &&
-      check % getSpawnInterval(level) === 0 &&
+      check % Math.max(1, Math.round(getSpawnInterval(level) / this.spawnFactor)) === 0 &&
       check !== this.lastEnemySpawn
     ) {
       this.lastEnemySpawn = check;
