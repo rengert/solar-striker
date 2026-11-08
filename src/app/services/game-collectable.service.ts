@@ -49,6 +49,8 @@ export class GameCollectableService extends UpdatableService {
   private readonly sound = inject(SoundService);
 
   private readonly animations: Dictionary<Texture[]> = {};
+  /** Turned off by the weekly no power-ups rule. */
+  powerUpsEnabled = true;
 
   constructor() {
     super();
@@ -219,7 +221,7 @@ export class GameCollectableService extends UpdatableService {
   }
 
   private spawn({ x, y }: ObjectModelType, { type, reference }: ObjectModelType): void {
-    if (type !== ObjectType.ship && reference?.type !== ObjectType.ship) {
+    if (!this.powerUpsEnabled || (type !== ObjectType.ship && reference?.type !== ObjectType.ship)) {
       return;
     }
 

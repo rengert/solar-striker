@@ -29,6 +29,15 @@ describe('calculateRunResult', () => {
     expect(campaign.total).toBe(2);
   });
 
+  it('ranks weekly runs by level and only against the same week', () => {
+    const createWeeklyRun = (kills: number, level: number, week: number): HighscoreEntry => ({ ...run(kills, undefined, level), mode: 'weekly', week });
+    const result = calculateRunResult([createWeeklyRun(10, 12, 7), createWeeklyRun(90, 30, 6), run(500)], createWeeklyRun(5, 11, 7), now);
+
+    expect(result.rank).toBe(2);
+    expect(result.total).toBe(2);
+    expect(result.previousBest).toBe(12);
+  });
+
   it('ranks endless runs by level before kills', () => {
     const result = calculateRunResult([run(500, undefined, 120)], run(50, undefined, 140), now);
 

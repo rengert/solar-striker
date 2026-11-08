@@ -30,6 +30,8 @@ const CONTROL_POINT_FACTOR = 2;
 @Injectable()
 export class GameBaseService {
   readonly energy = signal(BASE_MAX_ENERGY);
+  /** Energy after a repair; lowered by the weekly fragile base rule. */
+  maxEnergy = BASE_MAX_ENERGY;
 
   private readonly application = inject(ApplicationService);
   private readonly explosion = inject(ExplosionService);
@@ -48,7 +50,7 @@ export class GameBaseService {
   }
 
   repair(): void {
-    this.energy.set(BASE_MAX_ENERGY);
+    this.energy.set(this.maxEnergy);
     this.draw();
   }
 
@@ -87,12 +89,12 @@ export class GameBaseService {
       .stroke({ color: hit ? SHIELD_HIT_COLOR : SHIELD_COLOR, width: SHIELD_WIDTH, alpha: SHIELD_ALPHA });
 
     const energy = this.energy();
-    const barWidth = BASE_MAX_ENERGY * (BAR_SEGMENT_WIDTH + BAR_SEGMENT_GAP) - BAR_SEGMENT_GAP;
+    const barWidth = this.maxEnergy * (BAR_SEGMENT_WIDTH + BAR_SEGMENT_GAP) - BAR_SEGMENT_GAP;
     const left = (width - barWidth) * HALF;
     const top = height - BAR_BOTTOM_MARGIN - BAR_HEIGHT;
     const color = energy <= BAR_LOW_THRESHOLD ? BAR_LOW_COLOR : SHIELD_COLOR;
     this.bar.clear();
-    for (let i = 0; i < BASE_MAX_ENERGY; i++) {
+    for (let i = 0; i < this.maxEnergy; i++) {
       this.bar
         .rect(left + i * (BAR_SEGMENT_WIDTH + BAR_SEGMENT_GAP), top, BAR_SEGMENT_WIDTH, BAR_HEIGHT)
         .fill(i < energy ? color : BAR_EMPTY_COLOR);

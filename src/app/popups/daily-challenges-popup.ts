@@ -1,11 +1,12 @@
 import { Text } from 'pixi.js';
 import { THE_MIDDLE } from '../game-constants';
+import { getWeeklyChallenge } from '../models/weekly-challenge.model';
 import { DailyChallengeEntry } from '../services/daily-challenge.service';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 340;
+const POPUP_HEIGHT = 330;
 const CHALLENGE_START_Y = -60;
 const CHALLENGE_ROW_SPACING = 42;
 const CHALLENGE_TITLE_X = -115;
@@ -15,7 +16,11 @@ const ALIGN_LEFT = 0;
 const ALIGN_RIGHT = 1;
 const CHALLENGE_STATUS_SIZE = 9;
 const STATUS_LINE_OFFSET = 18;
-const BACK_BUTTON_INDEX = 4;
+const WEEKLY_TITLE_Y = 70;
+const WEEKLY_RULE_Y = 88;
+const WEEKLY_BUTTON_Y = 102;
+const BACK_BUTTON_Y = 156;
+const WEEKLY_COLOR = 0x1166cc;
 
 interface ChallengeRowContext {
   entry: DailyChallengeEntry;
@@ -34,11 +39,15 @@ export class DailyChallengesPopup extends Popup {
       this.addChallengeRow({ entry: entries[i], translation, rowY });
     }
 
-    this.addButton(
-      translation.getTranslation('common.back'),
-      () => gameService.openNavigation(this),
-      BACK_BUTTON_INDEX,
+    const weekly = getWeeklyChallenge();
+    this.addText(
+      translation.getTranslation('weekly.title', { level: weekly.stage }),
+      { size: CHALLENGE_TITLE_SIZE, fill: WEEKLY_COLOR },
+      { y: WEEKLY_TITLE_Y },
     );
+    this.addText(`${weekly.icon} ${translation.getTranslation(weekly.ruleKey)}`, { size: CHALLENGE_TITLE_SIZE }, { y: WEEKLY_RULE_Y });
+    this.addButton(translation.getTranslation('weekly.start'), () => gameService.startWeekly(this), 0).button.y = WEEKLY_BUTTON_Y;
+    this.addButton(translation.getTranslation('common.back'), () => gameService.openNavigation(this), 0).button.y = BACK_BUTTON_Y;
   }
 
   private addChallengeRow({ entry, translation, rowY }: ChallengeRowContext): void {
