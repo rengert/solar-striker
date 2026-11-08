@@ -18,7 +18,7 @@ export const STORY_DE = {
   'story.boss.2': 'Das hat gescheppert! Bring mir die Münzen.',
   'story.boss.3': 'Ein Verlust. Ich habe mehr davon.',
   'story.boss.4': 'Gut geflogen. Die Basis ist wieder repariert.',
-  'story.tutorial.1': 'Tipp: Finger halten zum Schießen, ziehen zum Steuern.',
+  'story.tutorial.1': 'Tipp: Gedrückt halten zum Schießen, ziehen zum Steuern.',
   'story.tutorial.2': 'Tipp: Feinde, die durchkommen, treffen die Basis unten.',
   'story.tutorial.3': 'Tipp: Im Hangar kaufst du mit Münzen neue Upgrades.',
   'story.tutorial.4': 'Tipp: Hol dir täglich Münzen mit den Tagesaufgaben.',

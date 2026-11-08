@@ -76,7 +76,11 @@ const TUTORIAL_LINES: readonly RadioLine[] = [
  */
 export function getStageBriefing(stage: number, tutorial = false): RadioLine[] {
   const tip = tutorial ? TUTORIAL_LINES[Math.floor(stage) - 1] : undefined;
-  return tip ? [...getStoryBriefing(stage), tip] : getStoryBriefing(stage);
+  if (!tip) {
+    return getStoryBriefing(stage);
+  }
+  // the controls tip comes first, enemies are already on their way during the chapter intro
+  return Math.floor(stage) === 1 ? [tip, ...getStoryBriefing(stage)] : [...getStoryBriefing(stage), tip];
 }
 
 function getStoryBriefing(stage: number): RadioLine[] {

@@ -26,9 +26,9 @@ describe('story', () => {
 
   it('should add a tip for new players on the first stages only', () => {
     expect(getStageBriefing(1, true).map(({ text }) => text)).toEqual([
+      'story.tutorial.1',
       'story.chapter.1.intro.1',
       'story.chapter.1.intro.2',
-      'story.tutorial.1',
     ]);
     expect(getStageBriefing(SECOND_STAGE, true)[1].text).toBe('story.tutorial.2');
     expect(getStageBriefing(SECOND_STAGE)).toEqual(getStageBriefing(SECOND_STAGE, false));
