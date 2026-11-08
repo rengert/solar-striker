@@ -86,6 +86,7 @@ export class PlayerShipService {
     ship.energy = definition.energy;
     ship.shotSpeed = definition.shotSpeed;
     ship.shotPower = definition.shotPower;
+    ship.permanentSpread = definition.spreadShot ?? false;
   }
 
   private async saveState(): Promise<void> {
