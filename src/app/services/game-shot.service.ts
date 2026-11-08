@@ -70,9 +70,10 @@ export class GameShotService extends UpdatableService {
     this.fireRadial(ship, ORBITAL_STRIKE_COUNT, ORBITAL_STRIKE_SPEED);
   }
 
-  /** Two extra shots angled left and right of straight up. */
-  fireSpread(ship: Ship): void {
-    this.fireRadial(ship, 2, ship.rocketSpeed, UP - SPREAD_SHOT_ARC / 2, SPREAD_SHOT_ARC);
+  /** `count` extra shots fanned out left and right of straight up; the fan widens with the count. */
+  fireSpread(ship: Ship, count = 2): void {
+    const arc = (SPREAD_SHOT_ARC * count) / 2;
+    this.fireRadial(ship, count, ship.rocketSpeed, UP - arc / 2, arc);
   }
 
   /** Fires `count` shots spread evenly over `arc` radians, starting at `fromAngle` (0 = right, PI/2 = down). */

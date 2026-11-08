@@ -4,6 +4,9 @@ export enum PlayerShipClass {
   fighter = 'fighter',
   scout = 'scout',
   gunship = 'gunship',
+  interceptor = 'interceptor',
+  titan = 'titan',
+  hornet = 'hornet',
 }
 
 export interface PlayerShipDefinition {
@@ -18,6 +21,8 @@ export interface PlayerShipDefinition {
   shotSpeed: number;
   shotPower: number;
   energy: number;
+  /** Every volley adds two diagonal shots, like a permanent spread-shot power-up. */
+  spreadShot?: boolean;
 }
 
 export const PLAYER_SHIP_DEFINITIONS: PlayerShipDefinition[] = [
@@ -59,6 +64,46 @@ export const PLAYER_SHIP_DEFINITIONS: PlayerShipDefinition[] = [
     shotSpeed: 1.5,
     shotPower: 2,
     energy: 16,
+  },
+  {
+    type: PlayerShipClass.interceptor,
+    titleKey: 'ship.interceptor.title',
+    descriptionKey: 'ship.interceptor.description',
+    cost: 400,
+    // eslint-disable-next-line no-magic-numbers
+    tint: 0x66ff99,
+    xSpeed: 1.8,
+    rocketSpeed: 3.5,
+    shotSpeed: 4.5,
+    shotPower: 1,
+    energy: 5,
+  },
+  {
+    type: PlayerShipClass.titan,
+    titleKey: 'ship.titan.title',
+    descriptionKey: 'ship.titan.description',
+    cost: 600,
+    // eslint-disable-next-line no-magic-numbers
+    tint: 0xff7766,
+    xSpeed: 0.5,
+    rocketSpeed: 1.8,
+    shotSpeed: 1.0,
+    shotPower: 3,
+    energy: 24,
+  },
+  {
+    type: PlayerShipClass.hornet,
+    titleKey: 'ship.hornet.title',
+    descriptionKey: 'ship.hornet.description',
+    cost: 800,
+    // eslint-disable-next-line no-magic-numbers
+    tint: 0xcc88ff,
+    xSpeed: 1.1,
+    rocketSpeed: 2.5,
+    shotSpeed: 1.2,
+    shotPower: 1,
+    energy: 7,
+    spreadShot: true,
   },
 ];
 
