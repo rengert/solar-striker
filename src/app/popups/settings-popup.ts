@@ -4,7 +4,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 400;
+const POPUP_HEIGHT = 505;
 const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
 const RESET_ARMED_COLOR = 0xff5555;
@@ -12,6 +12,8 @@ const RESET_ARMED_COLOR = 0xff5555;
 export class SettingsPopup extends Popup {
   private readonly languageButtons = new Map<SupportedLanguage, LabeledButton>();
   private readonly soundButton: LabeledButton;
+  private readonly exportButton: LabeledButton;
+  private readonly importButton: LabeledButton;
   private readonly resetButton: LabeledButton;
   private readonly backButton: LabeledButton;
   private resetArmed = false;
@@ -26,12 +28,12 @@ export class SettingsPopup extends Popup {
       this.createLanguageButton(language, index + BUTTON_INDEX_OFFSET);
     });
 
-    const soundButtonIndex = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
-    this.soundButton = this.addButton('', () => this.toggleSound(), soundButtonIndex);
+    let index = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
+    this.soundButton = this.addButton('', () => this.toggleSound(), index++);
+    this.exportButton = this.addButton('', () => void this.handleExport(), index++);
+    this.importButton = this.addButton('', () => void this.handleImport(), index++);
+    this.resetButton = this.addButton('', () => this.handleReset(), index++);
 
-    this.resetButton = this.addButton('', () => this.handleReset(), soundButtonIndex + 1);
-
-    const backButtonIndex = soundButtonIndex + 1 + 1;
     this.backButton = this.addButton(
       this.translation.getTranslation('common.back'),
       // opened from the pause menu while playing, otherwise from the main menu
@@ -39,7 +41,7 @@ export class SettingsPopup extends Popup {
         this.gameService.paused()
           ? this.gameService.openPause(this)
           : this.gameService.openNavigation(this),
-      backButtonIndex,
+      index,
     );
 
     this.updateContentLanguage();
@@ -48,6 +50,35 @@ export class SettingsPopup extends Popup {
   private toggleSound(): void {
     this.gameService.sound.muted = !this.gameService.sound.muted;
     this.updateContentLanguage();
+  }
+
+  private exportKey: TranslationKey = 'settings.export';
+  private importKey: TranslationKey = 'settings.import';
+
+  private async handleExport(): Promise<void> {
+    const code = await this.gameService.exportProgress();
+    try {
+      await navigator.clipboard.writeText(code);
+      this.exportKey = 'settings.exportCopied';
+    } catch {
+      // no clipboard access (e.g. older WebView): show the code so it can be copied by hand
+      // eslint-disable-next-line no-alert
+      window.prompt(this.translation.getTranslation('settings.export'), code);
+    }
+    this.updateContentLanguage();
+  }
+
+  private async handleImport(): Promise<void> {
+    // the Pixi canvas has no text field, the native prompt is the paste box (works in browser and Capacitor)
+    // eslint-disable-next-line no-alert
+    const code = window.prompt(this.translation.getTranslation('settings.importPrompt'));
+    if (!code) {
+      return;
+    }
+    if (!(await this.gameService.importProgress(this, code))) {
+      this.importKey = 'settings.importInvalid';
+      this.updateContentLanguage();
+    }
   }
 
   // first tap arms the button, second tap wipes the progress
@@ -90,12 +121,16 @@ export class SettingsPopup extends Popup {
     this.soundButton.label.text = this.translation.getTranslation(
       this.gameService.sound.muted ? 'settings.soundOff' : 'settings.soundOn',
     );
+    this.exportButton.label.text = this.translation.getTranslation(this.exportKey);
+    this.importButton.label.text = this.translation.getTranslation(this.importKey);
     this.resetButton.label.text = this.translation.getTranslation(
       this.resetArmed ? 'settings.resetConfirm' : 'settings.reset',
     );
     this.resetButton.label.style.fill = this.resetArmed ? RESET_ARMED_COLOR : 0x000000;
     this.backButton.label.text = this.translation.getTranslation('common.back');
     Popup.fitLabel(this.soundButton);
+    Popup.fitLabel(this.exportButton);
+    Popup.fitLabel(this.importButton);
     Popup.fitLabel(this.resetButton);
     Popup.fitLabel(this.backButton);
     this.highlightSelectedLanguage();

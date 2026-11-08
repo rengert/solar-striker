@@ -21,6 +21,39 @@ export enum Store {
   daily = 'daily',
 }
 
+const SAVE_CODE_PREFIX = 'SOLAR1:';
+const SAVE_CODE_VERSION = 1;
+
+/** Decodes an exported save; null unless every store holds a list of objects with a string id. */
+function parseSaveCode(code: string): Partial<Record<Store, unknown[]>> | null {
+  const trimmed = code.trim();
+  if (!trimmed.startsWith(SAVE_CODE_PREFIX)) {
+    return null;
+  }
+  try {
+    const bytes = Uint8Array.from(atob(trimmed.slice(SAVE_CODE_PREFIX.length)), (char) => char.charCodeAt(0));
+    const save = JSON.parse(new TextDecoder().decode(bytes)) as { version?: unknown; data?: unknown };
+    if (save.version !== SAVE_CODE_VERSION || typeof save.data !== 'object' || save.data === null) {
+      return null;
+    }
+    const stored = save.data as Partial<Record<string, unknown>>;
+    const data: Partial<Record<Store, unknown[]>> = {};
+    for (const store of Object.values(Store)) {
+      const items = stored[store] ?? [];
+      const valid = Array.isArray(items) && items.every(
+        (item) => typeof item === 'object' && item !== null && typeof (item as { id?: unknown }).id === 'string',
+      );
+      if (!valid) {
+        return null;
+      }
+      data[store] = items as unknown[];
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 function getManyFromStore<T>(
   storeName: Store,
   resolver?: (item: T) => boolean,
@@ -253,6 +286,31 @@ export class StorageService {
 
   /** Wipes all saved progress (coins, upgrades, highscores, achievements, dailies). */
   clearAll(): Promise<void> {
+    return this.replaceAll({});
+  }
+
+  /** The whole save as a text code that importAll() on another device (browser or app) restores. */
+  async exportAll(): Promise<string> {
+    const data: Partial<Record<Store, unknown[]>> = {};
+    for (const store of Object.values(Store)) {
+      data[store] = await getManyFromStore(store);
+    }
+    const bytes = new TextEncoder().encode(JSON.stringify({ version: SAVE_CODE_VERSION, data }));
+    return SAVE_CODE_PREFIX + btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(''));
+  }
+
+  /** Replaces the local save with an exported code; false (and nothing changed) if the code is invalid. */
+  async importAll(code: string): Promise<boolean> {
+    const data = parseSaveCode(code);
+    if (!data) {
+      return false;
+    }
+    await this.replaceAll(data);
+    return true;
+  }
+
+  // one transaction, so a failing write never leaves a half-wiped save behind
+  private replaceAll(data: Partial<Record<Store, unknown[]>>): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       // eslint-disable-next-line no-magic-numbers
       const dbRequest = indexedDB.open('data', 8);
@@ -264,9 +322,18 @@ export class StorageService {
         const database = (event.currentTarget as IDBOpenDBRequest).result;
         const stores = Object.values(Store);
         const transaction = database.transaction(stores, 'readwrite');
-        stores.forEach((store) => transaction.objectStore(store).clear());
         transaction.oncomplete = (): void => resolve();
-        transaction.onerror = (): void => reject(Error('IndexedDB clear error'));
+        transaction.onerror = (): void => reject(Error('IndexedDB write error'));
+        try {
+          stores.forEach((store) => {
+            const objectStore = transaction.objectStore(store);
+            objectStore.clear();
+            data[store]?.forEach((item) => objectStore.put(item));
+          });
+        } catch (error) {
+          transaction.abort();
+          reject(error instanceof Error ? error : Error('IndexedDB write error'));
+        }
       };
     });
   }
