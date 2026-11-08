@@ -75,7 +75,7 @@ export function createRunResult(run: RunResult | undefined, translation: Transla
   if (run.isRecord) {
     banner = label(translation.getTranslation('run.newRecord'), 14, 62, RECORD_COLOR);
     detail = run.previousBest
-      ? translation.getTranslation('run.oldRecord', { best: run.previousBest })
+      ? translation.getTranslation(entry.mode === 'endless' ? 'run.oldRecordLevel' : 'run.oldRecord', { best: run.previousBest })
       : translation.getTranslation('run.firstRun');
   } else if (run.isDailyBest) {
     banner = label(translation.getTranslation('run.dailyBest'), 14, 62, HIGHLIGHT_COLOR);

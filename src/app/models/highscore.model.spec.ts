@@ -1,5 +1,5 @@
 /* eslint-disable no-magic-numbers */
-import { HighscoreEntry, calculateRunResult } from './highscore.model';
+import { HighscoreEntry, calculateRunResult, isEndlessEntry } from './highscore.model';
 
 function run(kills: number, date = '2026-10-31T12:00:00.000Z', level = 1): HighscoreEntry {
   return { id: `${kills}-${date}-${level}`, date, kills, level };
@@ -22,12 +22,29 @@ describe('calculateRunResult', () => {
 
     expect(endless.rank).toBe(2);
     expect(endless.total).toBe(2);
-    expect(endless.previousBest).toBe(500);
 
     const campaign = calculateRunResult([run(500, undefined, 150), run(80)], run(100), now);
 
     expect(campaign.isRecord).toBeTrue();
     expect(campaign.total).toBe(2);
+  });
+
+  it('ranks endless runs by level before kills', () => {
+    const result = calculateRunResult([run(500, undefined, 120)], run(50, undefined, 140), now);
+
+    expect(result.rank).toBe(1);
+    expect(result.isRecord).toBeTrue();
+    expect(result.previousBest).toBe(120);
+    expect(result.killsToNextRank).toBeUndefined();
+  });
+
+  it('uses the stored mode over the level', () => {
+    const longCampaign: HighscoreEntry = { ...run(10, undefined, 110), mode: 'campaign' };
+    const shortEndless: HighscoreEntry = { ...run(10, undefined, 50), mode: 'endless' };
+
+    expect(isEndlessEntry(longCampaign)).toBeFalse();
+    expect(isEndlessEntry(shortEndless)).toBeTrue();
+    expect(isEndlessEntry(run(10, undefined, 101))).toBeTrue();
   });
 
   it('computes rank and kills needed for the next place', () => {
