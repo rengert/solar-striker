@@ -16,6 +16,8 @@ export class Ship extends AnimatedGameSprite {
   shieldTicks = 0;
   /** While > 0 every volley adds two diagonal shots. */
   spreadShotTicks = 0;
+  /** Ship class trait: every volley fires the spread shot, no power-up needed. */
+  permanentSpread = false;
   /** Extra shield time per shield power-up, from the hangar skill tree. */
   shieldBonusMs = 0;
   /** Power-ups closer than this (px) fly to the ship, from the hangar skill tree. */
@@ -65,7 +67,7 @@ export class Ship extends AnimatedGameSprite {
 
   shot(): void {
     this.shotService.shot(this.shotPower, this, this.speed <= 0);
-    if (this.spreadShotTicks > 0) {
+    if (this.spreadShotTicks > 0 || this.permanentSpread) {
       this.shotService.fireSpread(this);
     }
   }
