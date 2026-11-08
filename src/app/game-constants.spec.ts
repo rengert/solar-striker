@@ -2,11 +2,11 @@
 import { getDifficultyLevel, getStageReward } from './game-constants';
 
 describe('getDifficultyLevel', () => {
-  it('should start at the stage and grow slower later on', () => {
+  it('should stay linear up to stage 20 and grow slower later on', () => {
     expect(getDifficultyLevel(1)).toBe(1);
-    expect(getDifficultyLevel(2)).toBe(2);
-    expect(getDifficultyLevel(100)).toBe(37);
-    expect(getDifficultyLevel(1000)).toBe(133);
+    expect(getDifficultyLevel(20)).toBe(20);
+    expect(getDifficultyLevel(100)).toBe(51);
+    expect(getDifficultyLevel(1000)).toBe(150);
   });
 
   it('should never decrease from one stage to the next', () => {
@@ -19,6 +19,10 @@ describe('getDifficultyLevel', () => {
 describe('getStageReward', () => {
   it('should pay the base reward in stage 1 and more later', () => {
     expect(getStageReward(10, 1)).toBe(10);
-    expect(getStageReward(10, 100)).toBe(46);
+    expect(getStageReward(10, 100)).toBe(35);
+  });
+
+  it('should not grow past the last campaign stage', () => {
+    expect(getStageReward(10, 1000)).toBe(getStageReward(10, 100));
   });
 });
