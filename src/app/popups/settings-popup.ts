@@ -4,7 +4,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 400;
+const POPUP_HEIGHT = 452;
 const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
 const RESET_ARMED_COLOR = 0xff5555;
@@ -12,6 +12,7 @@ const RESET_ARMED_COLOR = 0xff5555;
 export class SettingsPopup extends Popup {
   private readonly languageButtons = new Map<SupportedLanguage, LabeledButton>();
   private readonly soundButton: LabeledButton;
+  private readonly effectsButton: LabeledButton;
   private readonly resetButton: LabeledButton;
   private readonly backButton: LabeledButton;
   private resetArmed = false;
@@ -29,9 +30,12 @@ export class SettingsPopup extends Popup {
     const soundButtonIndex = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
     this.soundButton = this.addButton('', () => this.toggleSound(), soundButtonIndex);
 
-    this.resetButton = this.addButton('', () => this.handleReset(), soundButtonIndex + 1);
+    this.effectsButton = this.addButton('', () => this.toggleEffects(), soundButtonIndex + 1);
+    // eslint-disable-next-line no-magic-numbers
+    this.resetButton = this.addButton('', () => this.handleReset(), soundButtonIndex + 2);
 
-    const backButtonIndex = soundButtonIndex + 1 + 1;
+    // eslint-disable-next-line no-magic-numbers
+    const backButtonIndex = soundButtonIndex + 3;
     this.backButton = this.addButton(
       this.translation.getTranslation('common.back'),
       // opened from the pause menu while playing, otherwise from the main menu
@@ -47,6 +51,11 @@ export class SettingsPopup extends Popup {
 
   private toggleSound(): void {
     this.gameService.sound.muted = !this.gameService.sound.muted;
+    this.updateContentLanguage();
+  }
+
+  private toggleEffects(): void {
+    this.gameService.gameScreen.effectsEnabled = !this.gameService.gameScreen.effectsEnabled;
     this.updateContentLanguage();
   }
 
@@ -90,12 +99,16 @@ export class SettingsPopup extends Popup {
     this.soundButton.label.text = this.translation.getTranslation(
       this.gameService.sound.muted ? 'settings.soundOff' : 'settings.soundOn',
     );
+    this.effectsButton.label.text = this.translation.getTranslation(
+      this.gameService.gameScreen.effectsEnabled ? 'settings.effectsOn' : 'settings.effectsOff',
+    );
     this.resetButton.label.text = this.translation.getTranslation(
       this.resetArmed ? 'settings.resetConfirm' : 'settings.reset',
     );
     this.resetButton.label.style.fill = this.resetArmed ? RESET_ARMED_COLOR : 0x000000;
     this.backButton.label.text = this.translation.getTranslation('common.back');
     Popup.fitLabel(this.soundButton);
+    Popup.fitLabel(this.effectsButton);
     Popup.fitLabel(this.resetButton);
     Popup.fitLabel(this.backButton);
     this.highlightSelectedLanguage();
