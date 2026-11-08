@@ -638,6 +638,16 @@ describe('GameService', () => {
 
       objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
 
+      // a new player reaches stage 2 for the first time, so the tip is included
+      expect(radio).toHaveBeenCalledOnceWith([...getBossDebriefing(1), ...getStageBriefing(STAGE_TWO, true)]);
+    });
+
+    it('should skip the new player tip on a stage that was already cleared', () => {
+      const radio = (TestBed.inject(GameScreenService) as unknown as { showRadioMessages: jasmine.Spy }).showRadioMessages;
+      service.clearedStage.set(STAGE_THREE);
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
       expect(radio).toHaveBeenCalledOnceWith([...getBossDebriefing(1), ...getStageBriefing(STAGE_TWO)]);
     });
 

@@ -344,7 +344,7 @@ export class GameService {
       if (this.started()) {
         this.addBonusCoins(STAGE_BONUS_COINS);
         this.gameScreen.showStageAnnouncement(nextStage);
-        this.gameScreen.showRadioMessages([...getBossDebriefing(currentStage), ...getStageBriefing(nextStage)]);
+        this.gameScreen.showRadioMessages([...getBossDebriefing(currentStage), ...getStageBriefing(nextStage, nextStage > this.clearedStage())]);
       }
     }
   }
@@ -482,7 +482,7 @@ export class GameService {
     if (this.stage() > 1) {
       this.gameScreen.showStageAnnouncement(this.stage());
     }
-    this.gameScreen.showRadioMessages(getStageBriefing(this.stage()));
+    this.gameScreen.showRadioMessages(getStageBriefing(this.stage(), this.stage() > this.clearedStage()));
   }
 
   async openCredits(requester: AppScreen): Promise<void> {

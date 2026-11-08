@@ -24,6 +24,17 @@ describe('story', () => {
     expect(getStageBriefing(THIRD_STAGE).map(({ text }) => text)).toEqual(['story.chapter.1.radio.2']);
   });
 
+  it('should add a tip for new players on the first stages only', () => {
+    expect(getStageBriefing(1, true).map(({ text }) => text)).toEqual([
+      'story.chapter.1.intro.1',
+      'story.chapter.1.intro.2',
+      'story.tutorial.1',
+    ]);
+    expect(getStageBriefing(SECOND_STAGE, true)[1].text).toBe('story.tutorial.2');
+    expect(getStageBriefing(SECOND_STAGE)).toEqual(getStageBriefing(SECOND_STAGE, false));
+    expect(getStageBriefing(FIRST_STAGE_OF_SECOND_CHAPTER, true)).toEqual(getStageBriefing(FIRST_STAGE_OF_SECOND_CHAPTER));
+  });
+
   it('should close a chapter with its outro after the last boss', () => {
     expect(getBossDebriefing(LAST_STAGE_OF_FIRST_CHAPTER).map(({ text }) => text)).toEqual(['story.chapter.1.outro']);
     expect(getBossDebriefing(1)[0].text).toMatch(/^story\.boss\./);
@@ -39,7 +50,7 @@ describe('story', () => {
     it(`should have every radio line and chapter title in ${language}`, () => {
       const keys = Array.from({ length: MAX_STAGE }, (_, index) => index + 1).flatMap((stage) => [
         getChapterTitle(getChapter(stage)),
-        ...[...getStageBriefing(stage), ...getBossDebriefing(stage)].map(({ text }) => text),
+        ...[...getStageBriefing(stage, true), ...getBossDebriefing(stage)].map(({ text }) => text),
       ]);
       expect(keys.filter((key) => !(key in TRANSLATIONS[language]))).toEqual([]);
     });
