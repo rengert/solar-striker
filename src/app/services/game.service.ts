@@ -650,6 +650,7 @@ export class GameService {
       level: this.stage(),
       combo: this.highestCombo(),
       coins: this.sessionCoins(),
+      mode: this.endless() ? 'endless' : 'campaign',
     };
     this.lastRun = calculateRunResult(await this.storage.getHighscore(), entry);
     await this.storage.setHighscore(entry);

@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { Container, Graphics, Rectangle, Text } from 'pixi.js';
-import { compareEntries, HighscoreEntry, isSameDay } from '../models/highscore.model';
+import { compareEntries, HighscoreEntry, isEndlessEntry, isSameDay } from '../models/highscore.model';
 import { GameService } from '../services/game.service';
 import { StorageService } from '../services/storage.service';
 import { TranslationService } from '../services/translation.service';
@@ -17,11 +17,17 @@ const ROW_STEP = 21;
 const ROW_SIZE = 12;
 const MEDALS = ['🥇', '🥈', '🥉'];
 const COLUMNS_X = { rank: -95, kills: -42, level: 4, combo: 50, date: 96 };
-const TAB_X = 55;
+const TAB_X = 80;
 const TAB_Y = -43;
-const TAB_HIT_WIDTH = 100;
+const TAB_HIT_WIDTH = 80;
+// leaves room for the 1.1x highlight so long labels (fr 'Aujourd'hui') never touch their neighbours
+const TAB_MAX_WIDTH = 68;
 const TAB_HIT_HEIGHT = 30;
 const HALF = 0.5;
+
+type TabMode = 'allTime' | 'today' | 'endless';
+
+const EMPTY_KEYS = { allTime: 'highscore.empty', today: 'highscore.emptyToday', endless: 'highscore.emptyEndless' } as const;
 
 interface RankedEntry {
   entry: HighscoreEntry;
@@ -31,7 +37,7 @@ interface RankedEntry {
 export class HighscorePopup extends Popup {
   private readonly storage: StorageService = new StorageService();
   private readonly rows = new Container();
-  private readonly tabs: { text: Text; todayOnly: boolean }[] = [];
+  private readonly tabs: { text: Text; mode: TabMode; fit: number }[] = [];
   private entries: HighscoreEntry[] = [];
   private latestId?: string;
   private readonly dateFormatter: Intl.DateTimeFormat;
@@ -50,25 +56,29 @@ export class HighscorePopup extends Popup {
     this.latestId = this.gameService.lastRun?.entry.id
       ?? this.entries.reduce<HighscoreEntry | undefined>((latest, e) => (!latest || e.date > latest.date ? e : latest), undefined)?.id;
 
-    if (this.entries.length) {
-      const best = this.entries[0].kills;
+    const campaign = this.entries.filter((e) => !isEndlessEntry(e));
+    if (campaign.length) {
+      const best = campaign[0].kills;
       this.addText(
-        `🏆 ${this.translation.getTranslation('highscore.summary', { best, games: this.entries.length })}`,
+        `🏆 ${this.translation.getTranslation('highscore.summary', { best, games: campaign.length })}`,
         { size: 11, fill: MUTED_COLOR },
         // eslint-disable-next-line no-magic-numbers
         { y: -66 },
       );
     }
-    this.addTab('highscore.allTime', -TAB_X, false);
-    this.addTab('highscore.today', TAB_X, true);
-    this.selectTab(0);
+    this.addTab('allTime', -TAB_X);
+    this.addTab('today', 0);
+    this.addTab('endless', TAB_X);
+    // open the endless tab right after an endless run, so the player sees it ranked
+    const lastRun = this.gameService.lastRun?.entry;
+    this.selectTab(this.tabs.findIndex(({ mode }) => mode === (lastRun && isEndlessEntry(lastRun) ? 'endless' : 'allTime')));
 
     await super.show();
   }
 
-  private addTab(key: 'highscore.allTime' | 'highscore.today', x: number, todayOnly: boolean): void {
-    const tab = this.addText(this.translation.getTranslation(key), { size: 13 }, { y: TAB_Y, x });
-    const index = this.tabs.push({ text: tab, todayOnly }) - 1;
+  private addTab(mode: TabMode, x: number): void {
+    const tab = this.addText(this.translation.getTranslation(`highscore.${mode}`), { size: 13 }, { y: TAB_Y, x });
+    const index = this.tabs.push({ text: tab, mode, fit: Math.min(1, TAB_MAX_WIDTH / tab.width) }) - 1;
     tab.eventMode = 'static';
     tab.cursor = 'pointer';
     // generous touch target, the label itself is tiny on phones
@@ -77,22 +87,26 @@ export class HighscorePopup extends Popup {
   }
 
   private selectTab(index: number): void {
-    this.tabs.forEach(({ text }, i) => {
+    this.tabs.forEach(({ text, fit }, i) => {
       text.style.fill = i === index ? HIGHLIGHT_COLOR : MUTED_COLOR;
       // eslint-disable-next-line no-magic-numbers
-      text.scale.set(i === index ? 1.1 : 1);
+      text.scale.set(fit * (i === index ? 1.1 : 1));
     });
-    const { todayOnly } = this.tabs[index];
+    const { mode } = this.tabs[index];
     const now = new Date();
-    this.renderRows(todayOnly ? this.entries.filter((e) => isSameDay(e.date, now)) : this.entries, todayOnly);
+    const list = this.entries.filter((e) => (mode === 'endless'
+      ? isEndlessEntry(e)
+      : !isEndlessEntry(e) && (mode !== 'today' || isSameDay(e.date, now))));
+    this.renderRows(list, mode);
   }
 
-  private renderRows(list: HighscoreEntry[], todayOnly: boolean): void {
+  private renderRows(list: HighscoreEntry[], mode: TabMode): void {
+    const todayOnly = mode === 'today';
     this.rows.removeChildren().forEach((child) => child.destroy({ children: true }));
 
     if (!list.length) {
       this.rows.addChild(this.createText(
-        this.translation.getTranslation(todayOnly ? 'highscore.emptyToday' : 'highscore.empty'),
+        this.translation.getTranslation(EMPTY_KEYS[mode]),
         { x: 0, y: 60, fill: MUTED_COLOR },
       ));
       return;
