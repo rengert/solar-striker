@@ -27,7 +27,7 @@ import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
 import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
-import { GameEnemyService } from './game-enemy.service';
+import { EnemyKind, GameEnemyService } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { getComboColor, GameScreenService } from './game-screen.service';
@@ -234,7 +234,8 @@ export class GameService {
         // Daily challenge: track kills and boss
         this.dailyChallengeService.addKills(1);
         const kind = this.enemy.getKind(destroyedEnemy);
-        if (kind) {
+        // the endless-only kinds have no badge
+        if (kind && kind !== EnemyKind.bomber && kind !== EnemyKind.phantom) {
           this.achievementService.addCumulative(`${kind}_hunter`, 1);
         }
         if (isBoss) {
@@ -474,6 +475,7 @@ export class GameService {
     this.weekly.set(weekly);
     this.collectables.powerUpsEnabled = weekly?.rule !== 'noPowerUps';
     this.enemy.spawnFactor = weekly?.rule === 'swarm' ? SWARM_SPAWN_FACTOR : 1;
+    this.enemy.endless = endless;
     this.base.maxEnergy = weekly?.rule === 'fragileBase' ? FRAGILE_BASE_ENERGY : BASE_MAX_ENERGY;
     await this.hideAndRemoveScreen(requester);
     const storedCoins = await this.storage.getCoins();
