@@ -1,0 +1,1 @@
+import{i as D}from"./chunk-DMAWJU-B.js";import{p as C}from"./main-EARS6APM.js";var o=class extends C{show(i){return D(this,null,function*(){})}hide(i){return D(this,null,function*(){})}};export{o as SplashScreenWeb};
