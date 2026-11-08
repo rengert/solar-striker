@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { Container, Graphics, Text } from 'pixi.js';
-import { RunResult } from '../models/highscore.model';
+import { getEntryMode, RunResult } from '../models/highscore.model';
 import { TranslationService } from '../services/translation.service';
 
 const TEXT_COLOR = 0x3c2f1e;
@@ -75,7 +75,7 @@ export function createRunResult(run: RunResult | undefined, translation: Transla
   if (run.isRecord) {
     banner = label(translation.getTranslation('run.newRecord'), 14, 62, RECORD_COLOR);
     detail = run.previousBest
-      ? translation.getTranslation(entry.mode === 'endless' ? 'run.oldRecordLevel' : 'run.oldRecord', { best: run.previousBest })
+      ? translation.getTranslation(getEntryMode(entry) === 'campaign' ? 'run.oldRecord' : 'run.oldRecordLevel', { best: run.previousBest })
       : translation.getTranslation('run.firstRun');
   } else if (run.isDailyBest) {
     banner = label(translation.getTranslation('run.dailyBest'), 14, 62, HIGHLIGHT_COLOR);

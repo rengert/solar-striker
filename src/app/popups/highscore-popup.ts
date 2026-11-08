@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { Container, Graphics, Rectangle, Text } from 'pixi.js';
-import { compareEntries, HighscoreEntry, isEndlessEntry, isSameDay } from '../models/highscore.model';
+import { compareEntries, getEntryMode, HighscoreEntry, isSameDay } from '../models/highscore.model';
+import { getWeekIndex } from '../models/weekly-challenge.model';
 import { GameService } from '../services/game.service';
 import { StorageService } from '../services/storage.service';
 import { TranslationService } from '../services/translation.service';
@@ -17,17 +18,17 @@ const ROW_STEP = 21;
 const ROW_SIZE = 12;
 const MEDALS = ['🥇', '🥈', '🥉'];
 const COLUMNS_X = { rank: -95, kills: -42, level: 4, combo: 50, date: 96 };
-const TAB_X = 80;
+const TAB_X = 60;
 const TAB_Y = -43;
-const TAB_HIT_WIDTH = 80;
+const TAB_HIT_WIDTH = 60;
 // leaves room for the 1.1x highlight so long labels (fr 'Aujourd'hui') never touch their neighbours
-const TAB_MAX_WIDTH = 68;
+const TAB_MAX_WIDTH = 52;
 const TAB_HIT_HEIGHT = 30;
 const HALF = 0.5;
 
-type TabMode = 'allTime' | 'today' | 'endless';
+type TabMode = 'allTime' | 'today' | 'endless' | 'weekly';
 
-const EMPTY_KEYS = { allTime: 'highscore.empty', today: 'highscore.emptyToday', endless: 'highscore.emptyEndless' } as const;
+const EMPTY_KEYS = { allTime: 'highscore.empty', today: 'highscore.emptyToday', endless: 'highscore.emptyEndless', weekly: 'highscore.emptyWeekly' } as const;
 
 interface RankedEntry {
   entry: HighscoreEntry;
@@ -56,7 +57,7 @@ export class HighscorePopup extends Popup {
     this.latestId = this.gameService.lastRun?.entry.id
       ?? this.entries.reduce<HighscoreEntry | undefined>((latest, e) => (!latest || e.date > latest.date ? e : latest), undefined)?.id;
 
-    const campaign = this.entries.filter((e) => !isEndlessEntry(e));
+    const campaign = this.entries.filter((e) => getEntryMode(e) === 'campaign');
     if (campaign.length) {
       const best = campaign[0].kills;
       this.addText(
@@ -66,12 +67,12 @@ export class HighscorePopup extends Popup {
         { y: -66 },
       );
     }
-    this.addTab('allTime', -TAB_X);
-    this.addTab('today', 0);
-    this.addTab('endless', TAB_X);
-    // open the endless tab right after an endless run, so the player sees it ranked
-    const lastRun = this.gameService.lastRun?.entry;
-    this.selectTab(this.tabs.findIndex(({ mode }) => mode === (lastRun && isEndlessEntry(lastRun) ? 'endless' : 'allTime')));
+    // eslint-disable-next-line no-magic-numbers
+    (['allTime', 'today', 'endless', 'weekly'] as const).forEach((mode, i) => this.addTab(mode, (i - 1.5) * TAB_X));
+    // open the tab of the latest run (endless, weekly or campaign), so the player sees it ranked
+    const latest = this.entries.find((e) => e.id === this.latestId);
+    const lastMode = latest ? getEntryMode(latest) : 'campaign';
+    this.selectTab(this.tabs.findIndex(({ mode }) => mode === (lastMode === 'campaign' ? 'allTime' : lastMode)));
 
     await super.show();
   }
@@ -94,9 +95,15 @@ export class HighscorePopup extends Popup {
     });
     const { mode } = this.tabs[index];
     const now = new Date();
-    const list = this.entries.filter((e) => (mode === 'endless'
-      ? isEndlessEntry(e)
-      : !isEndlessEntry(e) && (mode !== 'today' || isSameDay(e.date, now))));
+    const week = getWeekIndex();
+    const list = this.entries.filter((e) => {
+      const entryMode = getEntryMode(e);
+      if (mode === 'endless' || mode === 'weekly') {
+        // the weekly board only shows this week's challenge
+        return entryMode === mode && (mode === 'endless' || e.week === week);
+      }
+      return entryMode === 'campaign' && (mode !== 'today' || isSameDay(e.date, now));
+    });
     this.renderRows(list, mode);
   }
 
