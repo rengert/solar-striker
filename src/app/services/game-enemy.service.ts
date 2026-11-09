@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Container, Graphics, Rectangle, Sprite, Spritesheet, Text, Texture, Ticker } from 'pixi.js';
-import { GAME_CONFIG, getDifficultyLevel, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
+import { GAME_CONFIG, getDifficultyLevel, MAX_STAGE, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { AnimatedGameSprite, LoopData, OrbitData } from '../models/pixijs/animated-game-sprite';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
@@ -66,6 +66,8 @@ export enum EnemyKind {
   diver = 'diver',
   weaver = 'weaver',
   sniper = 'sniper',
+  bomber = 'bomber',
+  phantom = 'phantom',
 }
 
 interface EnemyKindDefinition {
@@ -75,6 +77,8 @@ interface EnemyKindDefinition {
   readonly energyMultiplier: number;
   readonly speed: number;
   readonly autoFire: boolean;
+  /** Only spawns in endless mode, so stage 101+ shows something new. */
+  readonly endlessOnly?: boolean;
 }
 
 /* eslint-disable no-magic-numbers */
@@ -85,6 +89,10 @@ const ENEMY_KIND_DEFINITIONS: Record<EnemyKind, EnemyKindDefinition> = {
   [EnemyKind.weaver]: { spawnChance: 0.1, tint: 0x66ff88, scale: 1, energyMultiplier: 1, speed: 0.45, autoFire: true },
   // parks near the top, fires aimed shots, then leaves
   [EnemyKind.sniper]: { spawnChance: 0.08, tint: 0xffee44, scale: 1.4, energyMultiplier: 2, speed: 0.5, autoFire: false },
+  // slow and tough, drops a ring of shots every few seconds
+  [EnemyKind.bomber]: { spawnChance: 0.08, tint: 0xff66cc, scale: 1.6, energyMultiplier: 3, speed: 0.25, autoFire: false, endlessOnly: true },
+  // blinks to a new spot and fires right after it reappears
+  [EnemyKind.phantom]: { spawnChance: 0.08, tint: 0x8888ff, scale: 1, energyMultiplier: 1, speed: 0.35, autoFire: false, endlessOnly: true },
 };
 /* eslint-enable no-magic-numbers */
 const ENEMY_KINDS = Object.values(EnemyKind);
@@ -100,6 +108,14 @@ const SNIPER_HOLD_Y_RATIO = 0.2;
 const SNIPER_HOLD_MS = 5000;
 const SNIPER_SHOT_INTERVAL_MS = 1400;
 const SNIPER_SHOT_SPEED = 0.7;
+const BOMBER_RING_COUNT = 8;
+const BOMBER_SHOT_INTERVAL_MS = 2400;
+const BOMBER_SHOT_SPEED = 0.35;
+const PHANTOM_BLINK_INTERVAL_MS = 1500;
+const PHANTOM_SHOT_SPEED = 0.6;
+const PHANTOM_FADE_IN_MS = 400;
+const PHANTOM_BLINK_ALPHA = 0.2;
+const PHANTOM_MIN_Y_RATIO = 0.1;
 
 const BOSS_ENERGY_BASE = 30;
 const BOSS_ENERGY_LEVEL_STEP = 5;
@@ -121,11 +137,16 @@ const BOSS_BAR_BACKGROUND = 0x330000;
 const BOSS_BAR_BORDER_COLOR = 0xffffff;
 const ENEMY_ANIMATION_SPEED = 0.167;
 
-/** Each stage boss uses one of these, in turn: sweeper (stage 1, 4, ...), orbiter (2, 5, ...), hunter (3, 6, ...). */
+/**
+ * Each campaign boss uses one of the first three, in turn: sweeper (stage 1, 4, ...), orbiter (2, 5, ...), hunter (3, 6, ...).
+ * Endless mode (stage 101+) rotates through all five, starting with the spiral.
+ */
 export enum BossPattern {
   sweeper = 'sweeper',
   orbiter = 'orbiter',
   hunter = 'hunter',
+  spiral = 'spiral',
+  warper = 'warper',
 }
 
 interface BossDefinition {
@@ -137,11 +158,16 @@ interface BossDefinition {
 }
 
 const BOSS_PATTERNS = [BossPattern.sweeper, BossPattern.orbiter, BossPattern.hunter] as const;
+const ENDLESS_BOSS_PATTERNS = [
+  BossPattern.spiral, BossPattern.sweeper, BossPattern.warper, BossPattern.orbiter, BossPattern.hunter,
+] as const;
 /* eslint-disable no-magic-numbers */
 const BOSS_DEFINITIONS: Record<BossPattern, BossDefinition> = {
   [BossPattern.sweeper]: { tint: 0xff3333, autoFire: true, attackIntervalMs: 2600, xSpeed: 0.035 },
   [BossPattern.orbiter]: { tint: 0xcc55ff, autoFire: false, attackIntervalMs: 2200, xSpeed: 0 },
   [BossPattern.hunter]: { tint: 0xffaa22, autoFire: false, attackIntervalMs: 1600, xSpeed: 0.06 },
+  [BossPattern.spiral]: { tint: 0x33ffcc, autoFire: false, attackIntervalMs: 400, xSpeed: 0.02 },
+  [BossPattern.warper]: { tint: 0x55aaff, autoFire: true, attackIntervalMs: 2000, xSpeed: 0 },
 };
 /* eslint-enable no-magic-numbers */
 const BOSS_HOVER_Y_RATIO = 0.25;
@@ -163,6 +189,14 @@ const BOSS_ORBIT_RADIUS_Y = 40;
 const BOSS_ORBIT_ANGULAR_SPEED = (Math.PI * 2) / 6000;
 // eslint-disable-next-line no-magic-numbers
 const DOWN = Math.PI / 2;
+const BOSS_SPIRAL_ARMS = 2;
+const BOSS_SPIRAL_STEP = 0.35;
+const BOSS_WARP_COUNT = 5;
+// eslint-disable-next-line no-magic-numbers
+const BOSS_WARP_ARC = Math.PI / 6;
+// warper fades in at its new spot and only fires once it is fully visible, so the volley can be dodged
+const BOSS_WARP_TELEGRAPH_MS = 400;
+const BOSS_WARP_ALPHA = 0.3;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -177,6 +211,10 @@ interface EnemyMovementState {
   weaveCenterX?: number;
   /** Sniper only: when it leaves its post. */
   leaveAt?: number;
+  /** Spiral boss only: where the next pair of shots starts. */
+  spiralAngle?: number;
+  /** Phantom and warper: when the shot after a blink is fired. */
+  blinkShotAt?: number;
 }
 
 /** Frames between enemy spawns; never below 1, otherwise endless stages past ~600 would stop spawning. */
@@ -186,6 +224,9 @@ export function getSpawnInterval(level: number): number {
 }
 
 export function getBossPattern(stage: number): BossPattern {
+  if (stage > MAX_STAGE) {
+    return ENDLESS_BOSS_PATTERNS[(stage - MAX_STAGE - 1) % ENDLESS_BOSS_PATTERNS.length];
+  }
   return BOSS_PATTERNS[(Math.max(1, stage) - 1) % BOSS_PATTERNS.length];
 }
 
@@ -200,6 +241,8 @@ export class GameEnemyService extends UpdatableService {
   bossFightActive = false;
   /** Spawn rate multiplier, raised by the weekly swarm rule. */
   spawnFactor = 1;
+  /** Set by GameService in endless mode; lets the endless-only enemy kinds spawn. */
+  endless = false;
 
   private elapsed = 0;
   private lastDeltaMs = 0;
@@ -349,6 +392,9 @@ export class GameEnemyService extends UpdatableService {
   private pickEnemyKind(): EnemyKind | undefined {
     let roll = Math.random();
     for (const kind of ENEMY_KINDS) {
+      if (ENEMY_KIND_DEFINITIONS[kind].endlessOnly && !this.endless) {
+        continue;
+      }
       roll -= ENEMY_KIND_DEFINITIONS[kind].spawnChance;
       if (roll < 0) {
         return kind;
@@ -418,6 +464,32 @@ export class GameEnemyService extends UpdatableService {
         enemy.targetX = undefined;
         enemy.x = movement.weaveCenterX + WEAVER_AMPLITUDE * Math.sin(movement.orbitAngle);
         break;
+      case EnemyKind.bomber:
+        // no ring while still above the screen
+        if (enemy.y >= 0 && (movement.nextAttack ??= this.elapsed + BOMBER_SHOT_INTERVAL_MS / DOUBLE) <= this.elapsed) {
+          this.shotService.fireRadial(enemy, BOMBER_RING_COUNT, BOMBER_SHOT_SPEED);
+          movement.nextAttack = this.elapsed + BOMBER_SHOT_INTERVAL_MS;
+        }
+        break;
+      case EnemyKind.phantom:
+        enemy.alpha = Math.min(1, enemy.alpha + this.lastDeltaMs / PHANTOM_FADE_IN_MS);
+        if (enemy.y < screen.height * PHANTOM_MIN_Y_RATIO) {
+          break;
+        }
+        // fires once it has faded back in, not while nearly invisible
+        if (movement.blinkShotAt !== undefined && movement.blinkShotAt <= this.elapsed) {
+          movement.blinkShotAt = undefined;
+          this.shotService.fireRadial(enemy, 1, PHANTOM_SHOT_SPEED, this.getAimAngle(enemy), 0);
+        }
+        if ((movement.nextAttack ??= this.elapsed + PHANTOM_BLINK_INTERVAL_MS) <= this.elapsed) {
+          const margin = enemy.width / DOUBLE;
+          enemy.targetX = undefined;
+          enemy.x = margin + Math.random() * Math.max(0, screen.width - enemy.width);
+          enemy.alpha = PHANTOM_BLINK_ALPHA;
+          movement.blinkShotAt = this.elapsed + PHANTOM_FADE_IN_MS;
+          movement.nextAttack = this.elapsed + PHANTOM_BLINK_INTERVAL_MS;
+        }
+        break;
       default: {
         // sniper
         const holdY = screen.height * SNIPER_HOLD_Y_RATIO;
@@ -431,9 +503,7 @@ export class GameEnemyService extends UpdatableService {
         enemy.y = holdY;
         enemy.targetX = this.getPlayer()?.x ?? enemy.x;
         if ((movement.nextAttack ??= this.elapsed + SNIPER_SHOT_INTERVAL_MS / DOUBLE) <= this.elapsed) {
-          const player = this.getPlayer();
-          const angle = player ? Math.atan2(player.y - enemy.y, player.x - enemy.x) : DOWN;
-          this.shotService.fireRadial(enemy, 1, SNIPER_SHOT_SPEED, angle, 0);
+          this.shotService.fireRadial(enemy, 1, SNIPER_SHOT_SPEED, this.getAimAngle(enemy), 0);
           movement.nextAttack = this.elapsed + SNIPER_SHOT_INTERVAL_MS;
         }
         break;
@@ -643,29 +713,51 @@ export class GameEnemyService extends UpdatableService {
       this.updateOrbitMovement(boss, movement, hoverY);
     } else if (pattern === BossPattern.hunter) {
       boss.targetX = this.getPlayer()?.x ?? boss.x;
+    } else if (pattern === BossPattern.warper) {
+      // stays put between its jumps
+      boss.targetX = undefined;
     } else {
       this.updateSweepMovement(boss, movement);
     }
 
+    if (pattern === BossPattern.warper) {
+      boss.alpha = Math.min(1, boss.alpha + this.lastDeltaMs / BOSS_WARP_TELEGRAPH_MS);
+      if (movement.blinkShotAt !== undefined && movement.blinkShotAt <= this.elapsed) {
+        movement.blinkShotAt = undefined;
+        this.shotService.fireRadial(boss, BOSS_WARP_COUNT, BOSS_RADIAL_SHOT_SPEED, this.getAimAngle(boss) - BOSS_WARP_ARC / DOUBLE, BOSS_WARP_ARC);
+      }
+    }
+
     if (arrived && movement.nextAttack !== undefined && movement.nextAttack <= this.elapsed) {
-      this.fireBossAttack(boss, pattern);
+      this.fireBossAttack(boss, pattern, movement);
       const enraged = boss.energy <= boss.maxEnergy * BOSS_ENRAGE_RATIO;
       const interval = BOSS_DEFINITIONS[pattern].attackIntervalMs;
       movement.nextAttack = this.elapsed + (enraged ? interval * BOSS_ENRAGE_INTERVAL_FACTOR : interval);
     }
   }
 
-  private fireBossAttack(boss: Ship, pattern: BossPattern): void {
+  private fireBossAttack(boss: Ship, pattern: BossPattern, movement: EnemyMovementState): void {
     switch (pattern) {
+      case BossPattern.spiral:
+        // two arms that keep turning, so the shots form a spiral
+        movement.spiralAngle = (movement.spiralAngle ?? DOWN) + BOSS_SPIRAL_STEP;
+        this.shotService.fireRadial(boss, BOSS_SPIRAL_ARMS, BOSS_RADIAL_SHOT_SPEED, movement.spiralAngle);
+        break;
+      case BossPattern.warper: {
+        // jumps to a new spot, fades in, then fires a wide aimed volley (see updateBoss)
+        const margin = boss.width / DOUBLE + BOSS_SWEEP_MARGIN;
+        boss.x = margin + Math.random() * Math.max(0, this.application.screen.width - margin * DOUBLE);
+        boss.alpha = BOSS_WARP_ALPHA;
+        movement.blinkShotAt = this.elapsed + BOSS_WARP_TELEGRAPH_MS;
+        break;
+      }
       case BossPattern.orbiter:
         // full ring in all directions
         this.shotService.fireRadial(boss, BOSS_RING_COUNT, BOSS_RADIAL_SHOT_SPEED);
         break;
       case BossPattern.hunter: {
         // tight volley aimed at the player
-        const player = this.getPlayer();
-        const angle = player ? Math.atan2(player.y - boss.y, player.x - boss.x) : DOWN;
-        this.shotService.fireRadial(boss, BOSS_AIMED_COUNT, BOSS_RADIAL_SHOT_SPEED, angle - BOSS_AIMED_ARC / DOUBLE, BOSS_AIMED_ARC);
+        this.shotService.fireRadial(boss, BOSS_AIMED_COUNT, BOSS_RADIAL_SHOT_SPEED, this.getAimAngle(boss) - BOSS_AIMED_ARC / DOUBLE, BOSS_AIMED_ARC);
         break;
       }
       default:
@@ -684,6 +776,12 @@ export class GameEnemyService extends UpdatableService {
     boss.x = centerX + radiusX * Math.sin(angle);
     // starts and stays at hoverY on average, dips below and above it
     boss.y = hoverY + BOSS_ORBIT_RADIUS_Y * Math.sin(angle * DOUBLE);
+  }
+
+  /** Angle from the shooter to the player, straight down if there is none. */
+  private getAimAngle(shooter: Ship): number {
+    const player = this.getPlayer();
+    return player ? Math.atan2(player.y - shooter.y, player.x - shooter.x) : DOWN;
   }
 
   private getPlayer(): ObjectModelType | undefined {
