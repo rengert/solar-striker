@@ -194,6 +194,9 @@ const BOSS_SPIRAL_STEP = 0.35;
 const BOSS_WARP_COUNT = 5;
 // eslint-disable-next-line no-magic-numbers
 const BOSS_WARP_ARC = Math.PI / 6;
+// warper fades in at its new spot and only fires once it is fully visible, so the volley can be dodged
+const BOSS_WARP_TELEGRAPH_MS = 400;
+const BOSS_WARP_ALPHA = 0.3;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -210,6 +213,8 @@ interface EnemyMovementState {
   leaveAt?: number;
   /** Spiral boss only: where the next pair of shots starts. */
   spiralAngle?: number;
+  /** Phantom and warper: when the shot after a blink is fired. */
+  blinkShotAt?: number;
 }
 
 /** Frames between enemy spawns; never below 1, otherwise endless stages past ~600 would stop spawning. */
@@ -460,7 +465,8 @@ export class GameEnemyService extends UpdatableService {
         enemy.x = movement.weaveCenterX + WEAVER_AMPLITUDE * Math.sin(movement.orbitAngle);
         break;
       case EnemyKind.bomber:
-        if ((movement.nextAttack ??= this.elapsed + BOMBER_SHOT_INTERVAL_MS / DOUBLE) <= this.elapsed) {
+        // no ring while still above the screen
+        if (enemy.y >= 0 && (movement.nextAttack ??= this.elapsed + BOMBER_SHOT_INTERVAL_MS / DOUBLE) <= this.elapsed) {
           this.shotService.fireRadial(enemy, BOMBER_RING_COUNT, BOMBER_SHOT_SPEED);
           movement.nextAttack = this.elapsed + BOMBER_SHOT_INTERVAL_MS;
         }
@@ -470,12 +476,17 @@ export class GameEnemyService extends UpdatableService {
         if (enemy.y < screen.height * PHANTOM_MIN_Y_RATIO) {
           break;
         }
+        // fires once it has faded back in, not while nearly invisible
+        if (movement.blinkShotAt !== undefined && movement.blinkShotAt <= this.elapsed) {
+          movement.blinkShotAt = undefined;
+          this.shotService.fireRadial(enemy, 1, PHANTOM_SHOT_SPEED, this.getAimAngle(enemy), 0);
+        }
         if ((movement.nextAttack ??= this.elapsed + PHANTOM_BLINK_INTERVAL_MS) <= this.elapsed) {
           const margin = enemy.width / DOUBLE;
           enemy.targetX = undefined;
           enemy.x = margin + Math.random() * Math.max(0, screen.width - enemy.width);
           enemy.alpha = PHANTOM_BLINK_ALPHA;
-          this.shotService.fireRadial(enemy, 1, PHANTOM_SHOT_SPEED, this.getAimAngle(enemy), 0);
+          movement.blinkShotAt = this.elapsed + PHANTOM_FADE_IN_MS;
           movement.nextAttack = this.elapsed + PHANTOM_BLINK_INTERVAL_MS;
         }
         break;
@@ -709,6 +720,14 @@ export class GameEnemyService extends UpdatableService {
       this.updateSweepMovement(boss, movement);
     }
 
+    if (pattern === BossPattern.warper) {
+      boss.alpha = Math.min(1, boss.alpha + this.lastDeltaMs / BOSS_WARP_TELEGRAPH_MS);
+      if (movement.blinkShotAt !== undefined && movement.blinkShotAt <= this.elapsed) {
+        movement.blinkShotAt = undefined;
+        this.shotService.fireRadial(boss, BOSS_WARP_COUNT, BOSS_RADIAL_SHOT_SPEED, this.getAimAngle(boss) - BOSS_WARP_ARC / DOUBLE, BOSS_WARP_ARC);
+      }
+    }
+
     if (arrived && movement.nextAttack !== undefined && movement.nextAttack <= this.elapsed) {
       this.fireBossAttack(boss, pattern, movement);
       const enraged = boss.energy <= boss.maxEnergy * BOSS_ENRAGE_RATIO;
@@ -725,10 +744,11 @@ export class GameEnemyService extends UpdatableService {
         this.shotService.fireRadial(boss, BOSS_SPIRAL_ARMS, BOSS_RADIAL_SHOT_SPEED, movement.spiralAngle);
         break;
       case BossPattern.warper: {
-        // jumps to a new spot, then fires a wide aimed volley
+        // jumps to a new spot, fades in, then fires a wide aimed volley (see updateBoss)
         const margin = boss.width / DOUBLE + BOSS_SWEEP_MARGIN;
         boss.x = margin + Math.random() * Math.max(0, this.application.screen.width - margin * DOUBLE);
-        this.shotService.fireRadial(boss, BOSS_WARP_COUNT, BOSS_RADIAL_SHOT_SPEED, this.getAimAngle(boss) - BOSS_WARP_ARC / DOUBLE, BOSS_WARP_ARC);
+        boss.alpha = BOSS_WARP_ALPHA;
+        movement.blinkShotAt = this.elapsed + BOSS_WARP_TELEGRAPH_MS;
         break;
       }
       case BossPattern.orbiter:

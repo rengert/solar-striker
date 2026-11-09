@@ -200,7 +200,7 @@ describe('GameEnemyService - boss patterns', () => {
     expect(second[3]).toBeGreaterThan(first[3]);
   });
 
-  it('warper jumps before it fires', () => {
+  it('warper jumps, fades in and only then fires', () => {
     const boss = spawnBoss(103);
     const x = boss.x;
     spyOn(Math, 'random').and.returnValue(0);
@@ -208,6 +208,11 @@ describe('GameEnemyService - boss patterns', () => {
     service.update(createMockTicker(2100), 103);
 
     expect(boss.x).not.toBe(x);
+    expect(boss.alpha).toBeLessThan(1);
+    expect(shotService.fireRadial).not.toHaveBeenCalled();
+
+    service.update(createMockTicker(500), 103);
+
     expect(shotService.fireRadial).toHaveBeenCalledOnceWith(boss, 5, jasmine.any(Number), jasmine.any(Number), jasmine.any(Number));
   });
 
@@ -309,6 +314,16 @@ describe('GameEnemyService - enemy kinds', () => {
     expect(rings[0].args[1]).toBe(8);
   });
 
+  it('bomber holds its ring while above the screen', () => {
+    const bomber = service.spawnKind(101, EnemyKind.bomber);
+    bomber.y = -1000;
+
+    service.update(createMockTicker(), 101);
+    service.update(createMockTicker(1300), 101);
+
+    expect(shotService.fireRadial.calls.all().filter((call) => call.args[0] === bomber).length).toBe(0);
+  });
+
   it('phantom blinks to a new spot and fires at the player', () => {
     const phantom = service.spawnKind(101, EnemyKind.phantom);
     phantom.y = MOCK_SCREEN_HEIGHT / 2;
@@ -319,6 +334,11 @@ describe('GameEnemyService - enemy kinds', () => {
 
     expect(phantom.x).toBe(phantom.width / 2);
     expect(phantom.alpha).toBeLessThan(1);
+    expect(shotService.fireRadial.calls.all().filter((call) => call.args[0] === phantom).length).toBe(0);
+
+    // fires only once faded back in
+    service.update(createMockTicker(500), 101);
+
     const [shooter, count, , angle] = shotService.fireRadial.calls.mostRecent().args as [Ship, number, number, number];
     expect(shooter).toBe(phantom);
     expect(count).toBe(1);
