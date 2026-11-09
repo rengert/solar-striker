@@ -1,4 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle, Ticker } from 'pixi.js';
 import { gsap } from 'gsap';
 import { RadioLine, SPEAKER_COLORS } from '../models/story.model';
@@ -65,6 +66,22 @@ const SHAKE_STEP_DURATION_S = 0.05;
 const SHAKE_REPEAT_COUNT = 5;
 const SHAKE_DECAY = 0.7;
 const FLASH_DURATION_S = 0.25;
+// haptic strength follows the shake: big explosion light, hit medium, boss heavy
+const LIGHT_IMPACT_MAX_SHAKE_PX = 4;
+const HEAVY_IMPACT_MIN_SHAKE_PX = 10;
+// many hits per second would otherwise buzz non-stop
+const MIN_VIBRATION_GAP_MS = 100;
+const EFFECTS_OFF_STORAGE_KEY = 'effects-off';
+
+function readEffectsOff(): boolean {
+  try {
+    const stored = window.localStorage.getItem(EFFECTS_OFF_STORAGE_KEY);
+    // until the player decides, follow the system's "reduce motion" setting
+    return stored === null ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : stored === 'true';
+  } catch {
+    return false;
+  }
+}
 const ITEM_NOT_FOUND_INDEX = -1;
 // Radio message constants
 const RADIO_MAX_WIDTH = 320;
@@ -103,6 +120,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   private lastHealth = 0;
   private isPulsing = false;
   private damageOverlay?: Graphics;
+  private effectsOff = readEffectsOff();
+  private lastVibration = -Infinity;
 
   private readonly points = new Text({ text: `${icons.points}  0000000`, style: fontAwesomeStyle });
   private readonly coinLabel = new Text({ text: `${icons.coin}  0000000`, style: fontAwesomeStyle });
@@ -564,8 +583,26 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     });
   }
 
-  /** Briefly shakes the game stage in a random, decaying direction; amplitude in px. */
+  /** Screen shake, full-screen flashes and phone vibration; switchable in the settings. */
+  get effectsEnabled(): boolean {
+    return !this.effectsOff;
+  }
+
+  set effectsEnabled(value: boolean) {
+    this.effectsOff = !value;
+    try {
+      window.localStorage.setItem(EFFECTS_OFF_STORAGE_KEY, String(!value));
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  /** Briefly shakes the game stage in a random, decaying direction and vibrates the phone; amplitude in px. */
   applyScreenShake(amplitude = SHAKE_AMPLITUDE): void {
+    if (this.effectsOff) {
+      return;
+    }
+    this.vibrate(amplitude);
     const stage = this.application.stage;
     try {
       // kill only the position tweens so other stage tweens are unaffected
@@ -590,8 +627,27 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     });
   }
 
+  // impact() is graded on iOS and Android; the browser falls back to navigator.vibrate (iOS Safari has none)
+  private vibrate(amplitude: number): void {
+    const now = performance.now();
+    if (now - this.lastVibration < MIN_VIBRATION_GAP_MS) {
+      return;
+    }
+    this.lastVibration = now;
+    let style = ImpactStyle.Medium;
+    if (amplitude <= LIGHT_IMPACT_MAX_SHAKE_PX) {
+      style = ImpactStyle.Light;
+    } else if (amplitude >= HEAVY_IMPACT_MIN_SHAKE_PX) {
+      style = ImpactStyle.Heavy;
+    }
+    Haptics.impact({ style }).catch(() => undefined);
+  }
+
   /** Fades a full-screen color overlay out, e.g. for hits and big explosions. */
   flashScreen(color: number, alpha: number): void {
+    if (this.effectsOff) {
+      return;
+    }
     const flash = new Graphics()
       .rect(0, 0, this.application.screen.width, this.application.screen.height)
       .fill(color);

@@ -108,7 +108,7 @@ export class GameService {
   private readonly ship = inject(GameShipService);
   private readonly meteor = inject(GameMeteorService);
   private readonly base = inject(GameBaseService);
-  private readonly gameScreen = inject(GameScreenService);
+  readonly gameScreen = inject(GameScreenService);
   private readonly object = inject(ObjectService);
   private readonly shotService = inject(GameShotService);
   readonly shipUpgrades = inject(ShipUpgradeService);
