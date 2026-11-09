@@ -17,6 +17,10 @@ export class SettingsPopup extends Popup {
   private readonly resetButton: LabeledButton;
   private readonly backButton: LabeledButton;
   private resetArmed = false;
+  private exportKey: TranslationKey = 'settings.export';
+  private importKey: TranslationKey = 'settings.import';
+  // prepared up front: iOS only allows the clipboard write synchronously inside the tap
+  private exportCode?: string;
 
   constructor(
     private readonly gameService: GameService,
@@ -44,6 +48,7 @@ export class SettingsPopup extends Popup {
       index,
     );
 
+    void this.gameService.exportProgress().then((code) => (this.exportCode = code));
     this.updateContentLanguage();
   }
 
@@ -52,11 +57,8 @@ export class SettingsPopup extends Popup {
     this.updateContentLanguage();
   }
 
-  private exportKey: TranslationKey = 'settings.export';
-  private importKey: TranslationKey = 'settings.import';
-
   private async handleExport(): Promise<void> {
-    const code = await this.gameService.exportProgress();
+    const code = this.exportCode ?? (await this.gameService.exportProgress());
     try {
       await navigator.clipboard.writeText(code);
       this.exportKey = 'settings.exportCopied';
@@ -72,10 +74,12 @@ export class SettingsPopup extends Popup {
     // the Pixi canvas has no text field, the native prompt is the paste box (works in browser and Capacitor)
     // eslint-disable-next-line no-alert
     const code = window.prompt(this.translation.getTranslation('settings.importPrompt'));
-    if (!code) {
+    // eslint-disable-next-line no-alert
+    if (!code || !window.confirm(this.translation.getTranslation('settings.importConfirm'))) {
       return;
     }
-    if (!(await this.gameService.importProgress(this, code))) {
+    const imported = await this.gameService.importProgress(this, code).catch(() => false);
+    if (!imported) {
       this.importKey = 'settings.importInvalid';
       this.updateContentLanguage();
     }
