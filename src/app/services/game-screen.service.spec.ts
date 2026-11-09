@@ -66,6 +66,20 @@ describe('GameScreenService effects switch', () => {
     expect(TestBed.runInInjectionContext(() => new GameScreenService()).effectsEnabled).toBeFalse();
   });
 
+  it('should vibrate once per burst of hits, graded by shake size', async () => {
+    const vibrate = spyOn(navigator, 'vibrate').and.returnValue(true);
+    service.effectsEnabled = true;
+    // eslint-disable-next-line no-magic-numbers
+    service.applyScreenShake(14);
+    service.applyScreenShake();
+    // the web haptics plugin loads lazily
+    // eslint-disable-next-line no-magic-numbers
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // eslint-disable-next-line no-magic-numbers
+    expect(vibrate.calls.allArgs()).toEqual([[[61]]]);
+  });
+
   it('should flash while effects are on', () => {
     service.effectsEnabled = true;
     service.flashScreen(WHITE, 1);

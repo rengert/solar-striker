@@ -1,5 +1,5 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
-import { Haptics } from '@capacitor/haptics';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle, Ticker } from 'pixi.js';
 import { gsap } from 'gsap';
 import { RadioLine, SPEAKER_COLORS } from '../models/story.model';
@@ -66,13 +66,18 @@ const SHAKE_STEP_DURATION_S = 0.05;
 const SHAKE_REPEAT_COUNT = 5;
 const SHAKE_DECAY = 0.7;
 const FLASH_DURATION_S = 0.25;
-// phone vibration grows with the shake: a hit buzzes ~50 ms, a boss kill ~110 ms
-const VIBRATION_MS_PER_SHAKE_PX = 8;
+// haptic strength follows the shake: big explosion light, hit medium, boss heavy
+const LIGHT_IMPACT_MAX_SHAKE_PX = 4;
+const HEAVY_IMPACT_MIN_SHAKE_PX = 10;
+// many hits per second would otherwise buzz non-stop
+const MIN_VIBRATION_GAP_MS = 100;
 const EFFECTS_OFF_STORAGE_KEY = 'effects-off';
 
 function readEffectsOff(): boolean {
   try {
-    return window.localStorage.getItem(EFFECTS_OFF_STORAGE_KEY) === 'true';
+    const stored = window.localStorage.getItem(EFFECTS_OFF_STORAGE_KEY);
+    // until the player decides, follow the system's "reduce motion" setting
+    return stored === null ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : stored === 'true';
   } catch {
     return false;
   }
@@ -116,6 +121,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   private isPulsing = false;
   private damageOverlay?: Graphics;
   private effectsOff = readEffectsOff();
+  private lastVibration = -Infinity;
 
   private readonly points = new Text({ text: `${icons.points}  0000000`, style: fontAwesomeStyle });
   private readonly coinLabel = new Text({ text: `${icons.coin}  0000000`, style: fontAwesomeStyle });
@@ -596,8 +602,7 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
     if (this.effectsOff) {
       return;
     }
-    // native haptics in the apps, navigator.vibrate in the browser (Android only, iOS Safari has none)
-    Haptics.vibrate({ duration: amplitude * VIBRATION_MS_PER_SHAKE_PX }).catch(() => undefined);
+    this.vibrate(amplitude);
     const stage = this.application.stage;
     try {
       // kill only the position tweens so other stage tweens are unaffected
@@ -620,6 +625,22 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
         stage.position.set(0);
       },
     });
+  }
+
+  // impact() is graded on iOS and Android; the browser falls back to navigator.vibrate (iOS Safari has none)
+  private vibrate(amplitude: number): void {
+    const now = performance.now();
+    if (now - this.lastVibration < MIN_VIBRATION_GAP_MS) {
+      return;
+    }
+    this.lastVibration = now;
+    let style = ImpactStyle.Medium;
+    if (amplitude <= LIGHT_IMPACT_MAX_SHAKE_PX) {
+      style = ImpactStyle.Light;
+    } else if (amplitude >= HEAVY_IMPACT_MIN_SHAKE_PX) {
+      style = ImpactStyle.Heavy;
+    }
+    Haptics.impact({ style }).catch(() => undefined);
   }
 
   /** Fades a full-screen color overlay out, e.g. for hits and big explosions. */
