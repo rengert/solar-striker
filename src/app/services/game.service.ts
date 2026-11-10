@@ -74,6 +74,14 @@ function calculateMeteorCoins(meteor: ObjectModelType): number {
   return Math.max(1, Math.floor(energy / METEOR_COIN_ENERGY_STEP));
 }
 
+/**
+ * The checkpoint is only cleared on campaign victory (and wiped with all progress on reset), so a missing checkpoint
+ * with progress below MAX_STAGE means the player won the shorter campaign: continue with the chapters added since.
+ */
+export function getContinueStage(savedStage: number | null, clearedStage: number): number | null {
+  return savedStage ?? (clearedStage > 0 && clearedStage < MAX_STAGE ? clearedStage + 1 : null);
+}
+
 @Injectable()
 export class GameService {
   readonly kills = signal(0);
@@ -402,8 +410,7 @@ export class GameService {
     // a checkpoint from before the campaign existed still counts as progress
     const cleared = Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1);
     this.clearedStage.set(cleared);
-    // whoever won the shorter campaign has no checkpoint left; continue with the chapters added since
-    this.savedStage.set(savedStage ?? (cleared > 0 && cleared < MAX_STAGE ? cleared + 1 : null));
+    this.savedStage.set(getContinueStage(savedStage, cleared));
     const endlessLevels = (await this.storage.getHighscore()).filter(isEndlessEntry).map((entry) => entry.level);
     this.endlessRecord.set(Math.max(await this.storage.getEndlessRecord(), ...endlessLevels));
     await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);

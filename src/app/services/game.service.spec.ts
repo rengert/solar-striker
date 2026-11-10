@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
-import { GameService } from './game.service';
+import { GameService, getContinueStage } from './game.service';
 import { SoundService } from './sound.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { AppScreen } from '../models/pixijs/app-screen';
@@ -691,6 +691,15 @@ describe('GameService', () => {
 
       expect(radio).toHaveBeenCalledOnceWith(getStageBriefing(SAVED_STAGE_SEVEN));
     });
+  });
+
+  it('should let winners of the shorter campaign continue with the new chapters only', () => {
+    const oldCampaignEnd = 100;
+    const checkpoint = 42;
+    expect(getContinueStage(null, oldCampaignEnd)).toBe(oldCampaignEnd + 1);
+    expect(getContinueStage(checkpoint, checkpoint - 1)).toBe(checkpoint);
+    expect(getContinueStage(null, 0)).toBeNull();
+    expect(getContinueStage(null, MAX_STAGE)).toBeNull();
   });
 
   describe('endless mode', () => {
