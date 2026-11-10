@@ -4,7 +4,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 452;
+const POPUP_HEIGHT = 557;
 const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
 const RESET_ARMED_COLOR = 0xff5555;
@@ -13,9 +13,15 @@ export class SettingsPopup extends Popup {
   private readonly languageButtons = new Map<SupportedLanguage, LabeledButton>();
   private readonly soundButton: LabeledButton;
   private readonly effectsButton: LabeledButton;
+  private readonly exportButton: LabeledButton;
+  private readonly importButton: LabeledButton;
   private readonly resetButton: LabeledButton;
   private readonly backButton: LabeledButton;
   private resetArmed = false;
+  private exportKey: TranslationKey = 'settings.export';
+  private importKey: TranslationKey = 'settings.import';
+  // prepared up front: iOS only allows the clipboard write synchronously inside the tap
+  private exportCode?: string;
 
   constructor(
     private readonly gameService: GameService,
@@ -27,15 +33,13 @@ export class SettingsPopup extends Popup {
       this.createLanguageButton(language, index + BUTTON_INDEX_OFFSET);
     });
 
-    const soundButtonIndex = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
-    this.soundButton = this.addButton('', () => this.toggleSound(), soundButtonIndex);
+    let index = BUTTON_INDEX_OFFSET + SUPPORTED_LANGUAGES.length;
+    this.soundButton = this.addButton('', () => this.toggleSound(), index++);
+    this.effectsButton = this.addButton('', () => this.toggleEffects(), index++);
+    this.exportButton = this.addButton('', () => void this.handleExport(), index++);
+    this.importButton = this.addButton('', () => void this.handleImport(), index++);
+    this.resetButton = this.addButton('', () => this.handleReset(), index++);
 
-    this.effectsButton = this.addButton('', () => this.toggleEffects(), soundButtonIndex + 1);
-    // eslint-disable-next-line no-magic-numbers
-    this.resetButton = this.addButton('', () => this.handleReset(), soundButtonIndex + 2);
-
-    // eslint-disable-next-line no-magic-numbers
-    const backButtonIndex = soundButtonIndex + 3;
     this.backButton = this.addButton(
       this.translation.getTranslation('common.back'),
       // opened from the pause menu while playing, otherwise from the main menu
@@ -43,9 +47,11 @@ export class SettingsPopup extends Popup {
         this.gameService.paused()
           ? this.gameService.openPause(this)
           : this.gameService.openNavigation(this),
-      backButtonIndex,
+      index,
     );
 
+    // on failure handleExport simply builds the code again in the tap
+    this.gameService.exportProgress().then((code) => (this.exportCode = code)).catch(() => undefined);
     this.updateContentLanguage();
   }
 
@@ -57,6 +63,39 @@ export class SettingsPopup extends Popup {
   private toggleEffects(): void {
     this.gameService.gameScreen.effectsEnabled = !this.gameService.gameScreen.effectsEnabled;
     this.updateContentLanguage();
+  }
+
+  private async handleExport(): Promise<void> {
+    let code: string | undefined;
+    try {
+      code = this.exportCode ?? (await this.gameService.exportProgress());
+      await navigator.clipboard.writeText(code);
+      this.exportKey = 'settings.exportCopied';
+    } catch {
+      if (code) {
+        // no clipboard access (e.g. older WebView): show the code so it can be copied by hand
+        // eslint-disable-next-line no-alert
+        window.prompt(this.translation.getTranslation('settings.export'), code);
+      } else {
+        this.exportKey = 'settings.exportFailed';
+      }
+    }
+    this.updateContentLanguage();
+  }
+
+  private async handleImport(): Promise<void> {
+    // the Pixi canvas has no text field, the native prompt is the paste box (works in browser and Capacitor)
+    // eslint-disable-next-line no-alert
+    const code = window.prompt(this.translation.getTranslation('settings.importPrompt'));
+    // eslint-disable-next-line no-alert
+    if (!code || !window.confirm(this.translation.getTranslation('settings.importConfirm'))) {
+      return;
+    }
+    const imported = await this.gameService.importProgress(this, code).catch(() => false);
+    if (!imported) {
+      this.importKey = 'settings.importInvalid';
+      this.updateContentLanguage();
+    }
   }
 
   // first tap arms the button, second tap wipes the progress
@@ -102,6 +141,8 @@ export class SettingsPopup extends Popup {
     this.effectsButton.label.text = this.translation.getTranslation(
       this.gameService.gameScreen.effectsEnabled ? 'settings.effectsOn' : 'settings.effectsOff',
     );
+    this.exportButton.label.text = this.translation.getTranslation(this.exportKey);
+    this.importButton.label.text = this.translation.getTranslation(this.importKey);
     this.resetButton.label.text = this.translation.getTranslation(
       this.resetArmed ? 'settings.resetConfirm' : 'settings.reset',
     );
@@ -109,6 +150,8 @@ export class SettingsPopup extends Popup {
     this.backButton.label.text = this.translation.getTranslation('common.back');
     Popup.fitLabel(this.soundButton);
     Popup.fitLabel(this.effectsButton);
+    Popup.fitLabel(this.exportButton);
+    Popup.fitLabel(this.importButton);
     Popup.fitLabel(this.resetButton);
     Popup.fitLabel(this.backButton);
     this.highlightSelectedLanguage();

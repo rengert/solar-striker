@@ -582,6 +582,20 @@ export class GameService {
     window.location.reload();
   }
 
+  exportProgress(): Promise<string> {
+    return this.storage.exportAll();
+  }
+
+  /** Restores a save code from another device and restarts; false if the code is invalid. */
+  async importProgress(requester: AppScreen, code: string): Promise<boolean> {
+    if (!(await this.storage.importAll(code))) {
+      return false;
+    }
+    await this.hideAndRemoveScreen(requester);
+    window.location.reload();
+    return true;
+  }
+
   async openHighscore(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     await this.presentPopup(HighscorePopup);
