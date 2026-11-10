@@ -7,6 +7,7 @@ import { GameShipService } from './game-ship.service';
 const TICK_MS = 1000;
 // longer than any radio line stays up
 const LONG_TICK_MS = 60_000;
+const WHITE = 0xffffff;
 
 describe('GameScreenService radio messages', () => {
   let service: GameScreenService;
@@ -34,5 +35,55 @@ describe('GameScreenService radio messages', () => {
 
     service.update({ deltaMS: LONG_TICK_MS } as Ticker);
     expect(hideSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('GameScreenService effects switch', () => {
+  let service: GameScreenService;
+  let stage: Container;
+
+  beforeEach(() => {
+    stage = new Container();
+    TestBed.configureTestingModule({
+      providers: [
+        GameScreenService,
+        { provide: ApplicationService, useValue: { stage, screen: { width: 390, height: 780 } } },
+        { provide: GameShipService, useValue: { instance: { energy: 10 } } },
+      ],
+    });
+    service = TestBed.inject(GameScreenService);
+  });
+
+  afterEach(() => (service.effectsEnabled = true));
+
+  it('should skip shake and flash once effects are switched off, and remember the choice', () => {
+    service.effectsEnabled = false;
+    service.flashScreen(WHITE, 1);
+    service.applyScreenShake();
+
+    expect(stage.children.length).toBe(0);
+    expect(stage.x).toBe(0);
+    expect(TestBed.runInInjectionContext(() => new GameScreenService()).effectsEnabled).toBeFalse();
+  });
+
+  it('should vibrate once per burst of hits, graded by shake size', async () => {
+    const vibrate = spyOn(navigator, 'vibrate').and.returnValue(true);
+    service.effectsEnabled = true;
+    // eslint-disable-next-line no-magic-numbers
+    service.applyScreenShake(14);
+    service.applyScreenShake();
+    // the web haptics plugin loads lazily
+    // eslint-disable-next-line no-magic-numbers
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // eslint-disable-next-line no-magic-numbers
+    expect(vibrate.calls.allArgs()).toEqual([[[61]]]);
+  });
+
+  it('should flash while effects are on', () => {
+    service.effectsEnabled = true;
+    service.flashScreen(WHITE, 1);
+
+    expect(stage.children.length).toBe(1);
   });
 });

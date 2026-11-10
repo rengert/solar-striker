@@ -181,6 +181,41 @@ describe('GameEnemyService - boss patterns', () => {
     ]);
   });
 
+  it('rotates through all five bosses in endless mode, starting with the spiral', () => {
+    expect([101, 102, 103, 104, 105, 106].map(getBossPattern)).toEqual([
+      BossPattern.spiral, BossPattern.sweeper, BossPattern.warper,
+      BossPattern.orbiter, BossPattern.hunter, BossPattern.spiral,
+    ]);
+  });
+
+  it('spiral fires two opposite shots that turn with every attack', () => {
+    const boss = spawnBoss(101);
+
+    service.update(createMockTicker(450), 101);
+    service.update(createMockTicker(450), 101);
+
+    const [first, second] = shotService.fireRadial.calls.all().map((call) => call.args as [Ship, number, number, number]);
+    expect(first[0]).toBe(boss);
+    expect(first[1]).toBe(2);
+    expect(second[3]).toBeGreaterThan(first[3]);
+  });
+
+  it('warper jumps, fades in and only then fires', () => {
+    const boss = spawnBoss(103);
+    const x = boss.x;
+    spyOn(Math, 'random').and.returnValue(0);
+
+    service.update(createMockTicker(2100), 103);
+
+    expect(boss.x).not.toBe(x);
+    expect(boss.alpha).toBeLessThan(1);
+    expect(shotService.fireRadial).not.toHaveBeenCalled();
+
+    service.update(createMockTicker(500), 103);
+
+    expect(shotService.fireRadial).toHaveBeenCalledOnceWith(boss, 5, jasmine.any(Number), jasmine.any(Number), jasmine.any(Number));
+  });
+
   it('stops descending at its hover height', () => {
     const boss = spawnBoss(1);
 
@@ -254,6 +289,60 @@ describe('GameEnemyService - enemy kinds', () => {
   it('gives every kind its own colour', () => {
     const tints = Object.values(EnemyKind).map((kind) => service.spawnKind(1, kind).tint);
     expect(new Set(tints).size).toBe(tints.length);
+  });
+
+  it('only spawns the endless kinds in endless mode', () => {
+    const pickEnemyKind = (): EnemyKind | undefined =>
+      (service as unknown as { pickEnemyKind(): EnemyKind | undefined }).pickEnemyKind();
+    // a roll past the three campaign kinds (0.28) lands on the bomber
+    spyOn(Math, 'random').and.returnValue(0.3);
+
+    expect(pickEnemyKind()).toBeUndefined();
+    service.endless = true;
+    expect(pickEnemyKind()).toBe(EnemyKind.bomber);
+  });
+
+  it('bomber drops a ring of shots', () => {
+    const bomber = service.spawnKind(101, EnemyKind.bomber);
+    bomber.y = 100;
+
+    service.update(createMockTicker(), 101);
+    service.update(createMockTicker(1300), 101);
+
+    const rings = shotService.fireRadial.calls.all().filter((call) => call.args[0] === bomber);
+    expect(rings.length).toBe(1);
+    expect(rings[0].args[1]).toBe(8);
+  });
+
+  it('bomber holds its ring while above the screen', () => {
+    const bomber = service.spawnKind(101, EnemyKind.bomber);
+    bomber.y = -1000;
+
+    service.update(createMockTicker(), 101);
+    service.update(createMockTicker(1300), 101);
+
+    expect(shotService.fireRadial.calls.all().filter((call) => call.args[0] === bomber).length).toBe(0);
+  });
+
+  it('phantom blinks to a new spot and fires at the player', () => {
+    const phantom = service.spawnKind(101, EnemyKind.phantom);
+    phantom.y = MOCK_SCREEN_HEIGHT / 2;
+    service.update(createMockTicker(), 101);
+    spyOn(Math, 'random').and.returnValue(0);
+
+    service.update(createMockTicker(1600), 101);
+
+    expect(phantom.x).toBe(phantom.width / 2);
+    expect(phantom.alpha).toBeLessThan(1);
+    expect(shotService.fireRadial.calls.all().filter((call) => call.args[0] === phantom).length).toBe(0);
+
+    // fires only once faded back in
+    service.update(createMockTicker(500), 101);
+
+    const [shooter, count, , angle] = shotService.fireRadial.calls.mostRecent().args as [Ship, number, number, number];
+    expect(shooter).toBe(phantom);
+    expect(count).toBe(1);
+    expect(angle).toBeCloseTo(Math.atan2(player.y - phantom.y, player.x - phantom.x));
   });
 
   it('diver locks onto the player and dives', () => {
