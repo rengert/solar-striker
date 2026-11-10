@@ -58,19 +58,29 @@ export class ObjectService extends UpdatableService {
       object.update(playerOwned ? ticker : slowed);
     }
 
+    // getBounds walks the scene graph, so take it once per object instead of once per pair
+    const bounds = objects.map((object) => (object.destroyed ? undefined : object.getBounds()));
+
     for (let i = 0; i < objects.length; i++) {
       const object1 = objects[i];
-      if (object1.destroyed || object1.destroying) {
+      const bounds1 = bounds[i];
+      if (object1.destroyed || object1.destroying || !bounds1) {
         continue;
       }
 
       for (let j = i + 1; j < objects.length; j++) {
         const object2 = objects[j];
+        const bounds2 = bounds[j];
 
         if (
           object1 === object2 ||
           object2.destroyed ||
           object2.destroying ||
+          !bounds2 ||
+          bounds1.maxX <= bounds2.minX ||
+          bounds2.maxX <= bounds1.minX ||
+          bounds1.maxY <= bounds2.minY ||
+          bounds2.maxY <= bounds1.minY ||
           !object1.hit(object2)
         ) {
           continue;

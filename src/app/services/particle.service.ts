@@ -4,7 +4,6 @@ import { Container, Sprite, Texture, Ticker } from 'pixi.js';
 import { createGlowTexture, createRingTexture } from '../utils/texture.util';
 import { ApplicationService } from './application.service';
 
-// shortcut: hard cap instead of pooling, raise or pool if effects start getting dropped
 const MAX_PARTICLES = 700;
 const FRAME_MS = 1000 / 60;
 
@@ -46,6 +45,8 @@ export class ParticleService {
 
   private readonly application = inject(ApplicationService);
   private readonly particles: Particle[] = [];
+  // finished sprites stay in the layer, hidden, so explosions do not allocate and garbage-collect sprites
+  private readonly pool: Sprite[] = [];
   private glow: Texture | undefined;
   private ring: Texture | undefined;
   private ticking = false;
@@ -60,8 +61,9 @@ export class ParticleService {
 
     const count = Math.min(options.count ?? 1, MAX_PARTICLES - this.particles.length);
     for (let i = 0; i < count; i++) {
-      const sprite = new Sprite(options.ring ? this.ring : this.glow);
-      sprite.anchor.set(0.5);
+      const sprite = this.pool.pop() ?? this.createSprite();
+      sprite.texture = (options.ring ? this.ring : this.glow)!;
+      sprite.visible = true;
       sprite.position.set(options.x, options.y);
       sprite.tint = options.color;
       sprite.blendMode = options.additive === false ? 'normal' : 'add';
@@ -71,7 +73,6 @@ export class ParticleService {
       const speed = (options.speed ?? 0) * (0.4 + Math.random() * 0.6);
       const scale = options.scale ?? 0.5;
       sprite.scale.set(scale);
-      this.layer.addChild(sprite);
       this.particles.push({
         sprite,
         vx: Math.cos(angle) * speed,
@@ -92,7 +93,8 @@ export class ParticleService {
       const particle = this.particles[i];
       particle.age += dt;
       if (particle.age >= particle.life) {
-        particle.sprite.destroy();
+        particle.sprite.visible = false;
+        this.pool.push(particle.sprite);
         this.particles[i] = this.particles[this.particles.length - 1];
         this.particles.pop();
         continue;
@@ -106,5 +108,12 @@ export class ParticleService {
       particle.sprite.alpha = particle.alpha * (1 - t);
       particle.sprite.scale.set(particle.scale + (particle.endScale - particle.scale) * t);
     }
+  }
+
+  private createSprite(): Sprite {
+    const sprite = new Sprite();
+    sprite.anchor.set(0.5);
+    this.layer.addChild(sprite);
+    return sprite;
   }
 }
