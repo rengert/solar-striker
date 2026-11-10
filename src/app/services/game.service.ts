@@ -717,7 +717,10 @@ export class GameService {
   }
 
   private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
-    this.sound.play('click');
+    // the run result popups already come with their jingle
+    if (ctor !== VictoryPopup && ctor !== YouAreDeadPopup) {
+      this.sound.play('click');
+    }
     if (this.currentPopup) {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
