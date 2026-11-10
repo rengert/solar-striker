@@ -9,7 +9,8 @@ export const SLOW_MOTION_DURATION_MS = 5000;
 export const SPREAD_SHOT_DURATION_MS = 8000;
 export const OFF_SCREEN_BUFFER = 50;
 export const MAX_SHOT_POWER = 5;
-export const MAX_STAGE = 100;
+/** Campaign length: 11 chapters of 10 stages; endless mode starts right after. */
+export const MAX_STAGE = 110;
 
 /** Up to this stage the difficulty stays linear like before; the early game was well tuned. */
 const DIFFICULTY_CURVE_KNEE = 20;

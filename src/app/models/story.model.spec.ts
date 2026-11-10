@@ -40,6 +40,13 @@ describe('story', () => {
     expect(getBossDebriefing(1)[0].text).toMatch(/^story\.boss\./);
   });
 
+  it('should let the Herald speak NOX\'s boss line once NOX is gone', () => {
+    const noxLine = 3;
+    const heraldStage = 103;
+    expect(getBossDebriefing(noxLine)[0].speaker).toBe('nox');
+    expect(getBossDebriefing(heraldStage)).toEqual([{ speaker: 'herald', text: 'story.boss.3' }]);
+  });
+
   it('should only play the endless intro on the first stage after the campaign', () => {
     expect(getStageBriefing(MAX_STAGE + 1).map(({ text }) => text)).toEqual(['story.endless.1', 'story.endless.2']);
     expect(getStageBriefing(MAX_STAGE + SECOND_STAGE)).toEqual([]);

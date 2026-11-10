@@ -1,5 +1,5 @@
 /* eslint-disable no-magic-numbers */
-import { getDifficultyLevel, getStageReward } from './game-constants';
+import { getDifficultyLevel, getStageReward, MAX_STAGE } from './game-constants';
 
 describe('getDifficultyLevel', () => {
   it('should stay linear up to stage 20 and grow slower later on', () => {
@@ -23,6 +23,6 @@ describe('getStageReward', () => {
   });
 
   it('should not grow past the last campaign stage', () => {
-    expect(getStageReward(10, 1000)).toBe(getStageReward(10, 100));
+    expect(getStageReward(10, 1000)).toBe(getStageReward(10, MAX_STAGE));
   });
 });

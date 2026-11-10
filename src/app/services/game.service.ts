@@ -27,7 +27,7 @@ import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
 import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
-import { EnemyKind, GameEnemyService } from './game-enemy.service';
+import { EnemyKind, GameEnemyService, LATE_KINDS_FROM_STAGE } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { getComboColor, GameScreenService } from './game-screen.service';
@@ -91,6 +91,8 @@ export class GameService {
   readonly endless = signal(false);
   /** Furthest stage reached in endless mode (counted like the endless highscore tab), 0 if none. */
   readonly endlessRecord = signal(0);
+  /** Players who already flew endless before the campaign grew keep it. */
+  readonly endlessUnlocked = computed(() => this.clearedStage() >= MAX_STAGE || this.endlessRecord() > 0);
   /** Weekly challenge being flown: a fixed start stage with a special rule, outside the campaign. */
   readonly weekly = signal<WeeklyChallenge | null>(null);
   private mode: GameMode = 'campaign';
@@ -169,6 +171,9 @@ export class GameService {
     effect(() => this.landscape.setStage(this.stage()));
     effect(() => (this.gameScreen.radioVisible = !this.#paused()));
 
+    // the late enemy kinds join from the Herald's chapter on, endless included
+    effect(() => (this.enemy.lateKinds = this.stage() >= LATE_KINDS_FROM_STAGE));
+
     // Achievement: track level milestones
     effect(() => {
       const level = this.stage();
@@ -234,7 +239,7 @@ export class GameService {
         // Daily challenge: track kills and boss
         this.dailyChallengeService.addKills(1);
         const kind = this.enemy.getKind(destroyedEnemy);
-        // the endless-only kinds have no badge
+        // the late kinds have no badge
         if (kind && kind !== EnemyKind.bomber && kind !== EnemyKind.phantom) {
           this.achievementService.addCumulative(`${kind}_hunter`, 1);
         }
@@ -394,9 +399,11 @@ export class GameService {
     const storedCoins = await this.storage.getCoins();
     const savedStage = await this.storage.getLevelCheckpoint();
     this.storedCoins.set(storedCoins);
-    this.savedStage.set(savedStage);
     // a checkpoint from before the campaign existed still counts as progress
-    this.clearedStage.set(Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1));
+    const cleared = Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1);
+    this.clearedStage.set(cleared);
+    // whoever won the shorter campaign has no checkpoint left; continue with the chapters added since
+    this.savedStage.set(savedStage ?? (cleared > 0 && cleared < MAX_STAGE ? cleared + 1 : null));
     const endlessLevels = (await this.storage.getHighscore()).filter(isEndlessEntry).map((entry) => entry.level);
     this.endlessRecord.set(Math.max(await this.storage.getEndlessRecord(), ...endlessLevels));
     await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);
@@ -458,7 +465,7 @@ export class GameService {
 
   /** Unlocked once the campaign is cleared; picks up difficulty right after the last stage. */
   async startEndless(requester: AppScreen): Promise<void> {
-    if (this.clearedStage() < MAX_STAGE) {
+    if (!this.endlessUnlocked()) {
       return;
     }
     await this.startSession(requester, MAX_STAGE + 1, 'endless');
@@ -475,7 +482,6 @@ export class GameService {
     this.weekly.set(weekly);
     this.collectables.powerUpsEnabled = weekly?.rule !== 'noPowerUps';
     this.enemy.spawnFactor = weekly?.rule === 'swarm' ? SWARM_SPAWN_FACTOR : 1;
-    this.enemy.endless = endless;
     this.base.maxEnergy = weekly?.rule === 'fragileBase' ? FRAGILE_BASE_ENERGY : BASE_MAX_ENERGY;
     await this.hideAndRemoveScreen(requester);
     const storedCoins = await this.storage.getCoins();

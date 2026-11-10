@@ -709,6 +709,14 @@ describe('GameService', () => {
       expect(service.endless()).toBeFalse();
     });
 
+    it('should stay unlocked for players with an endless record from before the campaign grew', async () => {
+      service.endlessRecord.set(MAX_STAGE - 1);
+
+      await service.startEndless({} as AppScreen);
+
+      expect(service.endless()).toBeTrue();
+    });
+
     it('should start right after the last stage without touching the checkpoint', async () => {
       service.clearedStage.set(MAX_STAGE);
 
