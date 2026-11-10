@@ -66,14 +66,19 @@ export class SettingsPopup extends Popup {
   }
 
   private async handleExport(): Promise<void> {
-    const code = this.exportCode ?? (await this.gameService.exportProgress());
+    let code: string | undefined;
     try {
+      code = this.exportCode ?? (await this.gameService.exportProgress());
       await navigator.clipboard.writeText(code);
       this.exportKey = 'settings.exportCopied';
     } catch {
-      // no clipboard access (e.g. older WebView): show the code so it can be copied by hand
-      // eslint-disable-next-line no-alert
-      window.prompt(this.translation.getTranslation('settings.export'), code);
+      if (code) {
+        // no clipboard access (e.g. older WebView): show the code so it can be copied by hand
+        // eslint-disable-next-line no-alert
+        window.prompt(this.translation.getTranslation('settings.export'), code);
+      } else {
+        this.exportKey = 'settings.exportFailed';
+      }
     }
     this.updateContentLanguage();
   }

@@ -24,6 +24,8 @@ export enum Store {
 const SAVE_CODE_PREFIX = 'SOLAR1:';
 const SAVE_CODE_VERSION = 1;
 
+// shortcut: only the shape (lists of objects with a string id) is checked, not field values or code size, and
+// stores missing from the code are cleared; fine while saves are local, validate per field before any server upload.
 /** Decodes an exported save; null unless every store holds a list of objects with a string id. */
 function parseSaveCode(code: string): Partial<Record<Store, unknown[]>> | null {
   const trimmed = code.trim();
