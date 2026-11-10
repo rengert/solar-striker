@@ -773,15 +773,26 @@ describe('GameService', () => {
     });
   });
 
-  it('should play music only while the game runs', () => {
+  it('should pick the music for menu, mode and boss fight and stop it while paused', () => {
     const sound = TestBed.inject(SoundService) as jasmine.SpyObj<SoundService>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (service as any).started.set(true);
+    const internal = service as any;
     TestBed.tick();
-    expect(sound.startMusic).toHaveBeenCalled();
+    expect(sound.startMusic).toHaveBeenCalledWith('menu');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (service as any).started.set(false);
+    internal.started.set(true);
+    TestBed.tick();
+    expect(sound.startMusic).toHaveBeenCalledWith('campaign');
+
+    service.endless.set(true);
+    TestBed.tick();
+    expect(sound.startMusic).toHaveBeenCalledWith('endless');
+
+    internal.bossFight.set(true);
+    TestBed.tick();
+    expect(sound.startMusic).toHaveBeenCalledWith('boss');
+
+    void service.pause();
     TestBed.tick();
     expect(sound.stopMusic).toHaveBeenCalled();
   });
