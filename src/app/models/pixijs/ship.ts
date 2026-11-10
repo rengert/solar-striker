@@ -83,7 +83,8 @@ export class Ship extends AnimatedGameSprite {
 
     super.update(ticker);
 
-    this.elapsed += Math.floor(ticker.deltaMS);
+    // no flooring per frame: at 120/144 Hz that dropped up to 14 % of the time and slowed the fire rate
+    this.elapsed += ticker.deltaMS;
     const check = Math.floor(this.elapsed);
     // todo: check if we want two power ups for speed
     // eslint-disable-next-line no-magic-numbers

@@ -46,6 +46,7 @@ const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
 
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
+const COMBO_START = 2;
 
 const STAGE_BONUS_COINS = 10;
 const STREAK_INTERVAL_MS = 15_000;
@@ -95,7 +96,8 @@ export class GameService {
   readonly weekly = signal<WeeklyChallenge | null>(null);
   private mode: GameMode = 'campaign';
 
-  private comboTimer?: number;
+  /** Time left in the combo window; counted down in the game loop so a pause does not end the combo. */
+  private comboRemainingMs = 0;
 
   private stageKills = 0;
   private lastShipEnergy = 0;
@@ -168,14 +170,6 @@ export class GameService {
 
     effect(() => this.landscape.setStage(this.stage()));
     effect(() => (this.gameScreen.radioVisible = !this.#paused()));
-
-    // Achievement: track level milestones
-    effect(() => {
-      const level = this.stage();
-      this.achievementService.checkMilestone('level_10', level);
-      this.achievementService.checkMilestone('level_20', level);
-      this.dailyChallengeService.checkLevel(level);
-    });
 
     // Achievement: track session coins (rich_pilot)
     effect(() => {
@@ -286,31 +280,20 @@ export class GameService {
   }
 
   private increaseCombo(): void {
-    // If timer is active, we are in a combo window
-    const currentCombo = this.combo();
-
-    if (this.comboTimer) {
-      // increase combo but do not exceed MAX_COMBO
-      const next = Math.min(MAX_COMBO, currentCombo + 1);
-      this.combo.set(next);
-      this.highestCombo.set(Math.max(this.highestCombo(), next));
-      window.clearTimeout(this.comboTimer);
-      this.comboTimer = window.setTimeout(() => this.resetCombo(), COMBO_WINDOW_MS);
-      return;
-    }
-
-    // No timer -> start a new combo sequence (combo becomes 2)
-    const startedCombo = 2;
-    this.combo.set(startedCombo);
-    this.highestCombo.set(Math.max(this.highestCombo(), startedCombo));
-    this.comboTimer = window.setTimeout(() => this.resetCombo(), COMBO_WINDOW_MS);
+    // inside a running window the combo grows (up to MAX_COMBO), otherwise a new sequence starts at x2
+    const next = this.comboRemainingMs > 0 ? Math.min(MAX_COMBO, this.combo() + 1) : COMBO_START;
+    this.combo.set(next);
+    this.highestCombo.set(Math.max(this.highestCombo(), next));
+    this.comboRemainingMs = COMBO_WINDOW_MS;
   }
 
-  private resetCombo(): void {
-    this.combo.set(1);
-    if (this.comboTimer) {
-      window.clearTimeout(this.comboTimer);
-      this.comboTimer = undefined;
+  private updateCombo(deltaMS: number): void {
+    if (this.comboRemainingMs <= 0) {
+      return;
+    }
+    this.comboRemainingMs -= deltaMS;
+    if (this.comboRemainingMs <= 0) {
+      this.combo.set(1);
     }
   }
 
@@ -336,6 +319,10 @@ export class GameService {
       // Advance to the next stage
       const nextStage = currentStage + 1;
       this.stage.set(nextStage);
+      // counted only when flown to, a weekly run starting on stage 20 must not hand out the stage 20 badge
+      this.achievementService.checkMilestone('level_10', nextStage);
+      this.achievementService.checkMilestone('level_20', nextStage);
+      this.dailyChallengeService.checkLevel(nextStage);
       // saved per boss as the reached stage (what the endless tab would show), so closing the app mid-run keeps the record
       if (this.endless() && nextStage > this.endlessRecord()) {
         this.endlessRecord.set(nextStage);
@@ -622,6 +609,7 @@ export class GameService {
       }
 
       this.updatables.forEach((updatable) => updatable.update(delta, getDifficultyLevel(this.stage())));
+      this.updateCombo(delta.deltaMS);
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;

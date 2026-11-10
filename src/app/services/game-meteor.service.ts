@@ -5,6 +5,7 @@ import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
 import { ExplosionService } from './explosion.service';
 import { ObjectModelType, ObjectService } from './object.service';
+import { rollSpawn } from '../utils/utils';
 import { UpdatableService } from './updatable.service';
 
 const METEOR_BASE_SPEED = 0.24;
@@ -30,9 +31,7 @@ export class GameMeteorService extends UpdatableService {
 
   private readonly meteorInitialWidths = new WeakMap<ObjectModelType, number>();
   private currentLevel = 1;
-  private elapsed = 0;
   // eslint-disable-next-line no-magic-numbers
-  private lastMeteorSpawn = -1;
 
   constructor() {
     super();
@@ -44,20 +43,14 @@ export class GameMeteorService extends UpdatableService {
   update(realTicker: Ticker, level: number): void {
     const ticker = this.object.getScaledTicker(realTicker);
     this.currentLevel = level;
-    this.elapsed += ticker.deltaMS;
 
     this.object
       .meteors()
       .filter((meteor) => meteor.y > this.application.screen.height + OFF_SCREEN_BUFFER)
       .forEach((meteor) => meteor.destroy());
 
-    const check = Math.floor(this.elapsed);
-    if (
-      // eslint-disable-next-line no-magic-numbers
-      check % Math.max(1, Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + 0.1 * (level - 1)))) === 0 &&
-      check !== this.lastMeteorSpawn
-    ) {
-      this.lastMeteorSpawn = check;
+    // eslint-disable-next-line no-magic-numbers
+    if (rollSpawn(ticker.deltaMS, Math.max(1, Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + 0.1 * (level - 1)))))) {
       this.spawn(level);
     }
   }

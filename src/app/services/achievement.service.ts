@@ -46,6 +46,9 @@ export class AchievementService {
 
     if (state.progress >= def.threshold) {
       this.unlock(state, def);
+    } else {
+      // progress towards e.g. 1000 kills must survive a reload, not only the final unlock
+      void this.storage.setAchievements(this.getAll());
     }
   }
 
