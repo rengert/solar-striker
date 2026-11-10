@@ -64,6 +64,7 @@ export class ParticleService {
       const sprite = this.pool.pop() ?? this.createSprite();
       sprite.texture = (options.ring ? this.ring : this.glow)!;
       sprite.visible = true;
+      sprite.alpha = options.alpha ?? 1;
       sprite.position.set(options.x, options.y);
       sprite.tint = options.color;
       sprite.blendMode = options.additive === false ? 'normal' : 'add';
