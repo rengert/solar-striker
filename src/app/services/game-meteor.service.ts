@@ -31,7 +31,6 @@ export class GameMeteorService extends UpdatableService {
 
   private readonly meteorInitialWidths = new WeakMap<ObjectModelType, number>();
   private currentLevel = 1;
-  // eslint-disable-next-line no-magic-numbers
 
   constructor() {
     super();
