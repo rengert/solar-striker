@@ -15,6 +15,7 @@ function createMockObject(
     reference: undefined,
     energy: 1,
     power: 1,
+    getBounds: () => ({ minX: 0, minY: 0, maxX: 10, maxY: 10 }),
     update: jasmine.createSpy('update'),
     ...overrides,
   } as unknown as ObjectModelType;
@@ -45,8 +46,8 @@ describe('ObjectService', () => {
   describe('slow motion', () => {
     const FRAME_MS = 16;
     it('should slow down non-player objects but not the player ship until it runs out', () => {
-      const enemy = { type: ObjectType.enemy, destroying: false, destroyed: false, update: jasmine.createSpy('update'), hit: (): boolean => false };
-      const ship = { type: ObjectType.ship, destroying: false, destroyed: false, update: jasmine.createSpy('update'), hit: (): boolean => false };
+      const enemy = { type: ObjectType.enemy, destroying: false, destroyed: false, update: jasmine.createSpy('update'), hit: (): boolean => false, getBounds: (): object => ({ minX: 0, minY: 0, maxX: 10, maxY: 10 }) };
+      const ship = { type: ObjectType.ship, destroying: false, destroyed: false, update: jasmine.createSpy('update'), hit: (): boolean => false, getBounds: (): object => ({ minX: 0, minY: 0, maxX: 10, maxY: 10 }) };
       service.add(enemy as never);
       service.add(ship as never);
       service.slowMotionMs = FRAME_MS;

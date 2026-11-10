@@ -8,6 +8,8 @@ const assets: Record<string, string> = {
   meteor4: 'assets/game/meteors/meteorGrey_small2.png',
 };
 
+const MAX_RESOLUTION = 2;
+
 @Injectable()
 export class ApplicationService {
   private app: Application | undefined;
@@ -46,7 +48,8 @@ export class ApplicationService {
       resizeTo: document.body,
       backgroundColor: 0x000000,
       autoDensity: true,
-      resolution: window.devicePixelRatio || 1,
+      // 3x phone screens would render 2.25x the pixels of 2x for no visible gain in a fast game
+      resolution: Math.min(window.devicePixelRatio || 1, MAX_RESOLUTION),
     });
 
     Assets.add({ alias: 'popup', src: 'assets/ui/navigation-popup.png' });
