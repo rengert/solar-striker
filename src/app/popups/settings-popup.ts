@@ -50,7 +50,8 @@ export class SettingsPopup extends Popup {
       index,
     );
 
-    void this.gameService.exportProgress().then((code) => (this.exportCode = code));
+    // on failure handleExport simply builds the code again in the tap
+    this.gameService.exportProgress().then((code) => (this.exportCode = code)).catch(() => undefined);
     this.updateContentLanguage();
   }
 
