@@ -299,6 +299,7 @@ export class GameService {
 
   private onBossDefeated(): void {
     const currentStage = this.stage();
+    void this.achievementService.save();
     if (this.base.energy() === this.base.maxEnergy) {
       this.dailyChallengeService.addFlawlessStage();
     }
@@ -513,6 +514,8 @@ export class GameService {
 
     this.ship.instance.autoFire = false;
     this.#paused.set(true);
+    // pause also runs when the app goes to the background, the last chance before it may be closed
+    void this.achievementService.save();
     await this.presentPopup(PausePopup);
   }
 
@@ -669,6 +672,7 @@ export class GameService {
   // ranks the run before the result popup opens, so the popup can show rank and record
   private async finishRun(popup: AppScreenConstructor): Promise<void> {
     this.gameScreen.clearRadioMessages();
+    void this.achievementService.save();
     const entry: HighscoreEntry = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),

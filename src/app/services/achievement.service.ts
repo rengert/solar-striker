@@ -46,10 +46,12 @@ export class AchievementService {
 
     if (state.progress >= def.threshold) {
       this.unlock(state, def);
-    } else {
-      // progress towards e.g. 1000 kills must survive a reload, not only the final unlock
-      void this.storage.setAchievements(this.getAll());
     }
+  }
+
+  /** Persists cumulative progress (e.g. towards 1000 kills); GameService calls it at stage ends, pause and game over, not per kill. */
+  save(): Promise<void> {
+    return this.storage.setAchievements(this.getAll());
   }
 
   /** Check single-game milestone (unlocks if currentValue meets threshold). */

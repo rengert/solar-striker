@@ -133,6 +133,7 @@ describe('GameService', () => {
             onUnlocked: undefined,
             checkMilestone: jasmine.createSpy('checkMilestone'),
             addCumulative: jasmine.createSpy('addCumulative'),
+            save: jasmine.createSpy('save').and.returnValue(Promise.resolve()),
             getAll: jasmine.createSpy('getAll').and.returnValue([]),
           },
         },
@@ -775,6 +776,7 @@ describe('GameService', () => {
 
       objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), createMockObject(ObjectType.ship));
       expect(achievements.checkMilestone).toHaveBeenCalledWith('level_20', challenge.stage + 1);
+      expect((TestBed.inject(AchievementService) as unknown as { save: jasmine.Spy }).save).toHaveBeenCalled();
       expect(daily.checkLevel).toHaveBeenCalledWith(challenge.stage + 1);
     });
 
