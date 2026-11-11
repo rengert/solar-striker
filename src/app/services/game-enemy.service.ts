@@ -12,6 +12,7 @@ import { GameShotService } from './game-shot.service';
 import { ObjectModelType, ObjectService } from './object.service';
 import { UpdatableService } from './updatable.service';
 import { createGlowTexture } from '../utils/texture.util';
+import { rollSpawn } from '../utils/utils';
 
 const halfWidth = 10;
 const MOVEMENT_TARGET_SNAP_DISTANCE = 5;
@@ -269,7 +270,6 @@ export class GameEnemyService extends UpdatableService {
 
   private elapsed = 0;
   private lastDeltaMs = 0;
-  private lastEnemySpawn: number | null = null;
   private boss: Ship | null = null;
   private bossBar: Container | null = null;
   private bossBarFill: Graphics | null = null;
@@ -336,14 +336,11 @@ export class GameEnemyService extends UpdatableService {
 
     enemies.forEach((enemy) => this.updateMovement(enemy, level));
 
-    const check = Math.floor(this.elapsed);
     if (
       !this.bossFightActive &&
       this.object.enemies().length < GAME_CONFIG.enemy.maxCount &&
-      check % Math.max(1, Math.round(getSpawnInterval(level) / this.spawnFactor)) === 0 &&
-      check !== this.lastEnemySpawn
+      rollSpawn(ticker.deltaMS, Math.max(1, Math.round(getSpawnInterval(level) / this.spawnFactor)))
     ) {
-      this.lastEnemySpawn = check;
       this.spawn(level);
     }
   }

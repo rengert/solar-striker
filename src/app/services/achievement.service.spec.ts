@@ -53,6 +53,14 @@ describe('AchievementService', () => {
     expect(sharpShooter?.progress).toBe(99);
   });
 
+  it('should save cumulative progress before the achievement unlocks', () => {
+    service.addCumulative('sharp_shooter', 1);
+    expect(storageServiceSpy.setAchievements).not.toHaveBeenCalled();
+    void service.save();
+    const saved = storageServiceSpy.setAchievements.calls.mostRecent().args[0];
+    expect(saved.find((s) => s.id === 'sharp_shooter')?.progress).toBe(1);
+  });
+
   it('should unlock sharp_shooter exactly at threshold', () => {
     // eslint-disable-next-line no-magic-numbers
     service.addCumulative('sharp_shooter', 100);

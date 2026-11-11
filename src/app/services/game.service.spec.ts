@@ -133,6 +133,7 @@ describe('GameService', () => {
             onUnlocked: undefined,
             checkMilestone: jasmine.createSpy('checkMilestone'),
             addCumulative: jasmine.createSpy('addCumulative'),
+            save: jasmine.createSpy('save').and.returnValue(Promise.resolve()),
             getAll: jasmine.createSpy('getAll').and.returnValue([]),
           },
         },
@@ -780,6 +781,22 @@ describe('GameService', () => {
       expect(storage.setCampaignProgress).not.toHaveBeenCalled();
     });
 
+    it('should only count stages the weekly run actually reached for level milestones', async () => {
+      const achievements = TestBed.inject(AchievementService) as unknown as { checkMilestone: jasmine.Spy };
+      const daily = TestBed.inject(DailyChallengeService) as unknown as { checkLevel: jasmine.Spy };
+      const challenge = getWeeklyChallenge();
+      await service.startWeekly({} as AppScreen);
+      TestBed.tick();
+
+      expect(achievements.checkMilestone).not.toHaveBeenCalledWith('level_20', challenge.stage);
+      expect(daily.checkLevel).not.toHaveBeenCalledWith(challenge.stage);
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), createMockObject(ObjectType.ship));
+      expect(achievements.checkMilestone).toHaveBeenCalledWith('level_20', challenge.stage + 1);
+      expect((TestBed.inject(AchievementService) as unknown as { save: jasmine.Spy }).save).toHaveBeenCalled();
+      expect(daily.checkLevel).toHaveBeenCalledWith(challenge.stage + 1);
+    });
+
     it('should drop the weekly rule when a normal run starts', async () => {
       await service.startWeekly({} as AppScreen);
       await service.start({} as AppScreen);
@@ -893,6 +910,24 @@ describe('GameService', () => {
       // advance almost a full interval — should NOT award yet
       tickerCallback({ deltaMS: STREAK_INTERVAL_MS - 1 });
       expect(gameScreenMock.showFloatingText).not.toHaveBeenCalled();
+    });
+
+    it('should keep the combo while paused and end it after the combo window of play time', async () => {
+      /* eslint-disable no-magic-numbers */
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      expect(service.combo()).toBe(2);
+
+      await service.pause();
+      tickerCallback({ deltaMS: 10_000 });
+      expect(service.combo()).toBe(2);
+
+      await service.resume({} as AppScreen);
+      tickerCallback({ deltaMS: 2999 });
+      expect(service.combo()).toBe(2);
+      tickerCallback({ deltaMS: 2 });
+      expect(service.combo()).toBe(1);
+      /* eslint-enable no-magic-numbers */
     });
 
     it('should only award one streak bonus per tick even if delta is very large', () => {

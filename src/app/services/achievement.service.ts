@@ -49,6 +49,11 @@ export class AchievementService {
     }
   }
 
+  /** Persists cumulative progress (e.g. towards 1000 kills); GameService calls it at stage ends, pause and game over, not per kill. */
+  save(): Promise<void> {
+    return this.storage.setAchievements(this.getAll());
+  }
+
   /** Check single-game milestone (unlocks if currentValue meets threshold). */
   checkMilestone(id: AchievementId, currentValue: number): void {
     const state = this.states.get(id);
