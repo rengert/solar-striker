@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
-import { GameService } from './game.service';
+import { GameService, getContinueStage } from './game.service';
 import { SoundService } from './sound.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { AppScreen } from '../models/pixijs/app-screen';
@@ -694,6 +694,15 @@ describe('GameService', () => {
     });
   });
 
+  it('should let winners of the shorter campaign continue with the new chapters only', () => {
+    const oldCampaignEnd = 100;
+    const checkpoint = 42;
+    expect(getContinueStage(null, oldCampaignEnd)).toBe(oldCampaignEnd + 1);
+    expect(getContinueStage(checkpoint, checkpoint - 1)).toBe(checkpoint);
+    expect(getContinueStage(null, 0)).toBeNull();
+    expect(getContinueStage(null, MAX_STAGE)).toBeNull();
+  });
+
   describe('endless mode', () => {
     // eslint-disable-next-line no-magic-numbers
     const SECOND_ENDLESS_STAGE = MAX_STAGE + 2;
@@ -708,6 +717,14 @@ describe('GameService', () => {
       await service.startEndless({} as AppScreen);
 
       expect(service.endless()).toBeFalse();
+    });
+
+    it('should stay unlocked for players with an endless record from before the campaign grew', async () => {
+      service.endlessRecord.set(MAX_STAGE - 1);
+
+      await service.startEndless({} as AppScreen);
+
+      expect(service.endless()).toBeTrue();
     });
 
     it('should start right after the last stage without touching the checkpoint', async () => {
@@ -790,15 +807,26 @@ describe('GameService', () => {
     });
   });
 
-  it('should play music only while the game runs', () => {
+  it('should pick the music for menu, mode and boss fight and stop it while paused', () => {
     const sound = TestBed.inject(SoundService) as jasmine.SpyObj<SoundService>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (service as any).started.set(true);
+    const internal = service as any;
     TestBed.tick();
-    expect(sound.startMusic).toHaveBeenCalled();
+    expect(sound.startMusic).toHaveBeenCalledWith('menu');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (service as any).started.set(false);
+    internal.started.set(true);
+    TestBed.tick();
+    expect(sound.startMusic).toHaveBeenCalledWith('campaign');
+
+    service.endless.set(true);
+    TestBed.tick();
+    expect(sound.startMusic).toHaveBeenCalledWith('endless');
+
+    internal.bossFight.set(true);
+    TestBed.tick();
+    expect(sound.startMusic).toHaveBeenCalledWith('boss');
+
+    void service.pause();
     TestBed.tick();
     expect(sound.stopMusic).toHaveBeenCalled();
   });

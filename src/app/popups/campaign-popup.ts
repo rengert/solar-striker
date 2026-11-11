@@ -4,7 +4,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 410;
+const POPUP_HEIGHT = 433;
 const PROGRESS_Y = -66;
 const START_Y = -38;
 const ROW_SPACING = 23;
@@ -17,9 +17,9 @@ const ALIGN_LEFT = 0;
 const ALIGN_RIGHT = 1;
 const CURRENT_COLOR = 0x1166cc;
 const LOCKED_ALPHA = 0.55;
-const ENDLESS_TEXT_Y = 191;
-const ENDLESS_BUTTON_Y = 207;
-const BACK_BUTTON_Y = 251;
+const ENDLESS_TEXT_Y = 214;
+const ENDLESS_BUTTON_Y = 230;
+const BACK_BUTTON_Y = 274;
 
 /** Chapters of the story with what the player has cleared so far. */
 export class CampaignPopup extends Popup {
@@ -54,7 +54,7 @@ export class CampaignPopup extends Popup {
       texts.forEach((text) => (text.alpha = unlocked ? 1 : LOCKED_ALPHA));
     });
 
-    const unlocked = cleared >= MAX_STAGE;
+    const unlocked = gameService.endlessUnlocked();
     const record = gameService.endlessRecord();
     let endlessText = translation.getTranslation('campaign.endless.hint', { total: MAX_STAGE });
     if (unlocked) {

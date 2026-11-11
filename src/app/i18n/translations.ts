@@ -74,6 +74,8 @@ const baseTranslation = {
   'settings.language.fr': 'Französisch',
   'settings.soundOn': 'Sound: an',
   'settings.soundOff': 'Sound: aus',
+  'settings.musicOn': 'Musik: an',
+  'settings.musicOff': 'Musik: aus',
   'settings.effectsOn': 'Wackeln & Vibration: an',
   'settings.effectsOff': 'Wackeln & Vibration: aus',
   'settings.export': 'Spielstand kopieren',
@@ -162,7 +164,7 @@ const baseTranslation = {
   'game.resume': 'Weiter spielen',
   // Victory
   'victory.title': 'Glückwunsch!',
-  'victory.subtitle': 'Du hast alle 100 Level geschafft!',
+  'victory.subtitle': 'Du hast alle {{total}} Level geschafft!',
   'victory.message': 'Du bist ein wahrer Raumheld.\nDer Kosmos gehört dir!',
   // Achievements UI
   'achievements.title': 'Errungenschaften',
@@ -301,6 +303,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'settings.language.fr': 'French',
     'settings.soundOn': 'Sound: on',
     'settings.soundOff': 'Sound: off',
+    'settings.musicOn': 'Music: on',
+    'settings.musicOff': 'Music: off',
     'settings.effectsOn': 'Shake & vibration: on',
     'settings.effectsOff': 'Shake & vibration: off',
     'settings.export': 'Copy save code',
@@ -389,7 +393,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'game.resume': 'Resume',
     // Victory
     'victory.title': 'Congratulations!',
-    'victory.subtitle': 'You completed all 100 levels!',
+    'victory.subtitle': 'You completed all {{total}} levels!',
     'victory.message': 'You are a true space hero.\nThe cosmos is yours!',
     'achievements.title': 'Achievements',
     'achievements.unlocked': 'Achievement unlocked!',
@@ -518,6 +522,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'settings.language.fr': 'Français',
     'settings.soundOn': 'Son : activé',
     'settings.soundOff': 'Son : désactivé',
+    'settings.musicOn': 'Musique : activée',
+    'settings.musicOff': 'Musique : désactivée',
     'settings.effectsOn': 'Secousses et vibrations : activées',
     'settings.effectsOff': 'Secousses et vibrations : désactivées',
     'settings.export': 'Copier la sauvegarde',
@@ -606,7 +612,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, TranslationDictionary> = {
     'game.resume': 'Reprendre',
     // Victory
     'victory.title': 'Félicitations !',
-    'victory.subtitle': 'Vous avez terminé les 100 niveaux !',
+    'victory.subtitle': 'Vous avez terminé les {{total}} niveaux !',
     'victory.message': 'Vous êtes un véritable héros de l\'espace.\nLe cosmos vous appartient !',
     'navigation.achievements': 'Succès',
     'achievements.title': 'Succès',

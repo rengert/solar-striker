@@ -78,8 +78,8 @@ interface EnemyKindDefinition {
   readonly energyMultiplier: number;
   readonly speed: number;
   readonly autoFire: boolean;
-  /** Only spawns in endless mode, so stage 101+ shows something new. */
-  readonly endlessOnly?: boolean;
+  /** Only spawns from LATE_KINDS_FROM_STAGE on (the Herald's chapter and endless), so late stages show something new. */
+  readonly late?: boolean;
 }
 
 /* eslint-disable no-magic-numbers */
@@ -91,9 +91,9 @@ const ENEMY_KIND_DEFINITIONS: Record<EnemyKind, EnemyKindDefinition> = {
   // parks near the top, fires aimed shots, then leaves
   [EnemyKind.sniper]: { spawnChance: 0.08, tint: 0xffee44, scale: 1.4, energyMultiplier: 2, speed: 0.5, autoFire: false },
   // slow and tough, drops a ring of shots every few seconds
-  [EnemyKind.bomber]: { spawnChance: 0.08, tint: 0xff66cc, scale: 1.6, energyMultiplier: 3, speed: 0.25, autoFire: false, endlessOnly: true },
+  [EnemyKind.bomber]: { spawnChance: 0.08, tint: 0xff66cc, scale: 1.6, energyMultiplier: 3, speed: 0.25, autoFire: false, late: true },
   // blinks to a new spot and fires right after it reappears
-  [EnemyKind.phantom]: { spawnChance: 0.08, tint: 0x8888ff, scale: 1, energyMultiplier: 1, speed: 0.35, autoFire: false, endlessOnly: true },
+  [EnemyKind.phantom]: { spawnChance: 0.08, tint: 0x8888ff, scale: 1, energyMultiplier: 1, speed: 0.35, autoFire: false, late: true },
 };
 /* eslint-enable no-magic-numbers */
 const ENEMY_KINDS = Object.values(EnemyKind);
@@ -138,9 +138,13 @@ const BOSS_BAR_BACKGROUND = 0x330000;
 const BOSS_BAR_BORDER_COLOR = 0xffffff;
 const ENEMY_ANIMATION_SPEED = 0.167;
 
+/** First stage of the Herald's chapter: bomber and phantom join, and the bosses switch to spiral and warper. */
+export const LATE_KINDS_FROM_STAGE = 101;
+
 /**
  * Each campaign boss uses one of the first three, in turn: sweeper (stage 1, 4, ...), orbiter (2, 5, ...), hunter (3, 6, ...).
- * Endless mode (stage 101+) rotates through all five, starting with the spiral.
+ * The Herald's chapter alternates spiral and warper and ends with the Herald itself on the last campaign stage.
+ * Endless mode rotates through all six, starting with the spiral.
  */
 export enum BossPattern {
   sweeper = 'sweeper',
@@ -148,6 +152,7 @@ export enum BossPattern {
   hunter = 'hunter',
   spiral = 'spiral',
   warper = 'warper',
+  herald = 'herald',
 }
 
 interface BossDefinition {
@@ -156,11 +161,14 @@ interface BossDefinition {
   readonly autoFire: boolean;
   readonly attackIntervalMs: number;
   readonly xSpeed: number;
+  /** Extra toughness for a chapter finale. */
+  readonly energyMultiplier?: number;
 }
 
 const BOSS_PATTERNS = [BossPattern.sweeper, BossPattern.orbiter, BossPattern.hunter] as const;
+const LATE_BOSS_PATTERNS = [BossPattern.spiral, BossPattern.warper] as const;
 const ENDLESS_BOSS_PATTERNS = [
-  BossPattern.spiral, BossPattern.sweeper, BossPattern.warper, BossPattern.orbiter, BossPattern.hunter,
+  BossPattern.spiral, BossPattern.sweeper, BossPattern.warper, BossPattern.orbiter, BossPattern.hunter, BossPattern.herald,
 ] as const;
 /* eslint-disable no-magic-numbers */
 const BOSS_DEFINITIONS: Record<BossPattern, BossDefinition> = {
@@ -169,6 +177,7 @@ const BOSS_DEFINITIONS: Record<BossPattern, BossDefinition> = {
   [BossPattern.hunter]: { tint: 0xffaa22, autoFire: false, attackIntervalMs: 1600, xSpeed: 0.06 },
   [BossPattern.spiral]: { tint: 0x33ffcc, autoFire: false, attackIntervalMs: 400, xSpeed: 0.02 },
   [BossPattern.warper]: { tint: 0x55aaff, autoFire: true, attackIntervalMs: 2000, xSpeed: 0 },
+  [BossPattern.herald]: { tint: 0xccff33, autoFire: false, attackIntervalMs: 1900, xSpeed: 0.03, energyMultiplier: 1.5 },
 };
 /* eslint-enable no-magic-numbers */
 const BOSS_HOVER_Y_RATIO = 0.25;
@@ -198,6 +207,12 @@ const BOSS_WARP_ARC = Math.PI / 6;
 // warper fades in at its new spot and only fires once it is fully visible, so the volley can be dodged
 const BOSS_WARP_TELEGRAPH_MS = 400;
 const BOSS_WARP_ALPHA = 0.3;
+// the Herald alternates a ring with a wide downward curtain that has one gap to slip through
+const HERALD_CURTAIN_COUNT = 14;
+// eslint-disable-next-line no-magic-numbers
+const HERALD_CURTAIN_ARC = (Math.PI * 7) / 9;
+const HERALD_GAP_SIZE = 2;
+const HERALD_RING_COUNT = 10;
 
 interface EnemyMovementState {
   nextChange: number;
@@ -216,6 +231,8 @@ interface EnemyMovementState {
   spiralAngle?: number;
   /** Phantom and warper: when the shot after a blink is fired. */
   blinkShotAt?: number;
+  /** Herald only: the next attack is the ring instead of the curtain. */
+  ringNext?: boolean;
 }
 
 /** Frames between enemy spawns; never below 1, otherwise endless stages past ~600 would stop spawning. */
@@ -227,6 +244,12 @@ export function getSpawnInterval(level: number): number {
 export function getBossPattern(stage: number): BossPattern {
   if (stage > MAX_STAGE) {
     return ENDLESS_BOSS_PATTERNS[(stage - MAX_STAGE - 1) % ENDLESS_BOSS_PATTERNS.length];
+  }
+  if (stage === MAX_STAGE) {
+    return BossPattern.herald;
+  }
+  if (stage >= LATE_KINDS_FROM_STAGE) {
+    return LATE_BOSS_PATTERNS[(stage - LATE_KINDS_FROM_STAGE) % LATE_BOSS_PATTERNS.length];
   }
   return BOSS_PATTERNS[(Math.max(1, stage) - 1) % BOSS_PATTERNS.length];
 }
@@ -242,8 +265,8 @@ export class GameEnemyService extends UpdatableService {
   bossFightActive = false;
   /** Spawn rate multiplier, raised by the weekly swarm rule. */
   spawnFactor = 1;
-  /** Set by GameService in endless mode; lets the endless-only enemy kinds spawn. */
-  endless = false;
+  /** Set by GameService from LATE_KINDS_FROM_STAGE on; lets the late enemy kinds spawn. */
+  lateKinds = false;
 
   private elapsed = 0;
   private lastDeltaMs = 0;
@@ -389,7 +412,7 @@ export class GameEnemyService extends UpdatableService {
   private pickEnemyKind(): EnemyKind | undefined {
     let roll = Math.random();
     for (const kind of ENEMY_KINDS) {
-      if (ENEMY_KIND_DEFINITIONS[kind].endlessOnly && !this.endless) {
+      if (ENEMY_KIND_DEFINITIONS[kind].late && !this.lateKinds) {
         continue;
       }
       roll -= ENEMY_KIND_DEFINITIONS[kind].spawnChance;
@@ -626,9 +649,11 @@ export class GameEnemyService extends UpdatableService {
 
   private spawnBoss(stage: number): void {
     const animations: Record<string, Texture[]> = this.enemySprite.animations;
-    const bossEnergy = BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (getDifficultyLevel(stage) - 1);
     const pattern = getBossPattern(stage);
     const definition = BOSS_DEFINITIONS[pattern];
+    const bossEnergy = Math.round(
+      (BOSS_ENERGY_BASE + BOSS_ENERGY_LEVEL_STEP * (getDifficultyLevel(stage) - 1)) * (definition.energyMultiplier ?? 1),
+    );
 
     const boss = new Ship(
       ShipType.enemy,
@@ -748,6 +773,14 @@ export class GameEnemyService extends UpdatableService {
         movement.blinkShotAt = this.elapsed + BOSS_WARP_TELEGRAPH_MS;
         break;
       }
+      case BossPattern.herald:
+        if (movement.ringNext) {
+          this.shotService.fireRadial(boss, HERALD_RING_COUNT, BOSS_RADIAL_SHOT_SPEED);
+        } else {
+          this.fireCurtain(boss);
+        }
+        movement.ringNext = !movement.ringNext;
+        break;
       case BossPattern.orbiter:
         // full ring in all directions
         this.shotService.fireRadial(boss, BOSS_RING_COUNT, BOSS_RADIAL_SHOT_SPEED);
@@ -761,6 +794,16 @@ export class GameEnemyService extends UpdatableService {
         // sweeper: fan of shots spreading downwards
         this.shotService.fireRadial(boss, BOSS_FAN_COUNT, BOSS_RADIAL_SHOT_SPEED, DOWN - BOSS_FAN_ARC / DOUBLE, BOSS_FAN_ARC);
     }
+  }
+
+  /** Wide downward fan with a gap of HERALD_GAP_SIZE missing shots at a random spot, never at the very edge. */
+  private fireCurtain(boss: Ship): void {
+    const step = HERALD_CURTAIN_ARC / (HERALD_CURTAIN_COUNT - 1);
+    const start = DOWN - HERALD_CURTAIN_ARC / DOUBLE;
+    const gap = 1 + Math.floor(Math.random() * (HERALD_CURTAIN_COUNT - HERALD_GAP_SIZE - 1));
+    const rightCount = HERALD_CURTAIN_COUNT - gap - HERALD_GAP_SIZE;
+    this.shotService.fireRadial(boss, gap, BOSS_RADIAL_SHOT_SPEED, start, (gap - 1) * step);
+    this.shotService.fireRadial(boss, rightCount, BOSS_RADIAL_SHOT_SPEED, start + (gap + HERALD_GAP_SIZE) * step, (rightCount - 1) * step);
   }
 
   /** Lying figure eight around the top centre of the screen. */
