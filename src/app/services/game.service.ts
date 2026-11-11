@@ -132,6 +132,8 @@ export class GameService {
   private currentPopup?: AppScreen;
 
   private readonly started = signal(false);
+  /** Mirrors the enemy service's bossFightActive for the music. */
+  private readonly bossFight = signal(false);
   readonly #paused = signal(false);
   readonly paused = this.#paused.asReadonly();
 
@@ -161,10 +163,18 @@ export class GameService {
       this.dailyChallengeService.checkCombo(combo);
     });
 
-    // music runs only while actually playing
-    effect(() =>
-      this.started() && !this.#paused() ? this.sound.startMusic() : this.sound.stopMusic(),
-    );
+    // menu loop outside a run, silence while paused, otherwise the loop of the mode or the boss fight
+    effect(() => {
+      if (this.#paused()) {
+        this.sound.stopMusic();
+      } else if (!this.started()) {
+        this.sound.startMusic('menu');
+      } else if (this.bossFight()) {
+        this.sound.startMusic('boss');
+      } else {
+        this.sound.startMusic(this.endless() ? 'endless' : 'campaign');
+      }
+    });
 
     effect(() => this.landscape.setStage(this.stage()));
     effect(() => (this.gameScreen.radioVisible = !this.#paused()));
@@ -224,7 +234,9 @@ export class GameService {
             this.stageKills >= this.getKillsRequiredForStage(this.stage())
           ) {
             this.enemy.bossFightActive = true;
+            this.bossFight.set(true);
             this.enemy.spawnStageBoss(this.stage());
+            this.sound.play('bossWarning');
           }
         }
         // Achievement: track cumulative kills and boss
@@ -343,11 +355,13 @@ export class GameService {
       }
       this.stageKills = 0;
       this.enemy.bossFightActive = false;
+      this.bossFight.set(false);
       this.base.repair();
       if (campaign) {
         void this.saveStageCheckpoint(nextStage);
       }
       if (this.started()) {
+        this.sound.play('stageClear');
         this.addBonusCoins(getStageReward(STAGE_BONUS_COINS, currentStage));
         this.gameScreen.showStageAnnouncement(nextStage);
       }
@@ -494,6 +508,7 @@ export class GameService {
     this.stage.set(endless ? startStage : Math.min(MAX_STAGE, Math.max(1, Math.floor(startStage))));
     this.stageKills = 0;
     this.enemy.bossFightActive = false;
+    this.bossFight.set(false);
     this.lastShipEnergy = this.ship.instance.energy;
     this.streakElapsedMs = 0;
     this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -696,13 +711,16 @@ export class GameService {
     if (entry.mode === 'endless') {
       this.endlessRecord.set(Math.max(this.endlessRecord(), entry.level));
     }
-    if (this.lastRun.isRecord) {
-      this.sound.play('powerUp');
-    }
+    // a new record gets the fanfare too
+    this.sound.play(popup === VictoryPopup || this.lastRun.isRecord ? 'victory' : 'gameOver');
     await this.presentPopup(popup);
   }
 
   private async presentPopup(ctor: AppScreenConstructor): Promise<void> {
+    // the run result popups already come with their jingle
+    if (ctor !== VictoryPopup && ctor !== YouAreDeadPopup) {
+      this.sound.play('click');
+    }
     if (this.currentPopup) {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
