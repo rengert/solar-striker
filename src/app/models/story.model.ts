@@ -1,7 +1,7 @@
 import { MAX_STAGE } from '../game-constants';
 import { TranslationKey } from '../i18n/translations';
 
-export type StorySpeaker = 'vega' | 'bolt' | 'nox';
+export type StorySpeaker = 'vega' | 'bolt' | 'nox' | 'herald';
 
 export interface RadioLine {
   readonly speaker: StorySpeaker;
@@ -15,9 +15,9 @@ interface StoryChapter {
 }
 
 // eslint-disable-next-line no-magic-numbers
-export const SPEAKER_COLORS: Record<StorySpeaker, number> = { vega: 0x66ccff, bolt: 0xffcc55, nox: 0xff5566 };
+export const SPEAKER_COLORS: Record<StorySpeaker, number> = { vega: 0x66ccff, bolt: 0xffcc55, nox: 0xff5566, herald: 0xccff33 };
 
-/** One chapter per 10 stages, from Earth orbit out to the core of NOX. */
+/** One chapter per 10 stages, from Earth orbit out to the core of NOX and on to the heliopause. */
 export const STORY_CHAPTERS: readonly StoryChapter[] = [
   { icon: '🌍', speakers: ['vega', 'vega', 'bolt', 'vega', 'nox'] },
   { icon: '🌙', speakers: ['vega', 'nox', 'bolt', 'vega', 'vega'] },
@@ -29,9 +29,12 @@ export const STORY_CHAPTERS: readonly StoryChapter[] = [
   { icon: '🌀', speakers: ['vega', 'bolt', 'nox', 'vega', 'vega'] },
   { icon: '❄️', speakers: ['vega', 'nox', 'bolt', 'vega', 'vega'] },
   { icon: '👁️', speakers: ['nox', 'vega', 'nox', 'bolt', 'nox'] },
+  { icon: '📡', speakers: ['vega', 'bolt', 'herald', 'vega', 'herald'] },
 ];
 
 export const STAGES_PER_CHAPTER = MAX_STAGE / STORY_CHAPTERS.length;
+/** From this chapter on NOX is gone and the Herald speaks in its place. */
+const HERALD_CHAPTER = 11;
 
 const BOSS_LINES: readonly RadioLine[] = [
   { speaker: 'vega', text: 'story.boss.1' },
@@ -106,5 +109,6 @@ export function getBossDebriefing(stage: number): RadioLine[] {
     // eslint-disable-next-line no-magic-numbers
     return [getChapterLine(getChapter(stage), 4, 'outro')];
   }
-  return [BOSS_LINES[(Math.floor(stage) - 1) % BOSS_LINES.length]];
+  const line = BOSS_LINES[(Math.floor(stage) - 1) % BOSS_LINES.length];
+  return [line.speaker === 'nox' && getChapter(stage) >= HERALD_CHAPTER ? { ...line, speaker: 'herald' } : line];
 }

@@ -181,11 +181,36 @@ describe('GameEnemyService - boss patterns', () => {
     ]);
   });
 
-  it('rotates through all five bosses in endless mode, starting with the spiral', () => {
-    expect([101, 102, 103, 104, 105, 106].map(getBossPattern)).toEqual([
-      BossPattern.spiral, BossPattern.sweeper, BossPattern.warper,
-      BossPattern.orbiter, BossPattern.hunter, BossPattern.spiral,
+  it('alternates spiral and warper in the Herald\'s chapter and ends the campaign with the Herald', () => {
+    expect([101, 102, 109, 110].map(getBossPattern)).toEqual([
+      BossPattern.spiral, BossPattern.warper, BossPattern.spiral, BossPattern.herald,
     ]);
+  });
+
+  it('rotates through all six bosses in endless mode, starting with the spiral', () => {
+    expect([111, 112, 113, 114, 115, 116, 117].map(getBossPattern)).toEqual([
+      BossPattern.spiral, BossPattern.sweeper, BossPattern.warper,
+      BossPattern.orbiter, BossPattern.hunter, BossPattern.herald, BossPattern.spiral,
+    ]);
+  });
+
+  it('Herald is tougher and alternates a gapped curtain with a ring', () => {
+    const boss = spawnBoss(110);
+    const sweeper = 30 + 5 * (54 - 1);
+    expect(boss.maxEnergy).toBe(Math.round(sweeper * 1.5));
+    spyOn(Math, 'random').and.returnValue(0.5);
+
+    service.update(createMockTicker(1900), 110);
+    const curtain = shotService.fireRadial.calls.all().map((call) => call.args as [Ship, number, number, number, number]);
+    // 14 positions minus a gap of 2, split into a left and a right part
+    expect(curtain.length).toBe(2);
+    expect(curtain[0][1] + curtain[1][1]).toBe(12);
+    const step = curtain[0][4] / (curtain[0][1] - 1);
+    expect(curtain[1][3] - (curtain[0][3] + curtain[0][4])).toBeCloseTo(step * 3);
+
+    shotService.fireRadial.calls.reset();
+    service.update(createMockTicker(1900), 110);
+    expect(shotService.fireRadial).toHaveBeenCalledOnceWith(boss, 10, jasmine.any(Number));
   });
 
   it('spiral fires two opposite shots that turn with every attack', () => {
@@ -201,17 +226,17 @@ describe('GameEnemyService - boss patterns', () => {
   });
 
   it('warper jumps, fades in and only then fires', () => {
-    const boss = spawnBoss(103);
+    const boss = spawnBoss(102);
     const x = boss.x;
     spyOn(Math, 'random').and.returnValue(0);
 
-    service.update(createMockTicker(2100), 103);
+    service.update(createMockTicker(2100), 102);
 
     expect(boss.x).not.toBe(x);
     expect(boss.alpha).toBeLessThan(1);
     expect(shotService.fireRadial).not.toHaveBeenCalled();
 
-    service.update(createMockTicker(500), 103);
+    service.update(createMockTicker(500), 102);
 
     expect(shotService.fireRadial).toHaveBeenCalledOnceWith(boss, 5, jasmine.any(Number), jasmine.any(Number), jasmine.any(Number));
   });
@@ -291,14 +316,14 @@ describe('GameEnemyService - enemy kinds', () => {
     expect(new Set(tints).size).toBe(tints.length);
   });
 
-  it('only spawns the endless kinds in endless mode', () => {
+  it('only spawns the late kinds once they are switched on', () => {
     const pickEnemyKind = (): EnemyKind | undefined =>
       (service as unknown as { pickEnemyKind(): EnemyKind | undefined }).pickEnemyKind();
     // a roll past the three campaign kinds (0.28) lands on the bomber
     spyOn(Math, 'random').and.returnValue(0.3);
 
     expect(pickEnemyKind()).toBeUndefined();
-    service.endless = true;
+    service.lateKinds = true;
     expect(pickEnemyKind()).toBe(EnemyKind.bomber);
   });
 
