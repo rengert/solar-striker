@@ -10,8 +10,10 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_BASE_SPEED = 0.24;
 const METEOR_SPEED_STEP = 0.05;
-const METEOR_BASE_ENERGY = 10;
-const METEOR_ENERGY_STEP = 2;
+const METEOR_BASE_ENERGY = 8;
+const METEOR_ENERGY_STEP = 1.5;
+// extra meteors per second for each level above 1
+const METEOR_SPAWN_STEP = 0.07;
 
 // Meteors wider than this threshold split into fragments instead of being destroyed
 const METEOR_SPLIT_MIN_WIDTH = 36;
@@ -49,7 +51,7 @@ export class GameMeteorService extends UpdatableService {
       .forEach((meteor) => meteor.destroy());
 
     // eslint-disable-next-line no-magic-numbers
-    if (rollSpawn(ticker.deltaMS, Math.max(1, Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + 0.1 * (level - 1)))))) {
+    if (rollSpawn(ticker.deltaMS, Math.max(1, Math.floor(60 / (GAME_CONFIG.meteor.autoSpawnSpeed + METEOR_SPAWN_STEP * (level - 1)))))) {
       this.spawn(level);
     }
   }
@@ -116,7 +118,7 @@ export class GameMeteorService extends UpdatableService {
     meteor.width += Math.random() * 20;
     // eslint-disable-next-line no-magic-numbers
     meteor.height += Math.random() * 20;
-    meteor.energy = METEOR_BASE_ENERGY + METEOR_ENERGY_STEP * Math.max(0, level - 1);
+    meteor.energy = Math.round(METEOR_BASE_ENERGY + METEOR_ENERGY_STEP * Math.max(0, level - 1));
     this.meteorInitialWidths.set(meteor, meteor.width);
     this.object.add(meteor);
     this.application.stage.addChild(meteor);
