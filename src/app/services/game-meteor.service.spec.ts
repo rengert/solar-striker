@@ -8,8 +8,8 @@ import { ObjectModelType, ObjectService } from './object.service';
 const STAGE_ONE = 1;
 const STAGE_TEN = 10;
 const DELTA_MS = 100;
-const STAGE_ONE_ENERGY = 10;
-const STAGE_TEN_ENERGY = 28;
+const STAGE_ONE_ENERGY = 8;
+const STAGE_TEN_ENERGY = 22;
 const MAX_SPEED_MULTIPLIER = 3;
 const METEOR_TEXTURE_RANDOM = 0.75;
 // Math.random() = 0 → no size addition → base width (~28 px) stays below the split threshold
