@@ -7,8 +7,8 @@ import { ObjectModelType, ObjectService } from './object.service';
 
 const STAGE_ONE = 1;
 const STAGE_TEN = 10;
-const STAGE_SPEED_CAP = 11;
-const STAGE_FIFTY = 50;
+const LEVEL_SPEED_CAP = 11;
+const LEVEL_FIFTY = 50;
 const DELTA_MS = 100;
 const STAGE_ONE_ENERGY = 8;
 const STAGE_TEN_ENERGY = 22;
@@ -88,8 +88,8 @@ describe('GameMeteorService', () => {
   });
 
   it('should stop meteor speed from rising in long runs', () => {
-    expect(getMeteorSpeed(STAGE_FIFTY)).toBe(getMeteorSpeed(STAGE_SPEED_CAP));
-    expect(getMeteorSpeed(STAGE_TEN)).toBeLessThan(getMeteorSpeed(STAGE_SPEED_CAP));
+    expect(getMeteorSpeed(LEVEL_FIFTY)).toBe(getMeteorSpeed(LEVEL_SPEED_CAP));
+    expect(getMeteorSpeed(STAGE_TEN)).toBeLessThan(getMeteorSpeed(LEVEL_SPEED_CAP));
   });
 
   describe('meteor splitting', () => {

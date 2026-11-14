@@ -10,8 +10,8 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_BASE_SPEED = 0.24;
 const METEOR_SPEED_STEP = 0.03;
-// reached at level 11; later levels must not get faster or meteors become undodgeable in long runs
-const METEOR_MAX_SPEED = 0.54;
+// later levels must not get faster or meteors become undodgeable in long runs
+const METEOR_MAX_SPEED_LEVEL = 11;
 const METEOR_BASE_ENERGY = 8;
 const METEOR_ENERGY_STEP = 1.5;
 // extra meteors per second for each level above 1
@@ -26,7 +26,7 @@ const METEOR_FRAGMENT_SCATTER = 15;
 const METEOR_FRAGMENT_SIZE_DIVISOR = 2;
 
 export function getMeteorSpeed(level: number): number {
-  return Math.min(METEOR_MAX_SPEED, METEOR_BASE_SPEED + METEOR_SPEED_STEP * Math.max(0, level - 1));
+  return METEOR_BASE_SPEED + METEOR_SPEED_STEP * Math.max(0, Math.min(level, METEOR_MAX_SPEED_LEVEL) - 1);
 }
 
 @Injectable()
