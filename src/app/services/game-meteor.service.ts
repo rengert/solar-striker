@@ -9,7 +9,9 @@ import { rollSpawn } from '../utils/utils';
 import { UpdatableService } from './updatable.service';
 
 const METEOR_BASE_SPEED = 0.24;
-const METEOR_SPEED_STEP = 0.05;
+const METEOR_SPEED_STEP = 0.03;
+// reached at level 11; later levels must not get faster or meteors become undodgeable in long runs
+const METEOR_MAX_SPEED = 0.54;
 const METEOR_BASE_ENERGY = 8;
 const METEOR_ENERGY_STEP = 1.5;
 // extra meteors per second for each level above 1
@@ -22,6 +24,10 @@ const METEOR_MAX_FRAGMENTS = 4;
 // eslint-disable-next-line no-magic-numbers
 const METEOR_FRAGMENT_SCATTER = 15;
 const METEOR_FRAGMENT_SIZE_DIVISOR = 2;
+
+export function getMeteorSpeed(level: number): number {
+  return Math.min(METEOR_MAX_SPEED, METEOR_BASE_SPEED + METEOR_SPEED_STEP * Math.max(0, level - 1));
+}
 
 @Injectable()
 export class GameMeteorService extends UpdatableService {
@@ -84,7 +90,7 @@ export class GameMeteorService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     const index = Math.floor(Math.random() * 4) + 1;
     const fragment = new GameSprite(ObjectType.meteor, this.explosionService, {
-      speed: METEOR_BASE_SPEED + METEOR_SPEED_STEP * Math.max(0, this.currentLevel - 1),
+      speed: getMeteorSpeed(this.currentLevel),
       texture: Texture.from(`meteor${index}`),
       hasEnergy: true,
     });
@@ -106,7 +112,7 @@ export class GameMeteorService extends UpdatableService {
     // eslint-disable-next-line no-magic-numbers
     const index = Math.floor(Math.random() * 4) + 1;
     const meteor = new GameSprite(ObjectType.meteor, this.explosionService, {
-      speed: METEOR_BASE_SPEED + METEOR_SPEED_STEP * Math.max(0, level - 1),
+      speed: getMeteorSpeed(level),
       texture: Texture.from(`meteor${index}`),
       hasEnergy: true,
     });
