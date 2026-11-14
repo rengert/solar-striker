@@ -2,11 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { Ticker } from 'pixi.js';
 import { ApplicationService } from './application.service';
 import { ExplosionService } from './explosion.service';
-import { GameMeteorService } from './game-meteor.service';
+import { GameMeteorService, getMeteorSpeed } from './game-meteor.service';
 import { ObjectModelType, ObjectService } from './object.service';
 
 const STAGE_ONE = 1;
 const STAGE_TEN = 10;
+const LEVEL_SPEED_CAP = 11;
+const LEVEL_FIFTY = 50;
 const DELTA_MS = 100;
 const STAGE_ONE_ENERGY = 8;
 const STAGE_TEN_ENERGY = 22;
@@ -83,6 +85,11 @@ describe('GameMeteorService', () => {
 
     expect(lateDistance).toBeGreaterThan(earlyDistance);
     expect(lateDistance).toBeLessThan(earlyDistance * MAX_SPEED_MULTIPLIER);
+  });
+
+  it('should stop meteor speed from rising in long runs', () => {
+    expect(getMeteorSpeed(LEVEL_FIFTY)).toBe(getMeteorSpeed(LEVEL_SPEED_CAP));
+    expect(getMeteorSpeed(STAGE_TEN)).toBeLessThan(getMeteorSpeed(LEVEL_SPEED_CAP));
   });
 
   describe('meteor splitting', () => {
