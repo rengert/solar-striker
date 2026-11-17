@@ -104,6 +104,8 @@ export class GameService {
   readonly endlessUnlocked = computed(() => this.clearedStage() >= MAX_STAGE || this.endlessRecord() > 0);
   /** Weekly challenge being flown: a fixed start stage with a special rule, outside the campaign. */
   readonly weekly = signal<WeeklyChallenge | null>(null);
+  /** Kills over all saved runs, the pilot rank in the main menu grows with it. */
+  readonly totalKills = signal(0);
   private mode: GameMode = 'campaign';
 
   /** Time left in the combo window; counted down in the game loop so a pause does not end the combo. */
@@ -413,7 +415,9 @@ export class GameService {
     const cleared = Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1);
     this.clearedStage.set(cleared);
     this.savedStage.set(getContinueStage(savedStage, cleared));
-    const endlessLevels = (await this.storage.getHighscore()).filter(isEndlessEntry).map((entry) => entry.level);
+    const runs = await this.storage.getHighscore();
+    this.totalKills.set(runs.reduce((sum, entry) => sum + entry.kills, 0));
+    const endlessLevels = runs.filter(isEndlessEntry).map((entry) => entry.level);
     this.endlessRecord.set(Math.max(await this.storage.getEndlessRecord(), ...endlessLevels));
     await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);
 

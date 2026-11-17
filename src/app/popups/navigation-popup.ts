@@ -1,3 +1,4 @@
+import { getPilotRank } from '../models/pilot-rank.model';
 import { CURRENT_SEASON_EVENT } from '../models/season-event.model';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
@@ -13,6 +14,9 @@ const PANEL_PADDING = 120;
 const BASE_BUTTON_COUNT = 9;
 const EVENT_LABEL_HEIGHT = 20;
 const EVENT_LABEL_OFFSET = 10;
+const RANK_LABEL_HEIGHT = 20;
+const RANK_LABEL_COLOR = 0x1a5fa0;
+const RANK_LABEL_MAX_WIDTH = 230;
 
 export function getDailySurpriseIcon(now: Date = new Date()): string {
   const daySinceEpoch = Math.floor(now.getTime() / DAY_IN_MS);
@@ -33,7 +37,7 @@ export class NavigationPopup extends Popup {
     super(
       `${translation.getTranslation('app.title')} ${CURRENT_SEASON_EVENT?.enemyIcons[0] ?? getDailySurpriseIcon()}`,
       BUTTON_START_Y + (buttonCount - 1) * BUTTON_STEP_Y + BUTTON_SIZE.height + PANEL_PADDING
-      + (CURRENT_SEASON_EVENT ? EVENT_LABEL_HEIGHT : 0),
+      + (CURRENT_SEASON_EVENT ? EVENT_LABEL_HEIGHT : 0) + RANK_LABEL_HEIGHT,
     );
     const buttons = [];
 
@@ -121,12 +125,23 @@ export class NavigationPopup extends Popup {
     buttons.forEach(({ button }, index) => {
       button.y = BUTTON_START_Y + index * BUTTON_STEP_Y;
     });
+    const rank = getPilotRank(gameService.totalKills());
+    const rankLabel = this.addText(
+      translation.getTranslation(rank.killsToNext === undefined ? 'rank.labelMax' : 'rank.label', {
+        rank: translation.getTranslation(`rank.${rank.id}`),
+        kills: rank.killsToNext ?? 0,
+      }),
+      { size: 11, fill: RANK_LABEL_COLOR },
+      { y: BUTTON_START_Y + buttonCount * BUTTON_STEP_Y + EVENT_LABEL_OFFSET },
+    );
+    // long rank names (French) must stay inside the panel
+    rankLabel.scale.set(Math.min(1, RANK_LABEL_MAX_WIDTH / rankLabel.width));
     if (CURRENT_SEASON_EVENT) {
       const { name, enemyIcons } = CURRENT_SEASON_EVENT;
       this.addText(
         `${enemyIcons.join(' ')} ${translation.getTranslation(name)}`,
         { size: 12 },
-        { y: BUTTON_START_Y + buttonCount * BUTTON_STEP_Y + EVENT_LABEL_OFFSET },
+        { y: BUTTON_START_Y + buttonCount * BUTTON_STEP_Y + EVENT_LABEL_OFFSET + RANK_LABEL_HEIGHT },
       );
     }
   }
