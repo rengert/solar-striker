@@ -3,9 +3,9 @@ import { getBossDebriefing, SPEAKER_COLORS } from '../models/story.model';
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
-import { createRunResult } from './run-result';
+import { createRunResult, handleShare } from './run-result';
 
-const RESULT_POPUP_HEIGHT = 380;
+const RESULT_POPUP_HEIGHT = 420;
 const OUTRO_Y = -6;
 const OUTRO_SIZE = 10;
 const OUTRO_LINE_GAP = 7;
@@ -28,7 +28,9 @@ export class VictoryPopup extends Popup {
     result.y = RESULT_Y;
     this.addToContent(result);
 
-    // eslint-disable-next-line no-magic-numbers
-    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 4.9);
+    /* eslint-disable no-magic-numbers */
+    const share = this.addButton(translation.getTranslation('run.share'), () => handleShare(share, gameService.lastRun, translation), 4.6);
+    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 5.6);
+    /* eslint-enable no-magic-numbers */
   }
 }
