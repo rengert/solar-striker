@@ -856,6 +856,28 @@ describe('GameService', () => {
       gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
     });
 
+    it('should fire every frame with always-fire on, remember it, and stop when it is switched off', () => {
+      service.alwaysFire = true;
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeTrue();
+      expect(window.localStorage.getItem('always-fire')).toBe('true');
+
+      service.alwaysFire = false;
+      expect(shipInstance.autoFire).toBeFalse();
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeFalse();
+      window.localStorage.removeItem('always-fire');
+    });
+
+    it('should not fire with always-fire on while paused', async () => {
+      service.alwaysFire = true;
+      await service.pause();
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeFalse();
+      service.alwaysFire = false;
+      window.localStorage.removeItem('always-fire');
+    });
+
     it('should call applyScreenShake when ship energy decreases', () => {
       shipInstance.energy = 8;
       tickerCallback({ deltaMS: 16 });

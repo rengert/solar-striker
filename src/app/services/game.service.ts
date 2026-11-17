@@ -303,6 +303,10 @@ export class GameService {
 
   set alwaysFire(value: boolean) {
     this.#alwaysFire = value;
+    if (!value) {
+      // switched off mid-run (pause → settings): stop at once instead of firing until the next tap
+      this.ship.instance.autoFire = false;
+    }
     try {
       window.localStorage.setItem(ALWAYS_FIRE_STORAGE_KEY, String(value));
     } catch {
