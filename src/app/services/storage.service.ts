@@ -1,8 +1,8 @@
-import { LoginStreakState } from '../models/login-reward.model';
 import { Injectable } from '@angular/core';
 import { AchievementState } from '../models/achievement.model';
 import { DailyChallengeState } from '../models/daily-challenge.model';
 import { HighscoreEntry } from '../models/highscore.model';
+import { LoginStreakState } from '../models/login-reward.model';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 
 export interface ShipClassSelectionState {

@@ -14,6 +14,15 @@ describe('claimLoginReward', () => {
     expect(claimLoginReward({ lastDay: '2026-11-30', streak: 2 }, '2026-12-01')?.day).toBe(3);
   });
 
+  it('pays nothing when the clock was set back before the last claim', () => {
+    expect(claimLoginReward({ lastDay: '2026-11-20', streak: 3 }, '2026-11-19')).toBeNull();
+  });
+
+  it('counts calendar days across a daylight saving change', () => {
+    expect(claimLoginReward({ lastDay: '2026-10-24', streak: 1 }, '2026-10-25')?.day).toBe(2);
+    expect(claimLoginReward({ lastDay: '2026-03-28', streak: 1 }, '2026-03-29')?.day).toBe(2);
+  });
+
   it('restarts after a missed day', () => {
     expect(claimLoginReward({ lastDay: '2026-11-18', streak: 5 }, '2026-11-20')?.day).toBe(1);
   });

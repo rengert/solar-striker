@@ -18,13 +18,15 @@ export interface LoginReward {
   coins: number;
 }
 
-/** The reward for opening the game on `today`, or null if today was already claimed. A missed day restarts the streak. */
+/** The reward for opening the game on `today`, or null if today (or a later day) was already claimed. A missed day restarts the streak. */
 export function claimLoginReward(previous: LoginStreakState | null, today: string): LoginReward | null {
-  if (previous?.lastDay === today) {
+  const daysSince = previous ? getDayIndex(today) - getDayIndex(previous.lastDay) : Infinity;
+  // same day, or the clock was set back: nothing new to pay
+  if (daysSince <= 0) {
     return null;
   }
-  const continues = previous !== null && getDayIndex(today) - getDayIndex(previous.lastDay) === 1;
-  const streak = continues ? previous.streak + 1 : 1;
+  const continues = daysSince === 1;
+  const streak = continues && previous ? previous.streak + 1 : 1;
   const day = ((streak - 1) % LOGIN_REWARDS.length) + 1;
   return { state: { lastDay: today, streak }, day, coins: LOGIN_REWARDS[day - 1] };
 }
