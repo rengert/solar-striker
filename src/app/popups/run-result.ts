@@ -7,31 +7,33 @@ import { LabeledButton } from '../models/pixijs/labeled-button.model';
 /** Public game link; the app runs from capacitor://localhost, so location.href would not help anyone. */
 const GAME_URL = 'https://rengert.github.io/solar-striker/';
 
-/** Opens the share sheet for a finished run, or copies the text if the device has none; false if both failed. */
-export async function shareRun(run: RunResult | undefined, translation: TranslationService): Promise<boolean> {
+export type ShareOutcome = 'shared' | 'copied' | 'failed';
+
+/** Opens the share sheet for a finished run, or copies the text if the device has none. */
+export async function shareRun(run: RunResult | undefined, translation: TranslationService): Promise<ShareOutcome> {
   if (!run) {
-    return false;
+    return 'failed';
   }
   const { kills, level } = run.entry;
   const text = translation.getTranslation('run.shareText', { kills, level });
   try {
     if (typeof navigator.share === 'function') {
       await navigator.share({ title: translation.getTranslation('app.title'), text, url: GAME_URL });
-    } else {
-      await navigator.clipboard.writeText(`${text} ${GAME_URL}`);
+      return 'shared';
     }
-    return true;
+    // navigator.clipboard is undefined outside secure contexts: the TypeError lands in the catch as 'failed'
+    await navigator.clipboard.writeText(`${text} ${GAME_URL}`);
+    return 'copied';
   } catch (error) {
     // closing the share sheet is no failure
-    return error instanceof DOMException && error.name === 'AbortError';
+    return error instanceof DOMException && error.name === 'AbortError' ? 'shared' : 'failed';
   }
 }
 
 /** Share button handler: shares and shows on the button whether it worked. */
 export function handleShare(button: LabeledButton, run: RunResult | undefined, translation: TranslationService): void {
-  void shareRun(run, translation).then((shared) => {
-    button.label.text = translation.getTranslation(shared ? 'run.shared' : 'run.shareFailed');
-  });
+  const labels = { shared: 'run.shared', copied: 'run.copied', failed: 'run.shareFailed' } as const;
+  void shareRun(run, translation).then((outcome) => (button.label.text = translation.getTranslation(labels[outcome])));
 }
 
 const TEXT_COLOR = 0x3c2f1e;

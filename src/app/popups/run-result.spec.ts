@@ -23,23 +23,23 @@ describe('shareRun', () => {
     const share = jasmine.createSpy('share').and.resolveTo();
     setShare(share);
 
-    expect(await shareRun(run, translation)).toBeTrue();
+    expect(await shareRun(run, translation)).toBe('shared');
     expect(share).toHaveBeenCalledWith(jasmine.objectContaining({ url: 'https://rengert.github.io/solar-striker/' }));
   });
 
   it('treats a closed share sheet as no failure, but reports other errors', async () => {
     setShare(jasmine.createSpy('share').and.rejectWith(new DOMException('closed', 'AbortError')));
-    expect(await shareRun(run, translation)).toBeTrue();
+    expect(await shareRun(run, translation)).toBe('shared');
 
     setShare(jasmine.createSpy('share').and.rejectWith(new DOMException('denied', 'NotAllowedError')));
-    expect(await shareRun(run, translation)).toBeFalse();
+    expect(await shareRun(run, translation)).toBe('failed');
   });
 
   it('copies the text when the device cannot share', async () => {
     setShare(undefined);
     const writeText = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
 
-    expect(await shareRun(run, translation)).toBeTrue();
+    expect(await shareRun(run, translation)).toBe('copied');
     expect(writeText).toHaveBeenCalled();
   });
 });
