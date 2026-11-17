@@ -27,7 +27,7 @@ import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
 import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
-import { EnemyKind, GameEnemyService, LATE_KINDS_FROM_STAGE } from './game-enemy.service';
+import { EnemyKind, GameEnemyService, GOLDEN_ENEMY_COINS, LATE_KINDS_FROM_STAGE } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { getComboColor, GameScreenService } from './game-screen.service';
@@ -60,6 +60,8 @@ const COMBO_CALLOUT_FROM = 3;
 const BOSS_SHAKE_AMPLITUDE = 14;
 const LARGE_ENEMY_SHAKE_AMPLITUDE = 4;
 const BOSS_FLASH_COLOR = 0xffffff;
+const GOLDEN_TEXT_COLOR = 0xffd700;
+const GOLDEN_TEXT_SCALE = 1.5;
 const BOSS_FLASH_ALPHA = 0.6;
 const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
@@ -222,6 +224,11 @@ export class GameService {
         );
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.addCoins(1);
+        }
+        if (this.enemy.isGolden(destroyedEnemy)) {
+          this.addBonusCoins(GOLDEN_ENEMY_COINS);
+          this.gameScreen.showFloatingText(`★ +${GOLDEN_ENEMY_COINS}`, destroyedEnemy.x, destroyedEnemy.y, GOLDEN_TEXT_COLOR, GOLDEN_TEXT_SCALE);
+          this.sound.play('powerUp');
         }
         const { isBoss, explosionCount } = destroyedEnemy as AnimatedGameSprite;
         if (isBoss) {

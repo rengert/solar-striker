@@ -7,7 +7,7 @@ import { SoundService } from './sound.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { AppScreen } from '../models/pixijs/app-screen';
 import { GameCollectableService } from './game-collectable.service';
-import { EnemyKind, GameEnemyService } from './game-enemy.service';
+import { EnemyKind, GameEnemyService, GOLDEN_ENEMY_COINS } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
@@ -74,7 +74,7 @@ describe('GameService', () => {
           },
         },
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
-        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss'), getKind: (): undefined => undefined } },
+        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss'), getKind: (): undefined => undefined, isGolden: (): boolean => false } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update'), setStage: jasmine.createSpy('setStage') } },
         {
           provide: GameBaseService,
@@ -188,6 +188,15 @@ describe('GameService', () => {
 
       expect(service.kills()).toBe(GAME_CONFIG.killsPerCoin);
       expect(service.sessionCoins()).toBe(COMBO_REWARD_AT_MAX);
+    });
+
+    it('should award the golden bonus without combo multiplier when a golden enemy is shot down', () => {
+      spyOn(TestBed.inject(GameEnemyService), 'isGolden').and.returnValue(true);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+
+      expect(service.sessionCoins()).toBe(GOLDEN_ENEMY_COINS);
     });
 
     it('should award bonus coins when a boss enemy is killed by the player', () => {
