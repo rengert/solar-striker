@@ -95,6 +95,7 @@ describe('GameService', () => {
             flashScreen: jasmine.createSpy('flashScreen'),
             showFloatingText: jasmine.createSpy('showFloatingText'),
             showRadioMessages: jasmine.createSpy('showRadioMessages'),
+            showAchievementBanner: jasmine.createSpy('showAchievementBanner'),
             clearRadioMessages: jasmine.createSpy('clearRadioMessages'),
             update: jasmine.createSpy('update'),
           },
@@ -125,7 +126,7 @@ describe('GameService', () => {
             applyToShip: jasmine.createSpy('applyToShip'),
           },
         },
-        { provide: TranslationService, useValue: {} },
+        { provide: TranslationService, useValue: { getTranslation: (key: string): string => key } },
         {
           provide: AchievementService,
           useValue: {
@@ -556,6 +557,9 @@ describe('GameService', () => {
     });
 
     it('should award stage bonus coins when boss is killed and game is started', () => {
+      // the ship was hit, so no flawless bonus on top
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).stageDamaged = true;
       const coinsBefore = service.sessionCoins();
       const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
       objectService.triggerCallbacks(bossEnemy, playerRocket);
@@ -565,6 +569,17 @@ describe('GameService', () => {
       expect(service.sessionCoins()).toBe(
         coinsBefore + GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER + STAGE_BONUS_COINS,
       );
+    });
+
+    it('should add the flawless bonus when the ship took no hit during the stage', () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showAchievementBanner: jasmine.Spy };
+      const coinsBefore = service.sessionCoins();
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      // eslint-disable-next-line no-magic-numbers
+      const STAGE_AND_FLAWLESS_BONUS = 10 + 15;
+      expect(service.sessionCoins()).toBe(coinsBefore + GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER + STAGE_AND_FLAWLESS_BONUS);
+      expect(gameScreen.showAchievementBanner).toHaveBeenCalledWith('✨', 'stage.flawless', 'daily.reward');
     });
 
     it('should trigger victory after the final stage boss is defeated', async () => {
