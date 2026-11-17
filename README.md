@@ -2,7 +2,7 @@
 
 SolarStriker ist ein vertikal scrollender Arcade-Shooter im Retro-Stil, inspiriert vom gleichnamigen Game-Boy-Klassiker. Das Projekt setzt auf Angular als Framework und kombiniert es mit PixiJS für schnelle 2D-Grafik im Browser und auf mobilen Geräten.
 
-[Spielen / Try it](https://rengert.github.io/solar-striker/browser)
+[Spielen / Try it](https://rengert.github.io/solar-striker/)
 
 ## Inhaltsverzeichnis
 
