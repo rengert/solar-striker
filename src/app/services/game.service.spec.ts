@@ -125,7 +125,7 @@ describe('GameService', () => {
             applyToShip: jasmine.createSpy('applyToShip'),
           },
         },
-        { provide: TranslationService, useValue: {} },
+        { provide: TranslationService, useValue: { getTranslation: (key: string): string => key } },
         {
           provide: AchievementService,
           useValue: {
@@ -854,6 +854,22 @@ describe('GameService', () => {
       const tickerMock = TestBed.inject(ApplicationService).ticker as unknown as { add: jasmine.Spy };
       tickerCallback = tickerMock.add.calls.mostRecent().args[0] as typeof tickerCallback;
       gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
+    });
+
+    it('should call out a multikill for kills in quick succession and pay a bonus coin per chained kill', () => {
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      const kill = (): void => objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+
+      kill();
+      kill();
+      expect(gameScreenMock.showFloatingText.calls.mostRecent().args[0]).toBe('multikill.double');
+      expect(service.sessionCoins()).toBe(1);
+
+      // eslint-disable-next-line no-magic-numbers
+      tickerCallback({ deltaMS: 500 });
+      kill();
+      expect(gameScreenMock.showFloatingText.calls.mostRecent().args[0]).not.toContain('multikill');
+      expect(service.sessionCoins()).toBe(1);
     });
 
     it('should call applyScreenShake when ship energy decreases', () => {

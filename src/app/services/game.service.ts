@@ -45,6 +45,14 @@ const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
 
 const COMBO_WINDOW_MS = 3000;
+/** Kills this close together (game time) form a multikill; every kill from the second on pays a bonus coin. */
+const MULTIKILL_WINDOW_MS = 450;
+// flat, so a nuke through a full wave stays a small bonus
+const MULTIKILL_COINS_PER_KILL = 1;
+const MULTIKILL_DOUBLE = 2;
+const MULTIKILL_TEXT_OFFSET_Y = 28;
+const MULTIKILL_TEXT_SCALE = 1.6;
+const MULTIKILL_COLOR = 0x66ddff;
 const MAX_COMBO = 5;
 const COMBO_START = 2;
 
@@ -73,6 +81,16 @@ function calculateMeteorCoins(meteor: ObjectModelType): number {
   const energy = meteor.initialEnergy ?? meteor.energy ?? 0;
 
   return Math.max(1, Math.floor(energy / METEOR_COIN_ENERGY_STEP));
+}
+
+export function getMultikillLabel(count: number, translation: TranslationService): string {
+  if (count === MULTIKILL_DOUBLE) {
+    return translation.getTranslation('multikill.double');
+  }
+  if (count === MULTIKILL_DOUBLE + 1) {
+    return translation.getTranslation('multikill.triple');
+  }
+  return translation.getTranslation('multikill.multi', { count });
 }
 
 /**
@@ -108,6 +126,8 @@ export class GameService {
 
   /** Time left in the combo window; counted down in the game loop so a pause does not end the combo. */
   private comboRemainingMs = 0;
+  private multikillRemainingMs = 0;
+  private multikill = 0;
 
   private stageKills = 0;
   private lastShipEnergy = 0;
@@ -223,6 +243,9 @@ export class GameService {
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.addCoins(1);
         }
+        if (this.started()) {
+          this.countMultikill(destroyedEnemy);
+        }
         const { isBoss, explosionCount } = destroyedEnemy as AnimatedGameSprite;
         if (isBoss) {
           this.gameScreen.applyScreenShake(BOSS_SHAKE_AMPLITUDE);
@@ -312,7 +335,24 @@ export class GameService {
     this.comboRemainingMs = COMBO_WINDOW_MS;
   }
 
+  private countMultikill(enemy: ObjectModelType): void {
+    this.multikill = this.multikillRemainingMs > 0 ? this.multikill + 1 : 1;
+    this.multikillRemainingMs = MULTIKILL_WINDOW_MS;
+    if (this.multikill < MULTIKILL_DOUBLE) {
+      return;
+    }
+    this.addBonusCoins(MULTIKILL_COINS_PER_KILL);
+    this.gameScreen.showFloatingText(
+      getMultikillLabel(this.multikill, this.translation),
+      enemy.x,
+      enemy.y - MULTIKILL_TEXT_OFFSET_Y,
+      MULTIKILL_COLOR,
+      MULTIKILL_TEXT_SCALE,
+    );
+  }
+
   private updateCombo(deltaMS: number): void {
+    this.multikillRemainingMs -= deltaMS;
     if (this.comboRemainingMs <= 0) {
       return;
     }
