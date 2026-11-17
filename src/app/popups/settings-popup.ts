@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { SUPPORTED_LANGUAGES, SupportedLanguage, TranslationKey } from '../i18n/translations';
 import { LabeledButton } from '../models/pixijs/labeled-button.model';
 import { GameService } from '../services/game.service';
@@ -5,6 +6,12 @@ import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
 const POPUP_HEIGHT = 609;
+const BUTTON_SLOT_HEIGHT = 52;
+
+/** Browsers only; the native apps run full screen anyway and iPhone Safari has no Fullscreen API. */
+function canToggleFullscreen(): boolean {
+  return document.fullscreenEnabled && !Capacitor.isNativePlatform();
+}
 const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
 const RESET_ARMED_COLOR = 0xff5555;
@@ -14,6 +21,7 @@ export class SettingsPopup extends Popup {
   private readonly soundButton: LabeledButton;
   private readonly musicButton: LabeledButton;
   private readonly effectsButton: LabeledButton;
+  private readonly fullscreenButton?: LabeledButton;
   private readonly exportButton: LabeledButton;
   private readonly importButton: LabeledButton;
   private readonly resetButton: LabeledButton;
@@ -28,7 +36,8 @@ export class SettingsPopup extends Popup {
     private readonly gameService: GameService,
     private readonly translation: TranslationService,
   ) {
-    super(translation.getTranslation('settings.title'), POPUP_HEIGHT);
+    const fullscreen = canToggleFullscreen();
+    super(translation.getTranslation('settings.title'), POPUP_HEIGHT + (fullscreen ? BUTTON_SLOT_HEIGHT : 0));
 
     SUPPORTED_LANGUAGES.forEach((language, index) => {
       this.createLanguageButton(language, index + BUTTON_INDEX_OFFSET);
@@ -38,6 +47,9 @@ export class SettingsPopup extends Popup {
     this.soundButton = this.addButton('', () => this.toggleSound(), index++);
     this.musicButton = this.addButton('', () => this.toggleMusic(), index++);
     this.effectsButton = this.addButton('', () => this.toggleEffects(), index++);
+    if (fullscreen) {
+      this.fullscreenButton = this.addButton('', () => void this.toggleFullscreen(), index++);
+    }
     this.exportButton = this.addButton('', () => void this.handleExport(), index++);
     this.importButton = this.addButton('', () => void this.handleImport(), index++);
     this.resetButton = this.addButton('', () => this.handleReset(), index++);
@@ -69,6 +81,15 @@ export class SettingsPopup extends Popup {
 
   private toggleEffects(): void {
     this.gameService.gameScreen.effectsEnabled = !this.gameService.gameScreen.effectsEnabled;
+    this.updateContentLanguage();
+  }
+
+  private async toggleFullscreen(): Promise<void> {
+    try {
+      await (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
+    } catch {
+      // the browser refused (e.g. no user gesture); the label simply stays as it is
+    }
     this.updateContentLanguage();
   }
 
@@ -151,6 +172,12 @@ export class SettingsPopup extends Popup {
     this.effectsButton.label.text = this.translation.getTranslation(
       this.gameService.gameScreen.effectsEnabled ? 'settings.effectsOn' : 'settings.effectsOff',
     );
+    if (this.fullscreenButton) {
+      this.fullscreenButton.label.text = this.translation.getTranslation(
+        document.fullscreenElement ? 'settings.fullscreenOn' : 'settings.fullscreenOff',
+      );
+      Popup.fitLabel(this.fullscreenButton);
+    }
     this.exportButton.label.text = this.translation.getTranslation(this.exportKey);
     this.importButton.label.text = this.translation.getTranslation(this.importKey);
     this.resetButton.label.text = this.translation.getTranslation(
