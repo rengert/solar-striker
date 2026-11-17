@@ -47,8 +47,9 @@ const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
 const COMBO_WINDOW_MS = 3000;
 /** Kills this close together (game time) form a multikill; every kill from the second on pays a bonus coin. */
 const MULTIKILL_WINDOW_MS = 450;
-// flat, so a nuke through a full wave stays a small bonus
+// flat and capped per chain, so a nuke through a full wave stays a small bonus
 const MULTIKILL_COINS_PER_KILL = 1;
+const MULTIKILL_MAX_COINS = 5;
 const MULTIKILL_DOUBLE = 2;
 const MULTIKILL_TEXT_OFFSET_Y = 28;
 const MULTIKILL_TEXT_SCALE = 1.6;
@@ -341,7 +342,10 @@ export class GameService {
     if (this.multikill < MULTIKILL_DOUBLE) {
       return;
     }
-    this.addBonusCoins(MULTIKILL_COINS_PER_KILL);
+    // the first kill of a chain pays nothing, so kill number n pays the (n - 1)th bonus coin
+    if ((this.multikill - 1) * MULTIKILL_COINS_PER_KILL <= MULTIKILL_MAX_COINS) {
+      this.addBonusCoins(MULTIKILL_COINS_PER_KILL);
+    }
     this.gameScreen.showFloatingText(
       getMultikillLabel(this.multikill, this.translation),
       enemy.x,

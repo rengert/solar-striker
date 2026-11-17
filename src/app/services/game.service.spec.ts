@@ -872,6 +872,17 @@ describe('GameService', () => {
       expect(service.sessionCoins()).toBe(1);
     });
 
+    it('should cap the multikill bonus at 5 coins per chain', () => {
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      // eslint-disable-next-line no-magic-numbers
+      for (let i = 0; i < 30; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      // 30 kills also pay 3 regular coins (every 10th kill, times the combo of x5)
+      // eslint-disable-next-line no-magic-numbers
+      expect(service.sessionCoins()).toBe(5 + 3 * 5);
+    });
+
     it('should call applyScreenShake when ship energy decreases', () => {
       shipInstance.energy = 8;
       tickerCallback({ deltaMS: 16 });
