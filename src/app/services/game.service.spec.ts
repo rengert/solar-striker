@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
@@ -225,6 +225,19 @@ describe('GameService', () => {
       expect(gameScreen.applyScreenShake).toHaveBeenCalled();
       expect(gameScreen.flashScreen).toHaveBeenCalled();
     });
+
+    it('should play a short slow motion when the player kills a boss', fakeAsync(() => {
+      const ticker = TestBed.inject(ApplicationService).ticker as unknown as { speed: number };
+      ticker.speed = 1;
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+      expect(ticker.speed).toBeLessThan(1);
+
+      // eslint-disable-next-line no-magic-numbers
+      tick(1000);
+      expect(ticker.speed).toBe(1);
+    }));
 
     it('should only shake the screen when a large enemy is killed by the player', () => {
       const gameScreen = TestBed.inject(GameScreenService) as unknown as { applyScreenShake: jasmine.Spy; flashScreen: jasmine.Spy };
