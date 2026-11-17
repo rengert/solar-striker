@@ -397,6 +397,17 @@ describe('GameService', () => {
       expect(service.paused()).toBe(false);
     });
 
+    it('should start only one countdown on a double tap on resume', async () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showCountdown: jasmine.Spy };
+      await service.start({} as AppScreen);
+      await service.pause();
+
+      await Promise.all([service.resume({} as AppScreen), service.resume({} as AppScreen)]);
+
+      expect(gameScreen.showCountdown).toHaveBeenCalledTimes(1);
+      expect(service.paused()).toBe(false);
+    });
+
     it('should keep the ticker running while paused so the pause menu renders', async () => {
       await service.start({} as AppScreen);
       await service.pause();

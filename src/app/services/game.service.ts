@@ -111,6 +111,7 @@ export class GameService {
   private comboRemainingMs = 0;
 
   private stageKills = 0;
+  private resuming = false;
   private lastShipEnergy = 0;
   private streakElapsedMs = 0;
   private nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -554,6 +555,19 @@ export class GameService {
   }
 
   async resume(requester: AppScreen): Promise<void> {
+    // a double tap on "resume" must not start a second countdown
+    if (this.resuming) {
+      return;
+    }
+    this.resuming = true;
+    try {
+      await this.resumeAfterCountdown(requester);
+    } finally {
+      this.resuming = false;
+    }
+  }
+
+  private async resumeAfterCountdown(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     this.currentPopup = undefined;
     // the game stays paused during the countdown, so the player can get a grip before enemies move again
