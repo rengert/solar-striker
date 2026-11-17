@@ -43,6 +43,7 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
+const RESUME_COUNTDOWN_FROM = 3;
 
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
@@ -555,6 +556,13 @@ export class GameService {
   async resume(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     this.currentPopup = undefined;
+    // the game stays paused during the countdown, so the player can get a grip before enemies move again
+    await this.gameScreen.showCountdown(RESUME_COUNTDOWN_FROM);
+    if (document.hidden) {
+      // the app went to the background during the countdown: stay paused
+      await this.presentPopup(PausePopup);
+      return;
+    }
     this.#paused.set(false);
   }
 

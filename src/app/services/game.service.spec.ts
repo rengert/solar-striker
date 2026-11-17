@@ -90,6 +90,7 @@ describe('GameService', () => {
             pauseButtonVisible: false,
             onPause: undefined,
             showStageAnnouncement: jasmine.createSpy('showStageAnnouncement'),
+            showCountdown: jasmine.createSpy('showCountdown').and.resolveTo(),
             showBossWarning: jasmine.createSpy('showBossWarning'),
             applyScreenShake: jasmine.createSpy('applyScreenShake'),
             flashScreen: jasmine.createSpy('flashScreen'),
@@ -377,6 +378,22 @@ describe('GameService', () => {
       await service.start({} as AppScreen);
       await service.pause();
       await service.resume({} as AppScreen);
+      expect(service.paused()).toBe(false);
+    });
+
+    it('should stay paused until the resume countdown is over', async () => {
+      let finishCountdown!: () => void;
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showCountdown: jasmine.Spy };
+      gameScreen.showCountdown.and.returnValue(new Promise<void>((resolve) => (finishCountdown = resolve)));
+      await service.start({} as AppScreen);
+      await service.pause();
+
+      const resumed = service.resume({} as AppScreen);
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(service.paused()).toBe(true);
+
+      finishCountdown();
+      await resumed;
       expect(service.paused()).toBe(false);
     });
 
