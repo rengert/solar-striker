@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { computed, DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG, getDifficultyLevel, getStageReward, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
@@ -67,6 +67,11 @@ const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
 const BASE_HIT_FLASH_ALPHA = 0.15;
 
+function isFormElement(target: EventTarget | null): boolean {
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement
+    || target instanceof HTMLSelectElement;
+}
+
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
 }
@@ -114,6 +119,8 @@ export class GameService {
   private stageKills = 0;
   /** KeyboardEvent.code of the held movement keys. */
   private readonly pressedKeys = new Set<string>();
+  private spaceHeld = false;
+  private pointerHeld = false;
   private lastShipEnergy = 0;
   private streakElapsedMs = 0;
   private nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -155,6 +162,7 @@ export class GameService {
 
   private readonly application = inject(ApplicationService);
   private readonly storage = inject(StorageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
     effect(() => {
@@ -646,6 +654,10 @@ export class GameService {
       this.updatables.forEach((updatable) => updatable.update(delta, getDifficultyLevel(this.stage())));
       this.updateCombo(delta.deltaMS);
       this.moveByKeyboard();
+      // set every frame, so a space bar held through the pause fires again right after it
+      if (this.spaceHeld) {
+        this.ship.instance.autoFire = true;
+      }
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;
@@ -683,30 +695,42 @@ export class GameService {
   }
 
   private setupKeyboard(): void {
+    const listeners = new AbortController();
+    this.destroyRef.onDestroy(() => listeners.abort());
+    const { signal: abort } = listeners;
     window.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         void this.pause();
-      } else if (isMovementKey(event.code)) {
+        return;
+      }
+      // only steal keys from the page while flying, and never from a focused form element
+      if (!this.started() || this.#paused() || isFormElement(event.target)) {
+        return;
+      }
+      if (isMovementKey(event.code)) {
         this.pressedKeys.add(event.code);
         event.preventDefault();
       } else if (event.code === 'Space') {
-        if (this.started() && !this.#paused()) {
-          this.ship.instance.autoFire = true;
-        }
+        this.spaceHeld = true;
         event.preventDefault();
       }
-    });
+    }, { signal: abort });
     window.addEventListener('keyup', (event) => {
       if (event.code === 'Space') {
-        this.ship.instance.autoFire = false;
+        this.spaceHeld = false;
+        // a held pointer keeps firing
+        this.ship.instance.autoFire = this.pointerHeld;
       } else if (this.pressedKeys.delete(event.code) && this.pressedKeys.size === 0) {
         // stop where the ship is instead of drifting to the last lead target
         this.ship.instance.targetX = this.ship.instance.x;
         this.ship.instance.targetY = this.ship.instance.y;
       }
-    });
+    }, { signal: abort });
     // a key released while the window is in the background never fires keyup
-    window.addEventListener('blur', () => this.pressedKeys.clear());
+    window.addEventListener('blur', () => {
+      this.pressedKeys.clear();
+      this.spaceHeld = false;
+    }, { signal: abort });
   }
 
   private moveByKeyboard(): void {
@@ -724,13 +748,17 @@ export class GameService {
     this.application.stage.eventMode = 'dynamic';
     this.application.stage.hitArea = this.application.screen;
     this.application.stage.on('pointerdown', () => {
+      this.pointerHeld = true;
       if (!this.started() || this.#paused()) {
         return;
       }
 
       ship.instance.autoFire = true;
     });
-    this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
+    this.application.stage.on('pointerup', () => {
+      this.pointerHeld = false;
+      ship.instance.autoFire = this.spaceHeld;
+    });
     this.application.stage.on('pointermove', (event: FederatedPointerEvent) => {
       if (!this.started() || this.#paused()) {
         return;
