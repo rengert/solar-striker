@@ -7,14 +7,14 @@ import { Popup } from './popup';
 
 const POPUP_HEIGHT = 609;
 const BUTTON_SLOT_HEIGHT = 52;
+const BUTTON_INDEX_OFFSET = 0.5;
+const BUTTON_DISABLED_ALPHA = 0.7;
+const RESET_ARMED_COLOR = 0xff5555;
 
 /** Browsers only; the native apps run full screen anyway and iPhone Safari has no Fullscreen API. */
 function canToggleFullscreen(): boolean {
   return document.fullscreenEnabled && !Capacitor.isNativePlatform();
 }
-const BUTTON_INDEX_OFFSET = 0.5;
-const BUTTON_DISABLED_ALPHA = 0.7;
-const RESET_ARMED_COLOR = 0xff5555;
 
 export class SettingsPopup extends Popup {
   private readonly languageButtons = new Map<SupportedLanguage, LabeledButton>();
@@ -27,6 +27,7 @@ export class SettingsPopup extends Popup {
   private readonly resetButton: LabeledButton;
   private readonly backButton: LabeledButton;
   private resetArmed = false;
+  private readonly fullscreenListener = new AbortController();
   private exportKey: TranslationKey = 'settings.export';
   private importKey: TranslationKey = 'settings.import';
   // prepared up front: iOS only allows the clipboard write synchronously inside the tap
@@ -49,6 +50,10 @@ export class SettingsPopup extends Popup {
     this.effectsButton = this.addButton('', () => this.toggleEffects(), index++);
     if (fullscreen) {
       this.fullscreenButton = this.addButton('', () => void this.toggleFullscreen(), index++);
+      // Esc or the browser's own controls also leave full screen
+      document.addEventListener('fullscreenchange', () => this.updateContentLanguage(), {
+        signal: this.fullscreenListener.signal,
+      });
     }
     this.exportButton = this.addButton('', () => void this.handleExport(), index++);
     this.importButton = this.addButton('', () => void this.handleImport(), index++);
@@ -67,6 +72,11 @@ export class SettingsPopup extends Popup {
     // on failure handleExport simply builds the code again in the tap
     this.gameService.exportProgress().then((code) => (this.exportCode = code)).catch(() => undefined);
     this.updateContentLanguage();
+  }
+
+  override async hide(): Promise<void> {
+    this.fullscreenListener.abort();
+    await super.hide();
   }
 
   private toggleSound(): void {
