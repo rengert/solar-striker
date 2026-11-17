@@ -717,6 +717,7 @@ export class GameService {
     };
     this.lastRun = calculateRunResult(await this.storage.getHighscore(), entry);
     await this.storage.setHighscore(entry);
+    this.totalKills.update((kills) => kills + entry.kills);
     if (entry.mode === 'endless') {
       this.endlessRecord.set(Math.max(this.endlessRecord(), entry.level));
     }
