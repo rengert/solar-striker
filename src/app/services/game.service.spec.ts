@@ -469,6 +469,20 @@ describe('GameService', () => {
       playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
     });
 
+    /** Lets the game loop see the ship's energy drop, like a real hit. */
+    function takeHit(): void {
+      spyOn(service as unknown as { presentPopup: () => Promise<void> }, 'presentPopup').and.resolveTo();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).setup();
+      const ticker = TestBed.inject(ApplicationService).ticker as unknown as { add: jasmine.Spy };
+      const tick = ticker.add.calls.mostRecent().args[0] as (delta: { deltaMS: number }) => void;
+      const ship = TestBed.inject(GameShipService).instance as { energy: number };
+      ship.energy = 10;
+      tick({ deltaMS: 16 });
+      ship.energy = 9;
+      tick({ deltaMS: 16 });
+    }
+
     function triggerStageBoss(stage: number, by: ObjectModelType): void {
       for (let i = 0; i < service.getKillsRequiredForStage(stage); i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), by);
@@ -558,8 +572,7 @@ describe('GameService', () => {
 
     it('should award stage bonus coins when boss is killed and game is started', () => {
       // the ship was hit, so no flawless bonus on top
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (service as any).stageDamaged = true;
+      takeHit();
       const coinsBefore = service.sessionCoins();
       const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
       objectService.triggerCallbacks(bossEnemy, playerRocket);
