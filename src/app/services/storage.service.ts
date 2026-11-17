@@ -1,3 +1,4 @@
+import { LoginStreakState } from '../models/login-reward.model';
 import { Injectable } from '@angular/core';
 import { AchievementState } from '../models/achievement.model';
 import { DailyChallengeState } from '../models/daily-challenge.model';
@@ -210,6 +211,18 @@ export class StorageService {
       id: 'daily-challenges',
       state,
     });
+  }
+
+  async getLoginStreak(): Promise<LoginStreakState | null> {
+    const entries = await getManyFromStore<{ id: string; state: LoginStreakState }>(
+      Store.daily,
+      (item) => item.id === 'login-streak',
+    );
+    return entries.at(0)?.state ?? null;
+  }
+
+  setLoginStreak(state: LoginStreakState): Promise<void> {
+    return this.toStore(Store.daily, { id: 'login-streak', state });
   }
 
   async getShipClassSelection(): Promise<ShipClassSelectionState | null> {
