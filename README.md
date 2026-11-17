@@ -93,8 +93,8 @@ Wesentliche Spielfunktionen wie Gegner-Spawning, Meteoriten, Upgrades, Popups un
 
 ## Steuerung & Gameplay
 
-- **Bewegung:** Bewege Maus oder Finger über die Spielfläche – das Schiff folgt der Zeigerposition.
-- **Schießen:** Pointer gedrückt halten oder auf dem Touchscreen gedrückt lassen, um Dauerfeuer zu aktivieren.
+- **Bewegung:** Bewege Maus oder Finger über die Spielfläche – das Schiff folgt der Zeigerposition. Am PC geht es auch mit Pfeiltasten oder WASD.
+- **Schießen:** Pointer gedrückt halten oder auf dem Touchscreen gedrückt lassen, um Dauerfeuer zu aktivieren. Am PC feuert die Leertaste, Escape pausiert.
 - **Navigation:** Über Popups erreichst du Hangar, Highscore, Credits oder den Spielstart.
 
 Besiege Gegner und Meteoriten, sammle Coins ein und investiere sie in dauerhafte Upgrades, um mit jedem Durchlauf weiter zu kommen. Level-Checkpoints erlauben es, eine Kampagne später auf dem zuletzt erreichten Level fortzusetzen.
