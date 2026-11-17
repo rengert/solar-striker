@@ -21,7 +21,7 @@ import { PausePopup } from '../popups/pause-popup';
 import { SettingsPopup } from '../popups/settings-popup';
 import { VictoryPopup } from '../popups/victory-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
-import { handleMouseMove } from '../utils/mouse.util';
+import { clampShipY, getKeyboardDirection, handleMouseMove, isMovementKey } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
@@ -43,6 +43,8 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
+// how far ahead of the ship a held key sets the target; the ship then flies there at its own speed
+const KEYBOARD_LEAD_PX = 40;
 
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
@@ -110,6 +112,8 @@ export class GameService {
   private comboRemainingMs = 0;
 
   private stageKills = 0;
+  /** KeyboardEvent.code of the held movement keys. */
+  private readonly pressedKeys = new Set<string>();
   private lastShipEnergy = 0;
   private streakElapsedMs = 0;
   private nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -624,7 +628,7 @@ export class GameService {
     this.ship.spawn();
     this.setupInteractions(this.ship);
     this.gameScreen.onPause = (): void => void this.pause();
-    window.addEventListener('keydown', (event) => event.key === 'Escape' && void this.pause());
+    this.setupKeyboard();
     this.enemy.onEnemyPassed = (enemy): void => {
       if (!this.started()) {
         return;
@@ -641,6 +645,7 @@ export class GameService {
 
       this.updatables.forEach((updatable) => updatable.update(delta, getDifficultyLevel(this.stage())));
       this.updateCombo(delta.deltaMS);
+      this.moveByKeyboard();
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;
@@ -675,6 +680,44 @@ export class GameService {
         this.gameScreen.pauseButtonVisible = false;
       }
     });
+  }
+
+  private setupKeyboard(): void {
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        void this.pause();
+      } else if (isMovementKey(event.code)) {
+        this.pressedKeys.add(event.code);
+        event.preventDefault();
+      } else if (event.code === 'Space') {
+        if (this.started() && !this.#paused()) {
+          this.ship.instance.autoFire = true;
+        }
+        event.preventDefault();
+      }
+    });
+    window.addEventListener('keyup', (event) => {
+      if (event.code === 'Space') {
+        this.ship.instance.autoFire = false;
+      } else if (this.pressedKeys.delete(event.code) && this.pressedKeys.size === 0) {
+        // stop where the ship is instead of drifting to the last lead target
+        this.ship.instance.targetX = this.ship.instance.x;
+        this.ship.instance.targetY = this.ship.instance.y;
+      }
+    });
+    // a key released while the window is in the background never fires keyup
+    window.addEventListener('blur', () => this.pressedKeys.clear());
+  }
+
+  private moveByKeyboard(): void {
+    const { x, y } = getKeyboardDirection(this.pressedKeys);
+    if (x === 0 && y === 0) {
+      return;
+    }
+    const ship = this.ship.instance;
+    const { width, height } = this.application.screen;
+    ship.targetX = Math.min(Math.max(ship.x + x * KEYBOARD_LEAD_PX, 0), width);
+    ship.targetY = clampShipY(ship.y + y * KEYBOARD_LEAD_PX, height);
   }
 
   private setupInteractions(ship: GameShipService): void {
