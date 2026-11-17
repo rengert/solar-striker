@@ -43,6 +43,7 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
+const ALWAYS_FIRE_STORAGE_KEY = 'always-fire';
 
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
@@ -64,6 +65,14 @@ const BOSS_FLASH_ALPHA = 0.6;
 const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
 const BASE_HIT_FLASH_ALPHA = 0.15;
+
+function readFlag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
@@ -110,6 +119,7 @@ export class GameService {
   private comboRemainingMs = 0;
 
   private stageKills = 0;
+  #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
   private lastShipEnergy = 0;
   private streakElapsedMs = 0;
   private nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -284,6 +294,20 @@ export class GameService {
       this.rewardedMeteors.add(meteor);
       this.addCoins(coins);
     });
+  }
+
+  /** Fires all the time during a run, so phone players only have to steer; switchable in the settings. */
+  get alwaysFire(): boolean {
+    return this.#alwaysFire;
+  }
+
+  set alwaysFire(value: boolean) {
+    this.#alwaysFire = value;
+    try {
+      window.localStorage.setItem(ALWAYS_FIRE_STORAGE_KEY, String(value));
+    } catch {
+      // ignore storage errors
+    }
   }
 
   /** True when the run ended because the home base was destroyed rather than the player ship. */
@@ -641,6 +665,9 @@ export class GameService {
 
       this.updatables.forEach((updatable) => updatable.update(delta, getDifficultyLevel(this.stage())));
       this.updateCombo(delta.deltaMS);
+      if (this.#alwaysFire) {
+        this.ship.instance.autoFire = true;
+      }
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;
