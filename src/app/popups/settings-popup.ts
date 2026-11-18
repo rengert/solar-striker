@@ -4,7 +4,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 609;
+const POPUP_HEIGHT = 661;
 const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
 const RESET_ARMED_COLOR = 0xff5555;
@@ -14,6 +14,7 @@ export class SettingsPopup extends Popup {
   private readonly soundButton: LabeledButton;
   private readonly musicButton: LabeledButton;
   private readonly effectsButton: LabeledButton;
+  private readonly alwaysFireButton: LabeledButton;
   private readonly exportButton: LabeledButton;
   private readonly importButton: LabeledButton;
   private readonly resetButton: LabeledButton;
@@ -38,6 +39,7 @@ export class SettingsPopup extends Popup {
     this.soundButton = this.addButton('', () => this.toggleSound(), index++);
     this.musicButton = this.addButton('', () => this.toggleMusic(), index++);
     this.effectsButton = this.addButton('', () => this.toggleEffects(), index++);
+    this.alwaysFireButton = this.addButton('', () => this.toggleAlwaysFire(), index++);
     this.exportButton = this.addButton('', () => void this.handleExport(), index++);
     this.importButton = this.addButton('', () => void this.handleImport(), index++);
     this.resetButton = this.addButton('', () => this.handleReset(), index++);
@@ -69,6 +71,11 @@ export class SettingsPopup extends Popup {
 
   private toggleEffects(): void {
     this.gameService.gameScreen.effectsEnabled = !this.gameService.gameScreen.effectsEnabled;
+    this.updateContentLanguage();
+  }
+
+  private toggleAlwaysFire(): void {
+    this.gameService.alwaysFire = !this.gameService.alwaysFire;
     this.updateContentLanguage();
   }
 
@@ -151,6 +158,9 @@ export class SettingsPopup extends Popup {
     this.effectsButton.label.text = this.translation.getTranslation(
       this.gameService.gameScreen.effectsEnabled ? 'settings.effectsOn' : 'settings.effectsOff',
     );
+    this.alwaysFireButton.label.text = this.translation.getTranslation(
+      this.gameService.alwaysFire ? 'settings.alwaysFireOn' : 'settings.alwaysFireOff',
+    );
     this.exportButton.label.text = this.translation.getTranslation(this.exportKey);
     this.importButton.label.text = this.translation.getTranslation(this.importKey);
     this.resetButton.label.text = this.translation.getTranslation(
@@ -161,6 +171,7 @@ export class SettingsPopup extends Popup {
     Popup.fitLabel(this.soundButton);
     Popup.fitLabel(this.musicButton);
     Popup.fitLabel(this.effectsButton);
+    Popup.fitLabel(this.alwaysFireButton);
     Popup.fitLabel(this.exportButton);
     Popup.fitLabel(this.importButton);
     Popup.fitLabel(this.resetButton);

@@ -43,6 +43,7 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
+const ALWAYS_FIRE_STORAGE_KEY = 'always-fire';
 // how far ahead of the ship a held key sets the target; the ship then flies there at its own speed
 const KEYBOARD_LEAD_PX = 40;
 
@@ -69,6 +70,14 @@ const BOSS_FLASH_ALPHA = 0.6;
 const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
 const BASE_HIT_FLASH_ALPHA = 0.15;
+
+function readFlag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === 'true';
+  } catch {
+    return false;
+  }
+}
 
 function isFormElement(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement
@@ -121,6 +130,7 @@ export class GameService {
 
   private stageKills = 0;
   private slowMotionTimer?: ReturnType<typeof setTimeout>;
+  #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
   /** KeyboardEvent.code of the held movement keys. */
   private readonly pressedKeys = new Set<string>();
   private spaceHeld = false;
@@ -301,6 +311,24 @@ export class GameService {
       this.rewardedMeteors.add(meteor);
       this.addCoins(coins);
     });
+  }
+
+  /** Fires all the time during a run, so phone players only have to steer; switchable in the settings. */
+  get alwaysFire(): boolean {
+    return this.#alwaysFire;
+  }
+
+  set alwaysFire(value: boolean) {
+    this.#alwaysFire = value;
+    if (!value) {
+      // switched off mid-run (pause → settings): stop at once instead of firing until the next tap
+      this.ship.instance.autoFire = false;
+    }
+    try {
+      window.localStorage.setItem(ALWAYS_FIRE_STORAGE_KEY, String(value));
+    } catch {
+      // ignore storage errors
+    }
   }
 
   /** True when the run ended because the home base was destroyed rather than the player ship. */
@@ -667,7 +695,7 @@ export class GameService {
       this.updateCombo(delta.deltaMS);
       this.moveByKeyboard();
       // set every frame, so a space bar held through the pause fires again right after it
-      if (this.spaceHeld) {
+      if (this.#alwaysFire || this.spaceHeld) {
         this.ship.instance.autoFire = true;
       }
 
