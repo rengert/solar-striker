@@ -41,10 +41,17 @@
       animation: boot-spin .8s linear infinite;
     }
     @keyframes boot-spin { to { transform: rotate(360deg); } }
+    #boot-loader.boot-failed { cursor: pointer; }
+    #boot-loader.boot-failed::after {
+      content: "Das Spiel konnte nicht starten. Tippen zum Neuladen.\A The game could not start. Tap to reload.";
+      white-space: pre-line; text-align: center; padding: 0 16px;
+      width: auto; height: auto; border: 0; border-radius: 0; animation: none;
+      color: #fff; font: 16px/1.5 system-ui, sans-serif; letter-spacing: 0;
+    }
   </style>
 </head>
 <body>
-  <div id="boot-loader" role="status" aria-label="Loading">SOLAR STRIKER</div>
+  <div id="boot-loader" role="status" aria-label="Loading" onclick="if (this.classList.contains('boot-failed')) location.reload()">SOLAR STRIKER</div>
   <app-root></app-root>
   <noscript style="color:#fff;font-family:sans-serif;text-align:center;display:block;padding:2em">Solar Striker braucht JavaScript. Bitte aktiviere es in deinem Browser.</noscript>
 </body>
