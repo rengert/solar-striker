@@ -78,6 +78,8 @@ describe('GameEnemyService - enemy recycling', () => {
 
     service = TestBed.inject(GameEnemyService);
     objectService = TestBed.inject(ObjectService);
+    // update() rolls random spawns; without loaded sprites a lucky roll crashed these tests now and then
+    spyOn(service as unknown as { spawn: () => void }, 'spawn');
   });
 
   it('should reset energy to maxEnergy when an enemy goes off-screen', () => {
@@ -166,6 +168,8 @@ describe('GameEnemyService - boss patterns', () => {
   });
 
   function spawnBoss(stage: number): Ship {
+    // as in the game: no regular spawns during a boss fight, they made these tests depend on Math.random
+    service.bossFightActive = true;
     service.spawnStageBoss(stage);
     const boss = objectService.enemies()[0] as Ship;
     // skip the fly-in

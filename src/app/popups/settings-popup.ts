@@ -5,7 +5,7 @@ import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
 
-const POPUP_HEIGHT = 609;
+const POPUP_HEIGHT = 661;
 const BUTTON_SLOT_HEIGHT = 52;
 const BUTTON_INDEX_OFFSET = 0.5;
 const BUTTON_DISABLED_ALPHA = 0.7;
@@ -22,6 +22,7 @@ export class SettingsPopup extends Popup {
   private readonly musicButton: LabeledButton;
   private readonly effectsButton: LabeledButton;
   private readonly fullscreenButton?: LabeledButton;
+  private readonly alwaysFireButton: LabeledButton;
   private readonly exportButton: LabeledButton;
   private readonly importButton: LabeledButton;
   private readonly resetButton: LabeledButton;
@@ -55,6 +56,7 @@ export class SettingsPopup extends Popup {
         signal: this.fullscreenListener.signal,
       });
     }
+    this.alwaysFireButton = this.addButton('', () => this.toggleAlwaysFire(), index++);
     this.exportButton = this.addButton('', () => void this.handleExport(), index++);
     this.importButton = this.addButton('', () => void this.handleImport(), index++);
     this.resetButton = this.addButton('', () => this.handleReset(), index++);
@@ -100,6 +102,11 @@ export class SettingsPopup extends Popup {
     } catch {
       // the browser refused (e.g. no user gesture); the label simply stays as it is
     }
+    this.updateContentLanguage();
+  }
+
+  private toggleAlwaysFire(): void {
+    this.gameService.alwaysFire = !this.gameService.alwaysFire;
     this.updateContentLanguage();
   }
 
@@ -188,6 +195,9 @@ export class SettingsPopup extends Popup {
       );
       Popup.fitLabel(this.fullscreenButton);
     }
+    this.alwaysFireButton.label.text = this.translation.getTranslation(
+      this.gameService.alwaysFire ? 'settings.alwaysFireOn' : 'settings.alwaysFireOff',
+    );
     this.exportButton.label.text = this.translation.getTranslation(this.exportKey);
     this.importButton.label.text = this.translation.getTranslation(this.importKey);
     this.resetButton.label.text = this.translation.getTranslation(
@@ -198,6 +208,7 @@ export class SettingsPopup extends Popup {
     Popup.fitLabel(this.soundButton);
     Popup.fitLabel(this.musicButton);
     Popup.fitLabel(this.effectsButton);
+    Popup.fitLabel(this.alwaysFireButton);
     Popup.fitLabel(this.exportButton);
     Popup.fitLabel(this.importButton);
     Popup.fitLabel(this.resetButton);
