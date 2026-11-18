@@ -38,3 +38,34 @@ export function isPointerEvent(
 ): event is PointerEvent {
   return (event as any).clientX !== undefined;
 }
+
+/* eslint-disable @typescript-eslint/naming-convention, no-magic-numbers -- KeyboardEvent.code names */
+const KEY_DIRECTIONS: Record<string, readonly [number, number]> = {
+  ArrowLeft: [-1, 0],
+  KeyA: [-1, 0],
+  ArrowRight: [1, 0],
+  KeyD: [1, 0],
+  ArrowUp: [0, -1],
+  KeyW: [0, -1],
+  ArrowDown: [0, 1],
+  KeyS: [0, 1],
+};
+/* eslint-enable @typescript-eslint/naming-convention, no-magic-numbers */
+
+export function isMovementKey(code: string): boolean {
+  return code in KEY_DIRECTIONS;
+}
+
+/** Sum of the held movement keys (KeyboardEvent.code), each axis -1, 0 or 1. */
+export function getKeyboardDirection(pressed: ReadonlySet<string>): { x: number; y: number } {
+  let x = 0;
+  let y = 0;
+  for (const code of pressed) {
+    const direction = KEY_DIRECTIONS[code] as readonly [number, number] | undefined;
+    if (direction) {
+      x += direction[0];
+      y += direction[1];
+    }
+  }
+  return { x: Math.sign(x), y: Math.sign(y) };
+}
