@@ -878,6 +878,24 @@ describe('GameService', () => {
       window.localStorage.removeItem('always-fire');
     });
 
+    it('should fire while space is held during the run and leave keys alone outside of it', () => {
+      const press = (type: string): KeyboardEvent => {
+        const event = new KeyboardEvent(type, { code: 'Space', cancelable: true });
+        window.dispatchEvent(event);
+        return event;
+      };
+
+      expect(press('keydown').defaultPrevented).toBeTrue();
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeTrue();
+      press('keyup');
+      expect(shipInstance.autoFire).toBeFalse();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).started.set(false);
+      expect(press('keydown').defaultPrevented).toBeFalse();
+    });
+
     it('should call applyScreenShake when ship energy decreases', () => {
       shipInstance.energy = 8;
       tickerCallback({ deltaMS: 16 });
