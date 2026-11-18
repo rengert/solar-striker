@@ -40,4 +40,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm install
+          npx ng test --watch=false --browsers=ChromeHeadlessCI
           npm run ng -- deploy --no-silent --name="Thomas Renger" --email="info@bolzplatzarena.net"
