@@ -46,10 +46,16 @@ export class PixijsComponent {
     void application
       .init(elementRef)
       .then(() => ngZone.runOutsideAngular(() => pixiGame.init()))
-      .finally(() => {
+      .then(
         // Keep the native splash / inline loader up until the menu is drawn, so the start never shows a black screen.
-        void SplashScreen.hide();
-        document.getElementById('boot-loader')?.remove();
-      });
+        () => document.getElementById('boot-loader')?.remove(),
+        (error: unknown) => {
+          // eslint-disable-next-line no-console
+          console.error(error);
+          // e.g. no WebGL or a failed asset download: tell the player instead of leaving a black screen
+          document.getElementById('boot-loader')?.classList.add('boot-failed');
+        },
+      )
+      .finally(() => void SplashScreen.hide());
   }
 }

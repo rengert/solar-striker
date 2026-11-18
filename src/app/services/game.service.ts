@@ -1,4 +1,4 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { computed, DestroyRef, effect, inject, Injectable, signal } from '@angular/core';
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG, getDifficultyLevel, getStageReward, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
@@ -21,7 +21,7 @@ import { PausePopup } from '../popups/pause-popup';
 import { SettingsPopup } from '../popups/settings-popup';
 import { VictoryPopup } from '../popups/victory-popup';
 import { YouAreDeadPopup } from '../popups/your-are-dead-popup';
-import { handleMouseMove } from '../utils/mouse.util';
+import { clampShipY, getKeyboardDirection, handleMouseMove, isMovementKey } from '../utils/mouse.util';
 import { AchievementService } from './achievement.service';
 import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
@@ -43,6 +43,9 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
+const ALWAYS_FIRE_STORAGE_KEY = 'always-fire';
+// how far ahead of the ship a held key sets the target; the ship then flies there at its own speed
+const KEYBOARD_LEAD_PX = 40;
 
 const COMBO_WINDOW_MS = 3000;
 const MAX_COMBO = 5;
@@ -64,6 +67,19 @@ const BOSS_FLASH_ALPHA = 0.6;
 const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
 const BASE_HIT_FLASH_ALPHA = 0.15;
+
+function readFlag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function isFormElement(target: EventTarget | null): boolean {
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement
+    || target instanceof HTMLSelectElement;
+}
 
 function isShipDestroyer(by: ObjectModelType): boolean {
   return by.type === ObjectType.ship || by.reference?.type === ObjectType.ship;
@@ -112,6 +128,11 @@ export class GameService {
   private stageKills = 0;
   /** Personal best of the current mode, announced once the run passes it; 0 when there is nothing (left) to beat. */
   private recordToBeat = 0;
+  #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
+  /** KeyboardEvent.code of the held movement keys. */
+  private readonly pressedKeys = new Set<string>();
+  private spaceHeld = false;
+  private pointerHeld = false;
   private lastShipEnergy = 0;
   private streakElapsedMs = 0;
   private nextStreakMilestoneMs = STREAK_INTERVAL_MS;
@@ -153,6 +174,7 @@ export class GameService {
 
   private readonly application = inject(ApplicationService);
   private readonly storage = inject(StorageService);
+  private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
     effect(() => {
@@ -302,6 +324,24 @@ export class GameService {
       this.rewardedMeteors.add(meteor);
       this.addCoins(coins);
     });
+  }
+
+  /** Fires all the time during a run, so phone players only have to steer; switchable in the settings. */
+  get alwaysFire(): boolean {
+    return this.#alwaysFire;
+  }
+
+  set alwaysFire(value: boolean) {
+    this.#alwaysFire = value;
+    if (!value) {
+      // switched off mid-run (pause → settings): stop at once instead of firing until the next tap
+      this.ship.instance.autoFire = false;
+    }
+    try {
+      window.localStorage.setItem(ALWAYS_FIRE_STORAGE_KEY, String(value));
+    } catch {
+      // ignore storage errors
+    }
   }
 
   /** True when the run ended because the home base was destroyed rather than the player ship. */
@@ -643,7 +683,7 @@ export class GameService {
     this.ship.spawn();
     this.setupInteractions(this.ship);
     this.gameScreen.onPause = (): void => void this.pause();
-    window.addEventListener('keydown', (event) => event.key === 'Escape' && void this.pause());
+    this.setupKeyboard();
     this.enemy.onEnemyPassed = (enemy): void => {
       if (!this.started()) {
         return;
@@ -660,6 +700,11 @@ export class GameService {
 
       this.updatables.forEach((updatable) => updatable.update(delta, getDifficultyLevel(this.stage())));
       this.updateCombo(delta.deltaMS);
+      this.moveByKeyboard();
+      // set every frame, so a space bar held through the pause fires again right after it
+      if (this.#alwaysFire || this.spaceHeld) {
+        this.ship.instance.autoFire = true;
+      }
 
       // Track damage for screen shake and survival streak
       const currentEnergy = this.ship.instance.energy;
@@ -696,17 +741,71 @@ export class GameService {
     });
   }
 
+  private setupKeyboard(): void {
+    const listeners = new AbortController();
+    this.destroyRef.onDestroy(() => listeners.abort());
+    const { signal: abort } = listeners;
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        void this.pause();
+        return;
+      }
+      // only steal keys from the page while flying, and never from a focused form element
+      if (!this.started() || this.#paused() || isFormElement(event.target)) {
+        return;
+      }
+      if (isMovementKey(event.code)) {
+        this.pressedKeys.add(event.code);
+        event.preventDefault();
+      } else if (event.code === 'Space') {
+        this.spaceHeld = true;
+        event.preventDefault();
+      }
+    }, { signal: abort });
+    window.addEventListener('keyup', (event) => {
+      if (event.code === 'Space') {
+        this.spaceHeld = false;
+        // a held pointer keeps firing
+        this.ship.instance.autoFire = this.pointerHeld;
+      } else if (this.pressedKeys.delete(event.code) && this.pressedKeys.size === 0) {
+        // stop where the ship is instead of drifting to the last lead target
+        this.ship.instance.targetX = this.ship.instance.x;
+        this.ship.instance.targetY = this.ship.instance.y;
+      }
+    }, { signal: abort });
+    // a key released while the window is in the background never fires keyup
+    window.addEventListener('blur', () => {
+      this.pressedKeys.clear();
+      this.spaceHeld = false;
+    }, { signal: abort });
+  }
+
+  private moveByKeyboard(): void {
+    const { x, y } = getKeyboardDirection(this.pressedKeys);
+    if (x === 0 && y === 0) {
+      return;
+    }
+    const ship = this.ship.instance;
+    const { width, height } = this.application.screen;
+    ship.targetX = Math.min(Math.max(ship.x + x * KEYBOARD_LEAD_PX, 0), width);
+    ship.targetY = clampShipY(ship.y + y * KEYBOARD_LEAD_PX, height);
+  }
+
   private setupInteractions(ship: GameShipService): void {
     this.application.stage.eventMode = 'dynamic';
     this.application.stage.hitArea = this.application.screen;
     this.application.stage.on('pointerdown', () => {
+      this.pointerHeld = true;
       if (!this.started() || this.#paused()) {
         return;
       }
 
       ship.instance.autoFire = true;
     });
-    this.application.stage.on('pointerup', () => (ship.instance.autoFire = false));
+    this.application.stage.on('pointerup', () => {
+      this.pointerHeld = false;
+      ship.instance.autoFire = this.spaceHeld;
+    });
     this.application.stage.on('pointermove', (event: FederatedPointerEvent) => {
       if (!this.started() || this.#paused()) {
         return;
