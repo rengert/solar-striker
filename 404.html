@@ -41,11 +41,18 @@
       animation: boot-spin .8s linear infinite;
     }
     @keyframes boot-spin { to { transform: rotate(360deg); } }
+    #boot-loader.boot-failed { cursor: pointer; }
+    #boot-loader.boot-failed::after {
+      content: "Das Spiel konnte nicht starten. Tippen zum Neuladen.\A The game could not start. Tap to reload.";
+      white-space: pre-line; text-align: center; padding: 0 16px;
+      width: auto; height: auto; border: 0; border-radius: 0; animation: none;
+      color: #fff; font: 16px/1.5 system-ui, sans-serif; letter-spacing: 0;
+    }
   </style>
 <style>:root{--fa-family-brands:"Font Awesome 7 Brands";--fa-font-brands:normal 400 1em/1 var(--fa-family-brands)}:root{--fa-font-regular:normal 400 1em/1 var(--fa-family-classic)}:root{--fa-family-classic:"Font Awesome 7 Free";--fa-font-solid:normal 900 1em/1 var(--fa-family-classic);--fa-style-family-classic:var(--fa-family-classic)}@font-face{font-family:DefaultFont;src:url("./media/kenvector_future-SU2HM7BV.ttf")}html,body{padding:0;margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-family:DefaultFont,sans-serif}</style><link rel="stylesheet" href="styles-624UKXMU.css" media="print" data-beasties-media="all"><noscript><link rel="stylesheet" href="styles-624UKXMU.css"></noscript></head>
 <body>
-  <div id="boot-loader" role="status" aria-label="Loading">SOLAR STRIKER</div>
+  <div id="boot-loader" role="status" aria-label="Loading" onclick="if (this.classList.contains('boot-failed')) location.reload()">SOLAR STRIKER</div>
   <app-root></app-root>
   <noscript style="color:#fff;font-family:sans-serif;text-align:center;display:block;padding:2em">Solar Striker braucht JavaScript. Bitte aktiviere es in deinem Browser.</noscript>
-<link rel="modulepreload" href="chunk-DMAWJU-B.js"><link rel="modulepreload" href="chunk-CHQIWXVB.js"><link rel="modulepreload" href="chunk-B-w-QiBT.js"><link rel="modulepreload" href="chunk-CXD44w-C.js"><link rel="modulepreload" href="chunk-I4qyQfD8.js"><link rel="modulepreload" href="chunk-xuSKOX3u.js"><link rel="modulepreload" href="chunk-CQWhq3W0.js"><script src="polyfills-PJGX3BAA.js" type="module"></script><script src="main-UPT6KCKH.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
+<link rel="modulepreload" href="chunk-DMAWJU-B.js"><link rel="modulepreload" href="chunk-CHQIWXVB.js"><link rel="modulepreload" href="chunk-B-w-QiBT.js"><link rel="modulepreload" href="chunk-CXD44w-C.js"><link rel="modulepreload" href="chunk-I4qyQfD8.js"><link rel="modulepreload" href="chunk-xuSKOX3u.js"><link rel="modulepreload" href="chunk-CQWhq3W0.js"><script src="polyfills-PJGX3BAA.js" type="module"></script><script src="main-T7XFI6AP.js" type="module"></script><script>document.querySelectorAll('link[data-beasties-media]').forEach(function(l){l.media=l.getAttribute('data-beasties-media');l.removeAttribute('data-beasties-media')})</script></body>
 </html>
