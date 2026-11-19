@@ -63,6 +63,9 @@ const COMBO_POPUP_SCALE_STEP = 0.15;
 const COMBO_CALLOUT_FROM = 3;
 const BOSS_SHAKE_AMPLITUDE = 14;
 const LARGE_ENEMY_SHAKE_AMPLITUDE = 4;
+// short slow motion finisher when the player kills a boss (real time ms / game speed)
+const BOSS_SLOW_MOTION_MS = 900;
+const BOSS_SLOW_MOTION_SPEED = 0.25;
 const BOSS_FLASH_COLOR = 0xffffff;
 const GOLDEN_TEXT_COLOR = 0xffd700;
 const GOLDEN_TEXT_SCALE = 1.5;
@@ -129,6 +132,7 @@ export class GameService {
   private comboRemainingMs = 0;
 
   private stageKills = 0;
+  private slowMotionTimer?: ReturnType<typeof setTimeout>;
   private resuming = false;
   #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
   /** KeyboardEvent.code of the held movement keys. */
@@ -258,6 +262,7 @@ export class GameService {
         if (isBoss) {
           this.gameScreen.applyScreenShake(BOSS_SHAKE_AMPLITUDE);
           this.gameScreen.flashScreen(BOSS_FLASH_COLOR, BOSS_FLASH_ALPHA);
+          this.playBossSlowMotion();
         } else if (explosionCount > 1) {
           this.gameScreen.applyScreenShake(LARGE_ENEMY_SHAKE_AMPLITUDE);
         }
@@ -351,6 +356,13 @@ export class GameService {
       Math.floor((normalizedStage - 1) / STAGE_KILL_GROWTH_INTERVAL) * STAGE_KILL_GROWTH_AMOUNT;
 
     return Math.min(STAGE_KILL_CAP, scaledKills);
+  }
+
+  /** Slows the whole game down for a moment; the timer runs in real time, so it also ends during a pause. */
+  private playBossSlowMotion(): void {
+    clearTimeout(this.slowMotionTimer);
+    this.application.ticker.speed = BOSS_SLOW_MOTION_SPEED;
+    this.slowMotionTimer = setTimeout(() => (this.application.ticker.speed = 1), BOSS_SLOW_MOTION_MS);
   }
 
   private increaseCombo(): void {
