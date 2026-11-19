@@ -43,6 +43,7 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
+const RESUME_COUNTDOWN_FROM = 3;
 const ALWAYS_FIRE_STORAGE_KEY = 'always-fire';
 // how far ahead of the ship a held key sets the target; the ship then flies there at its own speed
 const KEYBOARD_LEAD_PX = 40;
@@ -126,6 +127,7 @@ export class GameService {
   private comboRemainingMs = 0;
 
   private stageKills = 0;
+  private resuming = false;
   #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
   /** KeyboardEvent.code of the held movement keys. */
   private readonly pressedKeys = new Set<string>();
@@ -593,8 +595,28 @@ export class GameService {
   }
 
   async resume(requester: AppScreen): Promise<void> {
+    // a double tap on "resume" must not start a second countdown
+    if (this.resuming) {
+      return;
+    }
+    this.resuming = true;
+    try {
+      await this.resumeAfterCountdown(requester);
+    } finally {
+      this.resuming = false;
+    }
+  }
+
+  private async resumeAfterCountdown(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     this.currentPopup = undefined;
+    // the game stays paused during the countdown, so the player can get a grip before enemies move again
+    await this.gameScreen.showCountdown(RESUME_COUNTDOWN_FROM);
+    if (document.hidden) {
+      // the app went to the background during the countdown: stay paused
+      await this.presentPopup(PausePopup);
+      return;
+    }
     this.#paused.set(false);
   }
 
