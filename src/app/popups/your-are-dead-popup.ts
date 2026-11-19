@@ -1,9 +1,9 @@
 import { GameService } from '../services/game.service';
 import { TranslationService } from '../services/translation.service';
 import { Popup } from './popup';
-import { createRunResult } from './run-result';
+import { createRunResult, handleShare } from './run-result';
 
-const RESULT_POPUP_HEIGHT = 360;
+const RESULT_POPUP_HEIGHT = 400;
 
 export class YouAreDeadPopup extends Popup {
   constructor(gameService: GameService, translation: TranslationService) {
@@ -17,7 +17,9 @@ export class YouAreDeadPopup extends Popup {
     result.y = -2;
     this.addToContent(result);
 
-    // eslint-disable-next-line no-magic-numbers
-    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 4.5);
+    /* eslint-disable no-magic-numbers */
+    const share = this.addButton(translation.getTranslation('run.share'), () => handleShare(share, gameService.lastRun, translation), 4.2);
+    this.addButton(translation.getTranslation('common.close'), () => gameService.endGame(this), 5.2);
+    /* eslint-enable no-magic-numbers */
   }
 }

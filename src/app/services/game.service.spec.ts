@@ -96,6 +96,7 @@ describe('GameService', () => {
             flashScreen: jasmine.createSpy('flashScreen'),
             showFloatingText: jasmine.createSpy('showFloatingText'),
             showRadioMessages: jasmine.createSpy('showRadioMessages'),
+            showAchievementBanner: jasmine.createSpy('showAchievementBanner'),
             clearRadioMessages: jasmine.createSpy('clearRadioMessages'),
             update: jasmine.createSpy('update'),
           },
@@ -126,7 +127,7 @@ describe('GameService', () => {
             applyToShip: jasmine.createSpy('applyToShip'),
           },
         },
-        { provide: TranslationService, useValue: {} },
+        { provide: TranslationService, useValue: { getTranslation: (key: string): string => key } },
         {
           provide: AchievementService,
           useValue: {
@@ -331,6 +332,39 @@ describe('GameService', () => {
       TestBed.flushEffects();
 
       expect(gameScreenMock.coins).toBe(storedCoinsFromStorage);
+    });
+  });
+
+  describe('in-run record banner', () => {
+    it('should cheer once as soon as the run beats the best campaign run', async () => {
+      const storage = TestBed.inject(StorageService) as unknown as { getHighscore: jasmine.Spy };
+      storage.getHighscore.and.resolveTo([{ id: 'old', date: '2026-11-01T00:00:00Z', kills: 2, level: 1, mode: 'campaign' }]);
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showAchievementBanner: jasmine.Spy };
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      const kill = (): void => objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      await service.start({} as AppScreen);
+      TestBed.tick();
+
+      kill();
+      kill();
+      TestBed.tick();
+      expect(gameScreen.showAchievementBanner).not.toHaveBeenCalled();
+
+      kill();
+      TestBed.tick();
+      kill();
+      TestBed.tick();
+      expect(gameScreen.showAchievementBanner).toHaveBeenCalledOnceWith('🏆', 'run.newRecord', 'run.oldRecord');
+    });
+
+    it('should not cheer on the very first run', async () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showAchievementBanner: jasmine.Spy };
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      await service.start({} as AppScreen);
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      TestBed.tick();
+
+      expect(gameScreen.showAchievementBanner).not.toHaveBeenCalled();
     });
   });
 
@@ -917,6 +951,33 @@ describe('GameService', () => {
       const tickerMock = TestBed.inject(ApplicationService).ticker as unknown as { add: jasmine.Spy };
       tickerCallback = tickerMock.add.calls.mostRecent().args[0] as typeof tickerCallback;
       gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
+    });
+
+    it('should call out a multikill for kills in quick succession and pay a bonus coin per chained kill', () => {
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      const kill = (): void => objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+
+      kill();
+      kill();
+      expect(gameScreenMock.showFloatingText.calls.mostRecent().args[0]).toBe('multikill.double');
+      expect(service.sessionCoins()).toBe(1);
+
+      // eslint-disable-next-line no-magic-numbers
+      tickerCallback({ deltaMS: 500 });
+      kill();
+      expect(gameScreenMock.showFloatingText.calls.mostRecent().args[0]).not.toContain('multikill');
+      expect(service.sessionCoins()).toBe(1);
+    });
+
+    it('should cap the multikill bonus at 5 coins per chain', () => {
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      // eslint-disable-next-line no-magic-numbers
+      for (let i = 0; i < 30; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      // 30 kills also pay 3 regular coins (every 10th kill, times the combo of x5)
+      // eslint-disable-next-line no-magic-numbers
+      expect(service.sessionCoins()).toBe(5 + 3 * 5);
     });
 
     it('should fire every frame with always-fire on, remember it, and stop when it is switched off', () => {

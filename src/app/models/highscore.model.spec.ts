@@ -1,5 +1,5 @@
 /* eslint-disable no-magic-numbers */
-import { HighscoreEntry, calculateRunResult, isEndlessEntry } from './highscore.model';
+import { HighscoreEntry, calculateRunResult, getPersonalBest, isEndlessEntry } from './highscore.model';
 
 function run(kills: number, date = '2026-10-31T12:00:00.000Z', level = 1): HighscoreEntry {
   return { id: `${kills}-${date}-${level}`, date, kills, level };
@@ -79,5 +79,18 @@ describe('calculateRunResult', () => {
 
   it('does not count a zero-kill first run as record', () => {
     expect(calculateRunResult([], run(0), now).isRecord).toBeFalse();
+  });
+});
+
+describe('getPersonalBest', () => {
+  const createRun = (kills: number, level: number, mode?: HighscoreEntry['mode'], week?: number): HighscoreEntry =>
+    ({ id: `${kills}-${level}`, date: '2026-11-01T00:00:00Z', kills, level, mode, week });
+
+  it('uses kills for the campaign and the level for endless and weekly runs of the same week', () => {
+    const runs = [createRun(80, 9, 'campaign'), createRun(120, 4), createRun(30, 130, 'endless'), createRun(10, 14, 'weekly', 7), createRun(99, 30, 'weekly', 6)];
+    expect(getPersonalBest(runs, 'campaign')).toBe(120);
+    expect(getPersonalBest(runs, 'endless')).toBe(130);
+    expect(getPersonalBest(runs, 'weekly', 7)).toBe(14);
+    expect(getPersonalBest([], 'campaign')).toBe(0);
   });
 });
