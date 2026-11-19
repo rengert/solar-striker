@@ -64,6 +64,8 @@ const MAX_COMBO = 5;
 const COMBO_START = 2;
 
 const STAGE_BONUS_COINS = 10;
+/** Extra stage bonus when the ship took no hit during the whole stage. */
+const FLAWLESS_BONUS_COINS = 15;
 const STREAK_INTERVAL_MS = 15_000;
 const STREAK_BONUS_COINS = 3;
 const STAGE_KILL_BASE = 24;
@@ -155,6 +157,7 @@ export class GameService {
   private multikill = 0;
 
   private stageKills = 0;
+  private stageDamaged = false;
   /** Personal best of the current mode, announced once the run passes it; 0 when there is nothing (left) to beat. */
   private recordToBeat = 0;
   private slowMotionTimer?: ReturnType<typeof setTimeout>;
@@ -489,6 +492,16 @@ export class GameService {
       if (this.started()) {
         this.sound.play('stageClear');
         this.addBonusCoins(getStageReward(STAGE_BONUS_COINS, currentStage));
+        if (!this.stageDamaged) {
+          const bonus = getStageReward(FLAWLESS_BONUS_COINS, currentStage);
+          this.addBonusCoins(bonus);
+          this.gameScreen.showAchievementBanner(
+            '✨',
+            this.translation.getTranslation('stage.flawless'),
+            this.translation.getTranslation('daily.reward', { reward: bonus }),
+          );
+        }
+        this.stageDamaged = false;
         this.gameScreen.showStageAnnouncement(nextStage);
       }
       // weekly runs skip the story, it would spoil chapters the player has not reached
@@ -651,6 +664,7 @@ export class GameService {
     this.endless.set(endless);
     this.stage.set(endless ? startStage : Math.min(MAX_STAGE, Math.max(1, Math.floor(startStage))));
     this.stageKills = 0;
+    this.stageDamaged = false;
     this.enemy.bossFightActive = false;
     this.bossFight.set(false);
     this.lastShipEnergy = this.ship.instance.energy;
@@ -814,6 +828,7 @@ export class GameService {
       const currentEnergy = this.ship.instance.energy;
       if (currentEnergy < this.lastShipEnergy) {
         // Player took damage: shake screen and reset streak
+        this.stageDamaged = true;
         this.streakElapsedMs = 0;
         this.nextStreakMilestoneMs = STREAK_INTERVAL_MS;
         this.gameScreen.applyScreenShake();
