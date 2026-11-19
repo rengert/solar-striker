@@ -75,3 +75,9 @@ export function calculateRunResult(allRuns: HighscoreEntry[], entry: HighscoreEn
     killsToNextRank: nextTarget === undefined ? undefined : nextTarget - entry.kills + 1,
   };
 }
+
+/** Score to beat for a new record in this mode (and week): kills for the campaign, the level otherwise; 0 without earlier runs. */
+export function getPersonalBest(allRuns: HighscoreEntry[], mode: GameMode, week?: number): number {
+  const history = allRuns.filter((run) => getEntryMode(run) === mode && run.week === week);
+  return Math.max(0, ...history.map((run) => (mode === 'campaign' ? run.kills : run.level)));
+}
