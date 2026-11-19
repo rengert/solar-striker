@@ -527,12 +527,12 @@ describe('GameService', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (service as any).setup();
       const ticker = TestBed.inject(ApplicationService).ticker as unknown as { add: jasmine.Spy };
-      const tick = ticker.add.calls.mostRecent().args[0] as (delta: { deltaMS: number }) => void;
+      const runFrame = ticker.add.calls.mostRecent().args[0] as (delta: { deltaMS: number }) => void;
       const ship = TestBed.inject(GameShipService).instance as { energy: number };
       ship.energy = 10;
-      tick({ deltaMS: 16 });
+      runFrame({ deltaMS: 16 });
       ship.energy = 9;
-      tick({ deltaMS: 16 });
+      runFrame({ deltaMS: 16 });
     }
 
     function triggerStageBoss(stage: number, by: ObjectModelType): void {
