@@ -170,6 +170,8 @@ describe('GameService', () => {
             setCampaignProgress: jasmine.createSpy('setCampaignProgress').and.returnValue(Promise.resolve()),
             getDailyChallenges: jasmine.createSpy('getDailyChallenges').and.returnValue(Promise.resolve(null)),
             setDailyChallenges: jasmine.createSpy('setDailyChallenges').and.returnValue(Promise.resolve()),
+            getLoginStreak: jasmine.createSpy('getLoginStreak').and.returnValue(Promise.resolve(null)),
+            setLoginStreak: jasmine.createSpy('setLoginStreak').and.returnValue(Promise.resolve()),
           },
         },
       ],
