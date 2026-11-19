@@ -43,6 +43,10 @@ const LOOP_ANGULAR_SPEED = (Math.PI * 2) / LOOP_DURATION_MS;
 const LOOP_MIN_START_Y = LOOP_RADIUS * 2;
 const ENEMY_XSPEED = 0.05;
 const LARGE_ENEMY_SPAWN_CHANCE = 0.15;
+/** Rare golden enemy among the regular small ones; worth GOLDEN_ENEMY_COINS when shot down. */
+export const GOLDEN_ENEMY_CHANCE = 0.03;
+export const GOLDEN_ENEMY_COINS = 15;
+const GOLDEN_TINT = 0xffd700;
 const LARGE_ENEMY_SCALE = 2;
 const LARGE_ENEMY_ENERGY_MULTIPLIER = 3;
 const LARGE_ENEMY_SPEED_MULTIPLIER = 1.5;
@@ -278,12 +282,17 @@ export class GameEnemyService extends UpdatableService {
   private readonly movementStates = new WeakMap<ObjectModelType, EnemyMovementState>();
   // separate from movementStates because those are reset when an enemy is recycled
   private readonly enemyKinds = new WeakMap<ObjectModelType, EnemyKind>();
+  private readonly goldenEnemies = new WeakSet<ObjectModelType>();
   private glowTexture?: Texture;
   /** Called for every enemy that flew past the bottom edge, right before it re-enters at the top. */
   onEnemyPassed?: (enemy: ObjectModelType) => void;
 
   getKind(enemy: ObjectModelType): EnemyKind | undefined {
     return this.enemyKinds.get(enemy);
+  }
+
+  isGolden(enemy: ObjectModelType): boolean {
+    return this.goldenEnemies.has(enemy);
   }
 
   async init(): Promise<void> {
@@ -401,6 +410,11 @@ export class GameEnemyService extends UpdatableService {
     const usableWidth = Math.max(0, this.application.screen.width - enemy.width);
     enemy.x = Math.floor(Math.random() * usableWidth) + enemyHalfWidth;
     enemy.y = 0;
+    if (!isLarge && Math.random() < GOLDEN_ENEMY_CHANCE) {
+      enemy.tint = GOLDEN_TINT;
+      this.addGlow(enemy, GOLDEN_TINT);
+      this.goldenEnemies.add(enemy);
+    }
     this.decorateForSeason(enemy);
     enemy.enableEnergyDisplay();
     this.object.add(enemy);

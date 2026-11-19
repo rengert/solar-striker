@@ -1,11 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8">
-  <title>SolarStriker</title>
+  <title>Solar Striker – Retro-Weltraum-Shooter im Browser</title>
+  <meta name="description" content="Solar Striker ist ein kostenloser Retro-Weltraum-Shooter für zwischendurch. Direkt im Browser spielen, am Handy oder am PC, ohne Anmeldung.">
+  <link rel="canonical" href="https://rengert.github.io/solar-striker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Solar Striker">
+  <meta property="og:title" content="Solar Striker – Retro-Weltraum-Shooter im Browser">
+  <meta property="og:description" content="Kostenloser Arcade-Shooter für zwischendurch. Direkt im Browser spielen, ohne Anmeldung.">
+  <meta property="og:url" content="https://rengert.github.io/solar-striker/">
+  <meta property="og:image" content="https://rengert.github.io/solar-striker/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="de_DE">
+  <meta name="twitter:card" content="summary_large_image">
+  <noscript><style>#boot-loader { display: none !important; }</style></noscript>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SolarStriker">
   <!-- Inline so it paints before the game bundle is downloaded and parsed. -->
   <style>
     html, body { background: #000; }
@@ -21,10 +41,18 @@
       animation: boot-spin .8s linear infinite;
     }
     @keyframes boot-spin { to { transform: rotate(360deg); } }
+    #boot-loader.boot-failed { cursor: pointer; }
+    #boot-loader.boot-failed::after {
+      content: "Das Spiel konnte nicht starten. Tippen zum Neuladen.\A The game could not start. Tap to reload.";
+      white-space: pre-line; text-align: center; padding: 0 16px;
+      width: auto; height: auto; border: 0; border-radius: 0; animation: none;
+      color: #fff; font: 16px/1.5 system-ui, sans-serif; letter-spacing: 0;
+    }
   </style>
 </head>
 <body>
-  <div id="boot-loader" role="status" aria-label="Loading">SOLAR STRIKER</div>
+  <div id="boot-loader" role="status" aria-label="Loading" onclick="if (this.classList.contains('boot-failed')) location.reload()">SOLAR STRIKER</div>
   <app-root></app-root>
+  <noscript style="color:#fff;font-family:sans-serif;text-align:center;display:block;padding:2em">Solar Striker braucht JavaScript. Bitte aktiviere es in deinem Browser.</noscript>
 </body>
 </html>

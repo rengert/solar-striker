@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { ObjectModelType, ObjectService } from './object.service';
 import { ApplicationService } from './application.service';
@@ -7,7 +7,7 @@ import { SoundService } from './sound.service';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { AppScreen } from '../models/pixijs/app-screen';
 import { GameCollectableService } from './game-collectable.service';
-import { EnemyKind, GameEnemyService } from './game-enemy.service';
+import { EnemyKind, GameEnemyService, GOLDEN_ENEMY_COINS } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
@@ -74,7 +74,7 @@ describe('GameService', () => {
           },
         },
         { provide: GameCollectableService, useValue: { update: jasmine.createSpy('update') } },
-        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss'), getKind: (): undefined => undefined } },
+        { provide: GameEnemyService, useValue: { update: jasmine.createSpy('update'), bossFightActive: false, spawnStageBoss: jasmine.createSpy('spawnStageBoss'), getKind: (): undefined => undefined, isGolden: (): boolean => false } },
         { provide: GameLandscapeService, useValue: { update: jasmine.createSpy('update'), setStage: jasmine.createSpy('setStage') } },
         {
           provide: GameBaseService,
@@ -90,6 +90,7 @@ describe('GameService', () => {
             pauseButtonVisible: false,
             onPause: undefined,
             showStageAnnouncement: jasmine.createSpy('showStageAnnouncement'),
+            showCountdown: jasmine.createSpy('showCountdown').and.resolveTo(),
             showBossWarning: jasmine.createSpy('showBossWarning'),
             applyScreenShake: jasmine.createSpy('applyScreenShake'),
             flashScreen: jasmine.createSpy('flashScreen'),
@@ -168,6 +169,8 @@ describe('GameService', () => {
             setCampaignProgress: jasmine.createSpy('setCampaignProgress').and.returnValue(Promise.resolve()),
             getDailyChallenges: jasmine.createSpy('getDailyChallenges').and.returnValue(Promise.resolve(null)),
             setDailyChallenges: jasmine.createSpy('setDailyChallenges').and.returnValue(Promise.resolve()),
+            getLoginStreak: jasmine.createSpy('getLoginStreak').and.returnValue(Promise.resolve(null)),
+            setLoginStreak: jasmine.createSpy('setLoginStreak').and.returnValue(Promise.resolve()),
           },
         },
       ],
@@ -188,6 +191,15 @@ describe('GameService', () => {
 
       expect(service.kills()).toBe(GAME_CONFIG.killsPerCoin);
       expect(service.sessionCoins()).toBe(COMBO_REWARD_AT_MAX);
+    });
+
+    it('should award the golden bonus without combo multiplier when a golden enemy is shot down', () => {
+      spyOn(TestBed.inject(GameEnemyService), 'isGolden').and.returnValue(true);
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+
+      expect(service.sessionCoins()).toBe(GOLDEN_ENEMY_COINS);
     });
 
     it('should award bonus coins when a boss enemy is killed by the player', () => {
@@ -225,6 +237,19 @@ describe('GameService', () => {
       expect(gameScreen.applyScreenShake).toHaveBeenCalled();
       expect(gameScreen.flashScreen).toHaveBeenCalled();
     });
+
+    it('should play a short slow motion when the player kills a boss', fakeAsync(() => {
+      const ticker = TestBed.inject(ApplicationService).ticker as unknown as { speed: number };
+      ticker.speed = 1;
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+      expect(ticker.speed).toBeLessThan(1);
+
+      // eslint-disable-next-line no-magic-numbers
+      tick(1000);
+      expect(ticker.speed).toBe(1);
+    }));
 
     it('should only shake the screen when a large enemy is killed by the player', () => {
       const gameScreen = TestBed.inject(GameScreenService) as unknown as { applyScreenShake: jasmine.Spy; flashScreen: jasmine.Spy };
@@ -377,6 +402,33 @@ describe('GameService', () => {
       await service.start({} as AppScreen);
       await service.pause();
       await service.resume({} as AppScreen);
+      expect(service.paused()).toBe(false);
+    });
+
+    it('should stay paused until the resume countdown is over', async () => {
+      let finishCountdown!: () => void;
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showCountdown: jasmine.Spy };
+      gameScreen.showCountdown.and.returnValue(new Promise<void>((resolve) => (finishCountdown = resolve)));
+      await service.start({} as AppScreen);
+      await service.pause();
+
+      const resumed = service.resume({} as AppScreen);
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(service.paused()).toBe(true);
+
+      finishCountdown();
+      await resumed;
+      expect(service.paused()).toBe(false);
+    });
+
+    it('should start only one countdown on a double tap on resume', async () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showCountdown: jasmine.Spy };
+      await service.start({} as AppScreen);
+      await service.pause();
+
+      await Promise.all([service.resume({} as AppScreen), service.resume({} as AppScreen)]);
+
+      expect(gameScreen.showCountdown).toHaveBeenCalledTimes(1);
       expect(service.paused()).toBe(false);
     });
 
@@ -865,6 +917,46 @@ describe('GameService', () => {
       const tickerMock = TestBed.inject(ApplicationService).ticker as unknown as { add: jasmine.Spy };
       tickerCallback = tickerMock.add.calls.mostRecent().args[0] as typeof tickerCallback;
       gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
+    });
+
+    it('should fire every frame with always-fire on, remember it, and stop when it is switched off', () => {
+      service.alwaysFire = true;
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeTrue();
+      expect(window.localStorage.getItem('always-fire')).toBe('true');
+
+      service.alwaysFire = false;
+      expect(shipInstance.autoFire).toBeFalse();
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeFalse();
+      window.localStorage.removeItem('always-fire');
+    });
+
+    it('should not fire with always-fire on while paused', async () => {
+      service.alwaysFire = true;
+      await service.pause();
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeFalse();
+      service.alwaysFire = false;
+      window.localStorage.removeItem('always-fire');
+    });
+
+    it('should fire while space is held during the run and leave keys alone outside of it', () => {
+      const press = (type: string): KeyboardEvent => {
+        const event = new KeyboardEvent(type, { code: 'Space', cancelable: true });
+        window.dispatchEvent(event);
+        return event;
+      };
+
+      expect(press('keydown').defaultPrevented).toBeTrue();
+      tickerCallback({ deltaMS: 16 });
+      expect(shipInstance.autoFire).toBeTrue();
+      press('keyup');
+      expect(shipInstance.autoFire).toBeFalse();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).started.set(false);
+      expect(press('keydown').defaultPrevented).toBeFalse();
     });
 
     it('should call applyScreenShake when ship energy decreases', () => {

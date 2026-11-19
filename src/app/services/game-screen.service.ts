@@ -51,6 +51,9 @@ const ACHIEVEMENT_BANNER_SLIDE_DURATION = 0.4;
 const ACHIEVEMENT_BANNER_FADE_DURATION = 0.3;
 const ACHIEVEMENT_BANNER_SUBTITLE_SPACER = 4;
 // Stage announcement constants
+const COUNTDOWN_FONT_SIZE = 64;
+const COUNTDOWN_STEP_S = 0.5;
+const COUNTDOWN_START_SCALE = 1.8;
 const STAGE_ANNOUNCEMENT_FONT_SIZE = 30;
 const STAGE_ANNOUNCEMENT_STROKE_WIDTH = 4;
 const STAGE_ANNOUNCEMENT_DISPLAY_MS = 2000;
@@ -471,6 +474,34 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
         },
       });
     }, BOSS_WARNING_DISPLAY_MS);
+  }
+
+  /** Counts down from `from` to 1 in the middle of the screen; resolves when the countdown is over. */
+  async showCountdown(from: number): Promise<void> {
+    const text = new Text({
+      text: '',
+      style: new TextStyle({
+        fontFamily: 'Arial',
+        fontSize: COUNTDOWN_FONT_SIZE,
+        fontWeight: 'bold',
+        fill: STAGE_ANNOUNCEMENT_FILL_COLOR,
+        stroke: { color: STAGE_ANNOUNCEMENT_STROKE_COLOR, width: STAGE_ANNOUNCEMENT_STROKE_WIDTH },
+      }),
+    });
+    // eslint-disable-next-line no-magic-numbers
+    text.anchor.set(0.5);
+    text.x = this.application.screen.width / SCREEN_CENTER_DIVIDER;
+    text.y = this.application.screen.height / SCREEN_CENTER_DIVIDER;
+    this.addToStage(text);
+    for (let value = from; value > 0; value--) {
+      text.text = String(value);
+      text.alpha = 1;
+      text.scale.set(COUNTDOWN_START_SCALE);
+      gsap.to(text, { alpha: 0, duration: COUNTDOWN_STEP_S, ease: 'power2.in' });
+      await gsap.to(text.scale, { x: 1, y: 1, duration: COUNTDOWN_STEP_S, ease: 'power2.out' });
+    }
+    text.parent?.removeChild(text);
+    text.destroy();
   }
 
   /** Displays a golden "★ STAGE X ★" announcement banner on screen. */
