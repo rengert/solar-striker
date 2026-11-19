@@ -27,7 +27,7 @@ import { ApplicationService } from './application.service';
 import { DailyChallengeService } from './daily-challenge.service';
 import { BASE_MAX_ENERGY, GameBaseService } from './game-base.service';
 import { GameCollectableService } from './game-collectable.service';
-import { EnemyKind, GameEnemyService, LATE_KINDS_FROM_STAGE } from './game-enemy.service';
+import { EnemyKind, GameEnemyService, GOLDEN_ENEMY_COINS, LATE_KINDS_FROM_STAGE } from './game-enemy.service';
 import { GameLandscapeService } from './game-landscape.service';
 import { GameMeteorService } from './game-meteor.service';
 import { getComboColor, GameScreenService } from './game-screen.service';
@@ -43,6 +43,7 @@ import { UpdatableService } from './updatable.service';
 
 const METEOR_COIN_ENERGY_STEP = 20;
 const VISIBILITY_HIDDEN_DEBOUNCE_MS = 200;
+const RESUME_COUNTDOWN_FROM = 3;
 const ALWAYS_FIRE_STORAGE_KEY = 'always-fire';
 // how far ahead of the ship a held key sets the target; the ship then flies there at its own speed
 const KEYBOARD_LEAD_PX = 40;
@@ -65,6 +66,8 @@ const COMBO_CALLOUT_FROM = 3;
 const BOSS_SHAKE_AMPLITUDE = 14;
 const LARGE_ENEMY_SHAKE_AMPLITUDE = 4;
 const BOSS_FLASH_COLOR = 0xffffff;
+const GOLDEN_TEXT_COLOR = 0xffd700;
+const GOLDEN_TEXT_SCALE = 1.5;
 const BOSS_FLASH_ALPHA = 0.6;
 const DAMAGE_FLASH_COLOR = 0xff2222;
 const DAMAGE_FLASH_ALPHA = 0.25;
@@ -129,6 +132,7 @@ export class GameService {
 
   private stageKills = 0;
   private stageDamaged = false;
+  private resuming = false;
   #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
   /** KeyboardEvent.code of the held movement keys. */
   private readonly pressedKeys = new Set<string>();
@@ -247,6 +251,11 @@ export class GameService {
         );
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.addCoins(1);
+        }
+        if (this.enemy.isGolden(destroyedEnemy)) {
+          this.addBonusCoins(GOLDEN_ENEMY_COINS);
+          this.gameScreen.showFloatingText(`★ +${GOLDEN_ENEMY_COINS}`, destroyedEnemy.x, destroyedEnemy.y, GOLDEN_TEXT_COLOR, GOLDEN_TEXT_SCALE);
+          this.sound.play('powerUp');
         }
         const { isBoss, explosionCount } = destroyedEnemy as AnimatedGameSprite;
         if (isBoss) {
@@ -607,8 +616,28 @@ export class GameService {
   }
 
   async resume(requester: AppScreen): Promise<void> {
+    // a double tap on "resume" must not start a second countdown
+    if (this.resuming) {
+      return;
+    }
+    this.resuming = true;
+    try {
+      await this.resumeAfterCountdown(requester);
+    } finally {
+      this.resuming = false;
+    }
+  }
+
+  private async resumeAfterCountdown(requester: AppScreen): Promise<void> {
     await this.hideAndRemoveScreen(requester);
     this.currentPopup = undefined;
+    // the game stays paused during the countdown, so the player can get a grip before enemies move again
+    await this.gameScreen.showCountdown(RESUME_COUNTDOWN_FROM);
+    if (document.hidden) {
+      // the app went to the background during the countdown: stay paused
+      await this.presentPopup(PausePopup);
+      return;
+    }
     this.#paused.set(false);
   }
 
