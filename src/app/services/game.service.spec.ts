@@ -335,6 +335,39 @@ describe('GameService', () => {
     });
   });
 
+  describe('in-run record banner', () => {
+    it('should cheer once as soon as the run beats the best campaign run', async () => {
+      const storage = TestBed.inject(StorageService) as unknown as { getHighscore: jasmine.Spy };
+      storage.getHighscore.and.resolveTo([{ id: 'old', date: '2026-11-01T00:00:00Z', kills: 2, level: 1, mode: 'campaign' }]);
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showAchievementBanner: jasmine.Spy };
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      const kill = (): void => objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      await service.start({} as AppScreen);
+      TestBed.tick();
+
+      kill();
+      kill();
+      TestBed.tick();
+      expect(gameScreen.showAchievementBanner).not.toHaveBeenCalled();
+
+      kill();
+      TestBed.tick();
+      kill();
+      TestBed.tick();
+      expect(gameScreen.showAchievementBanner).toHaveBeenCalledOnceWith('🏆', 'run.newRecord', 'run.oldRecord');
+    });
+
+    it('should not cheer on the very first run', async () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showAchievementBanner: jasmine.Spy };
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      await service.start({} as AppScreen);
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      TestBed.tick();
+
+      expect(gameScreen.showAchievementBanner).not.toHaveBeenCalled();
+    });
+  });
+
   describe('hangar purchases', () => {
     const STORED_COINS = 100;
     const UPGRADE_COST = 30;

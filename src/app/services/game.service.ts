@@ -2,7 +2,7 @@ import { computed, DestroyRef, effect, inject, Injectable, signal } from '@angul
 import { FederatedPointerEvent } from 'pixi.js';
 import { GAME_CONFIG, getDifficultyLevel, getStageReward, MAX_STAGE } from '../game-constants';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
-import { GameMode, HighscoreEntry, calculateRunResult, isEndlessEntry, RunResult } from '../models/highscore.model';
+import { GameMode, HighscoreEntry, calculateRunResult, getPersonalBest, isEndlessEntry, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { claimLoginReward } from '../models/login-reward.model';
@@ -137,6 +137,8 @@ export class GameService {
 
   private stageKills = 0;
   private stageDamaged = false;
+  /** Personal best of the current mode, announced once the run passes it; 0 when there is nothing (left) to beat. */
+  private recordToBeat = 0;
   private slowMotionTimer?: ReturnType<typeof setTimeout>;
   private resuming = false;
   #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
@@ -221,6 +223,22 @@ export class GameService {
       } else {
         this.sound.startMusic(this.endless() ? 'endless' : 'campaign');
       }
+    });
+
+    // cheer as soon as the run beats the personal best, not only on the result screen
+    effect(() => {
+      const score = this.mode === 'campaign' ? this.kills() : this.stage();
+      if (!this.started() || this.recordToBeat === 0 || score <= this.recordToBeat) {
+        return;
+      }
+      const best = this.recordToBeat;
+      this.recordToBeat = 0;
+      this.gameScreen.showAchievementBanner(
+        '🏆',
+        this.translation.getTranslation('run.newRecord'),
+        this.translation.getTranslation(this.mode === 'campaign' ? 'run.oldRecord' : 'run.oldRecordLevel', { best }),
+      );
+      this.sound.play('stageClear');
     });
 
     effect(() => this.landscape.setStage(this.stage()));
@@ -590,6 +608,7 @@ export class GameService {
     this.storedCoins.set(storedCoins);
     this.rewardedMeteors = new WeakSet<ObjectModelType>();
     this.sessionCoins.set(0);
+    this.recordToBeat = getPersonalBest(await this.storage.getHighscore(), mode, weekly?.week);
     this.ship.applyUpgrades();
     this.kills.set(0);
     this.base.repair();
