@@ -5,6 +5,8 @@ import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { GameMode, HighscoreEntry, calculateRunResult, isEndlessEntry, RunResult } from '../models/highscore.model';
 import { AppScreen, AppScreenConstructor } from '../models/pixijs/app-screen';
 import { ObjectType } from '../models/pixijs/object-type.enum';
+import { claimLoginReward } from '../models/login-reward.model';
+import { getTodayDateKey } from '../models/daily-challenge.model';
 import { PlayerShipClass } from '../models/player-ship-class.model';
 import { ShipUpgradeType } from '../models/ship-upgrade.model';
 import { getBossDebriefing, getStageBriefing } from '../models/story.model';
@@ -501,6 +503,7 @@ export class GameService {
       this.addBonusCoins(challenge.reward);
     };
 
+    await this.claimLoginReward();
     this.setup();
 
     this.application.renderer.on('resize', (width: number, height: number) =>
@@ -523,6 +526,22 @@ export class GameService {
     });
 
     await this.presentPopup(NavigationPopup);
+  }
+
+  /** Coins for the first start of the day, growing over a 7-day streak. */
+  private async claimLoginReward(): Promise<void> {
+    const reward = claimLoginReward(await this.storage.getLoginStreak(), getTodayDateKey());
+    if (!reward) {
+      return;
+    }
+    this.storedCoins.update((coins) => coins + reward.coins);
+    await this.storage.setCoins(this.storedCoins());
+    await this.storage.setLoginStreak(reward.state);
+    this.gameScreen.showAchievementBanner(
+      '🎁',
+      this.translation.getTranslation('login.title', { day: reward.day }),
+      this.translation.getTranslation('daily.reward', { reward: reward.coins }),
+    );
   }
 
   async start(requester: AppScreen): Promise<void> {
