@@ -554,6 +554,20 @@ describe('GameService', () => {
       playerRocket = createMockObject(ObjectType.rocket, { reference: playerShip });
     });
 
+    /** Lets the game loop see the ship's energy drop, like a real hit. */
+    function takeHit(): void {
+      spyOn(service as unknown as { presentPopup: () => Promise<void> }, 'presentPopup').and.resolveTo();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (service as any).setup();
+      const ticker = TestBed.inject(ApplicationService).ticker as unknown as { add: jasmine.Spy };
+      const runFrame = ticker.add.calls.mostRecent().args[0] as (delta: { deltaMS: number }) => void;
+      const ship = TestBed.inject(GameShipService).instance as { energy: number };
+      ship.energy = 10;
+      runFrame({ deltaMS: 16 });
+      ship.energy = 9;
+      runFrame({ deltaMS: 16 });
+    }
+
     function triggerStageBoss(stage: number, by: ObjectModelType): void {
       for (let i = 0; i < service.getKillsRequiredForStage(stage); i++) {
         objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), by);
@@ -642,6 +656,8 @@ describe('GameService', () => {
     });
 
     it('should award stage bonus coins when boss is killed and game is started', () => {
+      // the ship was hit, so no flawless bonus on top
+      takeHit();
       const coinsBefore = service.sessionCoins();
       const bossEnemy = createMockObject(ObjectType.enemy, { destroying: true, isBoss: true });
       objectService.triggerCallbacks(bossEnemy, playerRocket);
@@ -651,6 +667,17 @@ describe('GameService', () => {
       expect(service.sessionCoins()).toBe(
         coinsBefore + GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER + STAGE_BONUS_COINS,
       );
+    });
+
+    it('should add the flawless bonus when the ship took no hit during the stage', () => {
+      const gameScreen = TestBed.inject(GameScreenService) as unknown as { showAchievementBanner: jasmine.Spy };
+      const coinsBefore = service.sessionCoins();
+      objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true, isBoss: true }), playerRocket);
+
+      // eslint-disable-next-line no-magic-numbers
+      const STAGE_AND_FLAWLESS_BONUS = 10 + 15;
+      expect(service.sessionCoins()).toBe(coinsBefore + GAME_CONFIG.boss.coinsReward * BOSS_COMBO_MULTIPLIER + STAGE_AND_FLAWLESS_BONUS);
+      expect(gameScreen.showAchievementBanner).toHaveBeenCalledWith('✨', 'stage.flawless', 'daily.reward');
     });
 
     it('should trigger victory after the final stage boss is defeated', async () => {
