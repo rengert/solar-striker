@@ -969,6 +969,33 @@ describe('GameService', () => {
       gameScreenMock = TestBed.inject(GameScreenService) as unknown as typeof gameScreenMock;
     });
 
+    it('should call out a multikill for kills in quick succession and pay a bonus coin per chained kill', () => {
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      const kill = (): void => objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+
+      kill();
+      kill();
+      expect(gameScreenMock.showFloatingText.calls.mostRecent().args[0]).toBe('multikill.double');
+      expect(service.sessionCoins()).toBe(1);
+
+      // eslint-disable-next-line no-magic-numbers
+      tickerCallback({ deltaMS: 500 });
+      kill();
+      expect(gameScreenMock.showFloatingText.calls.mostRecent().args[0]).not.toContain('multikill');
+      expect(service.sessionCoins()).toBe(1);
+    });
+
+    it('should cap the multikill bonus at 5 coins per chain', () => {
+      const playerRocket = createMockObject(ObjectType.rocket, { reference: createMockObject(ObjectType.ship) });
+      // eslint-disable-next-line no-magic-numbers
+      for (let i = 0; i < 30; i++) {
+        objectService.triggerCallbacks(createMockObject(ObjectType.enemy, { destroying: true }), playerRocket);
+      }
+      // 30 kills also pay 3 regular coins (every 10th kill, times the combo of x5)
+      // eslint-disable-next-line no-magic-numbers
+      expect(service.sessionCoins()).toBe(5 + 3 * 5);
+    });
+
     it('should fire every frame with always-fire on, remember it, and stop when it is switched off', () => {
       service.alwaysFire = true;
       tickerCallback({ deltaMS: 16 });
