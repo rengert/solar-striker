@@ -51,6 +51,15 @@ const ALWAYS_FIRE_STORAGE_KEY = 'always-fire';
 const KEYBOARD_LEAD_PX = 40;
 
 const COMBO_WINDOW_MS = 3000;
+/** Kills this close together (game time) form a multikill; every kill from the second on pays a bonus coin. */
+const MULTIKILL_WINDOW_MS = 450;
+// flat and capped per chain, so a nuke through a full wave stays a small bonus
+const MULTIKILL_COINS_PER_KILL = 1;
+const MULTIKILL_MAX_COINS = 5;
+const MULTIKILL_DOUBLE = 2;
+const MULTIKILL_TEXT_OFFSET_Y = 28;
+const MULTIKILL_TEXT_SCALE = 1.6;
+const MULTIKILL_COLOR = 0x66ddff;
 const MAX_COMBO = 5;
 const COMBO_START = 2;
 
@@ -99,6 +108,16 @@ function calculateMeteorCoins(meteor: ObjectModelType): number {
   return Math.max(1, Math.floor(energy / METEOR_COIN_ENERGY_STEP));
 }
 
+export function getMultikillLabel(count: number, translation: TranslationService): string {
+  if (count === MULTIKILL_DOUBLE) {
+    return translation.getTranslation('multikill.double');
+  }
+  if (count === MULTIKILL_DOUBLE + 1) {
+    return translation.getTranslation('multikill.triple');
+  }
+  return translation.getTranslation('multikill.multi', { count });
+}
+
 /**
  * The checkpoint is only cleared on campaign victory (and wiped with all progress on reset), so a missing checkpoint
  * with progress below MAX_STAGE means the player won the shorter campaign: continue with the chapters added since.
@@ -132,6 +151,8 @@ export class GameService {
 
   /** Time left in the combo window; counted down in the game loop so a pause does not end the combo. */
   private comboRemainingMs = 0;
+  private multikillRemainingMs = 0;
+  private multikill = 0;
 
   private stageKills = 0;
   /** Personal best of the current mode, announced once the run passes it; 0 when there is nothing (left) to beat. */
@@ -273,6 +294,9 @@ export class GameService {
         if (newKills % GAME_CONFIG.killsPerCoin === 0) {
           this.addCoins(1);
         }
+        if (this.started()) {
+          this.countMultikill(destroyedEnemy);
+        }
         if (this.enemy.isGolden(destroyedEnemy)) {
           this.addBonusCoins(GOLDEN_ENEMY_COINS);
           this.gameScreen.showFloatingText(`★ +${GOLDEN_ENEMY_COINS}`, destroyedEnemy.x, destroyedEnemy.y, GOLDEN_TEXT_COLOR, GOLDEN_TEXT_SCALE);
@@ -393,7 +417,27 @@ export class GameService {
     this.comboRemainingMs = COMBO_WINDOW_MS;
   }
 
+  private countMultikill(enemy: ObjectModelType): void {
+    this.multikill = this.multikillRemainingMs > 0 ? this.multikill + 1 : 1;
+    this.multikillRemainingMs = MULTIKILL_WINDOW_MS;
+    if (this.multikill < MULTIKILL_DOUBLE) {
+      return;
+    }
+    // the first kill of a chain pays nothing, so kill number n pays the (n - 1)th bonus coin
+    if ((this.multikill - 1) * MULTIKILL_COINS_PER_KILL <= MULTIKILL_MAX_COINS) {
+      this.addBonusCoins(MULTIKILL_COINS_PER_KILL);
+    }
+    this.gameScreen.showFloatingText(
+      getMultikillLabel(this.multikill, this.translation),
+      enemy.x,
+      enemy.y - MULTIKILL_TEXT_OFFSET_Y,
+      MULTIKILL_COLOR,
+      MULTIKILL_TEXT_SCALE,
+    );
+  }
+
   private updateCombo(deltaMS: number): void {
+    this.multikillRemainingMs -= deltaMS;
     if (this.comboRemainingMs <= 0) {
       return;
     }
