@@ -872,6 +872,17 @@ describe('GameService', () => {
 
       expect(service.endlessRecord()).toBe(SECOND_ENDLESS_STAGE);
     });
+
+    it('should add the kills of a finished run to the pilot rank total', async () => {
+      const kills = 7;
+      const earlierKills = 100;
+      service.totalKills.set(earlierKills);
+      service.kills.set(kills);
+
+      await (service as unknown as { finishRun: (popup: unknown) => Promise<void> }).finishRun(null);
+
+      expect(service.totalKills()).toBe(earlierKills + kills);
+    });
   });
 
   describe('weekly challenge', () => {
