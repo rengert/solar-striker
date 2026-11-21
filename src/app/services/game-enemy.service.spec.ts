@@ -200,7 +200,7 @@ describe('GameEnemyService - boss patterns', () => {
 
   it('Herald is tougher and alternates a gapped curtain with a ring', () => {
     const boss = spawnBoss(110);
-    const sweeper = 30 + 5 * (54 - 1);
+    const sweeper = 30 + 4 * (54 - 1);
     expect(boss.maxEnergy).toBe(Math.round(sweeper * 1.5));
     spyOn(Math, 'random').and.returnValue(0.5);
 
@@ -418,5 +418,10 @@ describe('getSpawnInterval', () => {
     // eslint-disable-next-line no-magic-numbers
     expect(getSpawnInterval(600)).toBe(1);
     expect(getSpawnInterval(1)).toBeGreaterThan(1);
+  });
+
+  it('should keep level 1 and ramp up by 0.08 enemies per second per level', () => {
+    expect(getSpawnInterval(1)).toBe(120);
+    expect(getSpawnInterval(11)).toBe(46);
   });
 });
