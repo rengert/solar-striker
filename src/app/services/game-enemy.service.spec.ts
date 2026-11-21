@@ -200,7 +200,7 @@ describe('GameEnemyService - boss patterns', () => {
 
   it('Herald is tougher and alternates a gapped curtain with a ring', () => {
     const boss = spawnBoss(110);
-    const sweeper = 30 + 5 * (54 - 1);
+    const sweeper = 30 + 4 * (54 - 1);
     expect(boss.maxEnergy).toBe(Math.round(sweeper * 1.5));
     spyOn(Math, 'random').and.returnValue(0.5);
 
