@@ -419,4 +419,9 @@ describe('getSpawnInterval', () => {
     expect(getSpawnInterval(600)).toBe(1);
     expect(getSpawnInterval(1)).toBeGreaterThan(1);
   });
+
+  it('should keep level 1 and ramp up by 0.08 enemies per second per level', () => {
+    expect(getSpawnInterval(1)).toBe(120);
+    expect(getSpawnInterval(11)).toBe(46);
+  });
 });

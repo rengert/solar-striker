@@ -34,6 +34,8 @@ const MOVEMENT_LEVEL_ACCELERATION_CAP = 10;
 const MOVEMENT_MIN_DELAY = 250;
 const ENEMY_BASE_ENERGY = 1;
 const ENEMY_ENERGY_LEVEL_STEP = 4;
+// extra enemies per second for each level above 1
+const ENEMY_SPAWN_STEP = 0.08;
 const LOOP_CHANCE = 0.15;
 const LOOP_RADIUS = 70;
 const LOOP_DURATION_MS = 2500;
@@ -123,8 +125,6 @@ const PHANTOM_BLINK_ALPHA = 0.2;
 const PHANTOM_MIN_Y_RATIO = 0.1;
 
 const BOSS_ENERGY_BASE = 30;
-// extra enemies per second for each level above 1
-const ENEMY_SPAWN_STEP = 0.08;
 const BOSS_ENERGY_LEVEL_STEP = 4;
 const BOSS_SCALE = 3;
 const BOSS_SPEED = 0.12;
