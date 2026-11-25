@@ -126,6 +126,8 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
+            "cache": true,
+            "cacheLocation": ".angular/cache/eslint",
             "lintFilePatterns": [
               "src/**/*.ts",
               "src/**/*.html"
