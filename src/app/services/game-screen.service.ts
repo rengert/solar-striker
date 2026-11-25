@@ -1,9 +1,9 @@
 import { inject, Injectable, OnDestroy } from '@angular/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle, Ticker } from 'pixi.js';
-import { gsap } from 'gsap';
+import { BitmapFontManager, BitmapText, Container, FederatedPointerEvent, Graphics, Rectangle, Text, TextStyle, Ticker } from 'pixi.js';
+import { gsap } from 'gsap/gsap-core';
 import { RadioLine, SPEAKER_COLORS } from '../models/story.model';
-import { fontAwesomeStyle, icons } from '../style-constants';
+import { energyLabelStyle, fontAwesomeStyle, icons } from '../style-constants';
 import { GameShipService } from './game-ship.service';
 import { TranslationService } from './translation.service';
 import { UpdatableService } from './updatable.service';
@@ -247,6 +247,10 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
   }
 
   init(): void {
+    // draw the glyph atlases of the BitmapText labels now, behind the loading screen, instead of on the first hit
+    BitmapFontManager.getFont('0123456789+-x★🛡', energyLabelStyle);
+    BitmapFontManager.getFont('0123456789+-x★🛡', this.floatingTextStyle);
+
     this.points.x = this.application.screen.width - this.points.width - HEADER_SIDE_PADDING;
     this.points.y = HEADER_TOP_PADDING + HEADER_LINE_SPACING * DOUBLE;
     this.addToStage(this.points);
@@ -414,7 +418,8 @@ export class GameScreenService extends UpdatableService implements OnDestroy {
    */
   // eslint-disable-next-line max-params
   showFloatingText(text: string, x?: number, y?: number, color = COMBO_COLORS[0], scale = 1): void {
-    const txt = new Text({ text, style: this.floatingTextStyle });
+    // BitmapText: popups come and go every kill, and canvas Text renders and uploads a texture for each one
+    const txt = new BitmapText({ text, style: this.floatingTextStyle });
     txt.tint = color;
     // eslint-disable-next-line no-magic-numbers
     txt.anchor.set(0.5);

@@ -1,4 +1,4 @@
-import gsap from 'gsap';
+import gsap from 'gsap/gsap-core';
 import { Container, Graphics, Text } from 'pixi.js';
 import { getEntryMode, RunResult } from '../models/highscore.model';
 import { TranslationService } from '../services/translation.service';

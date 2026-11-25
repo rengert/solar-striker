@@ -1,5 +1,5 @@
 import { ButtonContainer } from '@pixi/ui';
-import gsap from 'gsap';
+import gsap from 'gsap/gsap-core';
 import { Container, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js';
 import { LabeledButton } from '../models/pixijs/labeled-button.model';
 

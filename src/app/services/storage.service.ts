@@ -57,72 +57,77 @@ function parseSaveCode(code: string): Partial<Record<Store, unknown[]>> | null {
   }
 }
 
-function getManyFromStore<T>(
-  storeName: Store,
-  resolver?: (item: T) => boolean,
-): Promise<T[]> {
+const DB_VERSION = 8;
+
+let connection: Promise<IDBDatabase> | undefined;
+
+// one shared connection: opening IndexedDB per read/write cost a round trip each time and leaked connections
+function openDatabase(): Promise<IDBDatabase> {
+  connection ??= new Promise<IDBDatabase>((resolve, reject) => {
+    const dbRequest = indexedDB.open('data', DB_VERSION);
+    dbRequest.onerror = (): void => reject(Error('IndexedDB database error'));
+    // an old tab still holds an older version open: fail this call instead of hanging every later one; retried next call
+    dbRequest.onblocked = (): void => reject(Error('IndexedDB upgrade blocked by another tab'));
+    dbRequest.onupgradeneeded = (): void => migrateDatabase(dbRequest.result);
+    dbRequest.onsuccess = (): void => {
+      const database = dbRequest.result;
+      // let a newer version (another tab after an update) upgrade instead of blocking it; reopen on next use
+      database.onversionchange = (): void => {
+        database.close();
+        connection = undefined;
+      };
+      database.onclose = (): void => {
+        connection = undefined;
+      };
+      resolve(database);
+    };
+  });
+  connection.catch(() => (connection = undefined));
+  return connection;
+}
+
+function migrateDatabase(database: IDBDatabase): void {
+  for (const store of Object.values(Store)) {
+    if (!database.objectStoreNames.contains(store)) {
+      database.createObjectStore(store, { keyPath: 'id' });
+    }
+  }
+}
+
+async function getManyFromStore<T>(storeName: Store, resolver?: (item: T) => boolean): Promise<T[]> {
+  let database: IDBDatabase;
+  try {
+    database = await openDatabase();
+  } catch {
+    // on purpose: reads fall back to an empty save, while writes reject, so a failed open never overwrites real data
+    return [];
+  }
   return new Promise((resolve, reject) => {
-    const dbRequest = indexedDB.open('data');
-    dbRequest.onerror = function (): void {
-      resolve([]);
-    };
-
-    dbRequest.onupgradeneeded = function (event: IDBVersionChangeEvent): void {
-      (event.currentTarget as IDBOpenDBRequest).transaction?.abort();
-      resolve([]);
-    };
-
-    dbRequest.onsuccess = function (event: Event): void {
-      const database = (event.currentTarget as IDBOpenDBRequest).result;
-      if (!database.objectStoreNames.contains(storeName)) {
-        resolve([]);
-        return;
-      }
-
-      const store = database.transaction([storeName]).objectStore(storeName);
-      const objectRequest = store.getAll();
-
-      objectRequest.onerror = function (): void {
-        reject(Error('Error text'));
-      };
-
-      objectRequest.onsuccess = function (): void {
-        resolve((objectRequest.result as T[]).filter((item) => !resolver || resolver(item)));
-      };
+    const objectRequest = database.transaction([storeName]).objectStore(storeName).getAll();
+    objectRequest.onerror = (): void => reject(Error('Error text'));
+    objectRequest.onsuccess = (): void => {
+      resolve((objectRequest.result as T[]).filter((item) => !resolver || resolver(item)));
     };
   });
 }
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
-  toStore<T>(storeName: string, dataToStore: T | T[], clear = false): Promise<void> {
+  async toStore<T>(storeName: string, dataToStore: T | T[], clear = false): Promise<void> {
     const data: T[] = Array.isArray(dataToStore) ? dataToStore : [dataToStore];
+    const database = await openDatabase();
     return new Promise<void>((resolve, reject) => {
-      // eslint-disable-next-line no-magic-numbers
-      const dbRequest = indexedDB.open('data', 8);
-      dbRequest.onerror = (): void => {
-        reject(Error('IndexedDB database error'));
-      };
+      const transaction = database.transaction([storeName], 'readwrite');
+      const objectStore = transaction.objectStore(storeName);
 
-      dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent): void => {
-        const database = (event.currentTarget as IDBOpenDBRequest).result;
-        this.migrateDatabase(database);
-      };
+      if (clear) {
+        objectStore.clear();
+      }
 
-      dbRequest.onsuccess = function (event: Event): void {
-        const database = (event.currentTarget as IDBOpenDBRequest).result;
-        const transaction = database.transaction([storeName], 'readwrite');
-        const objectStore = transaction.objectStore(storeName);
-
-        if (clear) {
-          objectStore.clear();
-        }
-
-        data.forEach((item) => objectStore.put(item)); // Overwrite if exists
-        // resolve only once committed, so a following clearAll() cannot be overtaken
-        transaction.oncomplete = (): void => resolve();
-        transaction.onerror = (): void => reject(Error('IndexedDB write error'));
-      };
+      data.forEach((item) => objectStore.put(item)); // Overwrite if exists
+      // resolve only once committed, so a following clearAll() cannot be overtaken
+      transaction.oncomplete = (): void => resolve();
+      transaction.onerror = (): void => reject(Error('IndexedDB write error'));
     });
   }
 
@@ -325,75 +330,32 @@ export class StorageService {
   }
 
   // one transaction, so a failing write never leaves a half-wiped save behind
-  private replaceAll(data: Partial<Record<Store, unknown[]>>): Promise<void> {
+  private async replaceAll(data: Partial<Record<Store, unknown[]>>): Promise<void> {
+    const database = await openDatabase();
     return new Promise<void>((resolve, reject) => {
-      // eslint-disable-next-line no-magic-numbers
-      const dbRequest = indexedDB.open('data', 8);
-      dbRequest.onerror = (): void => reject(Error('IndexedDB database error'));
-      dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent): void => {
-        this.migrateDatabase((event.currentTarget as IDBOpenDBRequest).result);
-      };
-      dbRequest.onsuccess = (event: Event): void => {
-        const database = (event.currentTarget as IDBOpenDBRequest).result;
-        const stores = Object.values(Store);
-        const transaction = database.transaction(stores, 'readwrite');
-        transaction.oncomplete = (): void => resolve();
-        transaction.onerror = (): void => reject(Error('IndexedDB write error'));
-        try {
-          stores.forEach((store) => {
-            const objectStore = transaction.objectStore(store);
-            objectStore.clear();
-            data[store]?.forEach((item) => objectStore.put(item));
-          });
-        } catch (error) {
-          transaction.abort();
-          reject(error instanceof Error ? error : Error('IndexedDB write error'));
-        }
-      };
+      const stores = Object.values(Store);
+      const transaction = database.transaction(stores, 'readwrite');
+      transaction.oncomplete = (): void => resolve();
+      transaction.onerror = (): void => reject(Error('IndexedDB write error'));
+      try {
+        stores.forEach((store) => {
+          const objectStore = transaction.objectStore(store);
+          objectStore.clear();
+          data[store]?.forEach((item) => objectStore.put(item));
+        });
+      } catch (error) {
+        transaction.abort();
+        reject(error instanceof Error ? error : Error('IndexedDB write error'));
+      }
     });
   }
 
-  private deleteFromStore(storeName: Store, id: string): Promise<void> {
+  private async deleteFromStore(storeName: Store, id: string): Promise<void> {
+    const database = await openDatabase();
     return new Promise<void>((resolve, reject) => {
-      // eslint-disable-next-line no-magic-numbers
-      const dbRequest = indexedDB.open('data', 8);
-      dbRequest.onerror = (): void => {
-        reject(Error('IndexedDB database error'));
-      };
-      dbRequest.onupgradeneeded = (event: IDBVersionChangeEvent): void => {
-        const database = (event.currentTarget as IDBOpenDBRequest).result;
-        this.migrateDatabase(database);
-      };
-      dbRequest.onsuccess = (event: Event): void => {
-        const database = (event.currentTarget as IDBOpenDBRequest).result;
-        const objectStore = database.transaction([storeName], 'readwrite').objectStore(storeName);
-        const deleteRequest = objectStore.delete(id);
-
-        deleteRequest.onerror = (): void => reject(Error('IndexedDB delete error'));
-        deleteRequest.onsuccess = (): void => resolve();
-      };
+      const deleteRequest = database.transaction([storeName], 'readwrite').objectStore(storeName).delete(id);
+      deleteRequest.onerror = (): void => reject(Error('IndexedDB delete error'));
+      deleteRequest.onsuccess = (): void => resolve();
     });
-  }
-
-  private migrateDatabase(database: IDBDatabase): void {
-    if (!database.objectStoreNames.contains(Store.games)) {
-      database.createObjectStore(Store.games, { keyPath: 'id' });
-    }
-
-    if (!database.objectStoreNames.contains(Store.coins)) {
-      database.createObjectStore(Store.coins, { keyPath: 'id' });
-    }
-
-    if (!database.objectStoreNames.contains(Store.upgrades)) {
-      database.createObjectStore(Store.upgrades, { keyPath: 'id' });
-    }
-
-    if (!database.objectStoreNames.contains(Store.achievements)) {
-      database.createObjectStore(Store.achievements, { keyPath: 'id' });
-    }
-
-    if (!database.objectStoreNames.contains(Store.daily)) {
-      database.createObjectStore(Store.daily, { keyPath: 'id' });
-    }
   }
 }

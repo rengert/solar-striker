@@ -165,6 +165,7 @@ export class GameService {
   private slowMotionTimer?: ReturnType<typeof setTimeout>;
   private resuming = false;
   #alwaysFire = readFlag(ALWAYS_FIRE_STORAGE_KEY);
+  private assetsLoading?: Promise<unknown>;
   /** KeyboardEvent.code of the held movement keys. */
   private readonly pressedKeys = new Set<string>();
   private spaceHeld = false;
@@ -529,9 +530,10 @@ export class GameService {
     this.dailyChallengeService.addCoins(clamped);
   }
 
-  async init(): Promise<void> {
+  /** Downloads need no renderer, so the component starts them while the renderer is still being set up. */
+  loadAssets(): Promise<unknown> {
     // Independent loads: run them in parallel instead of one network round trip after another.
-    await Promise.all([
+    this.assetsLoading ??= Promise.all([
       this.translation.init(),
       document.fonts.load('900 10px "Font Awesome 6 Free"'),
       this.collectables.init(),
@@ -539,24 +541,34 @@ export class GameService {
       this.ship.init(),
       this.shotService.init(),
     ]);
+    return this.assetsLoading;
+  }
+
+  async init(): Promise<void> {
+    await this.loadAssets();
     this.landscape.setup();
     this.base.init();
     this.gameScreen.init();
 
-    await this.shipUpgrades.init();
-    await this.playerShipService.init();
-    await this.achievementService.init();
-    const storedCoins = await this.storage.getCoins();
-    const savedStage = await this.storage.getLevelCheckpoint();
+    // independent IndexedDB reads, so one round trip instead of eight
+    const [, , , storedCoins, savedStage, campaignProgress, runs, endlessRecord] = await Promise.all([
+      this.shipUpgrades.init(),
+      this.playerShipService.init(),
+      this.achievementService.init(),
+      this.storage.getCoins(),
+      this.storage.getLevelCheckpoint(),
+      this.storage.getCampaignProgress(),
+      this.storage.getHighscore(),
+      this.storage.getEndlessRecord(),
+    ]);
     this.storedCoins.set(storedCoins);
     // a checkpoint from before the campaign existed still counts as progress
-    const cleared = Math.max(await this.storage.getCampaignProgress(), (savedStage ?? 1) - 1);
+    const cleared = Math.max(campaignProgress, (savedStage ?? 1) - 1);
     this.clearedStage.set(cleared);
     this.savedStage.set(getContinueStage(savedStage, cleared));
-    const runs = await this.storage.getHighscore();
     this.totalKills.set(runs.reduce((sum, entry) => sum + entry.kills, 0));
     const endlessLevels = runs.filter(isEndlessEntry).map((entry) => entry.level);
-    this.endlessRecord.set(Math.max(await this.storage.getEndlessRecord(), ...endlessLevels));
+    this.endlessRecord.set(Math.max(endlessRecord, ...endlessLevels));
     await this.dailyChallengeService.init(this.clearedStage() >= MAX_STAGE);
 
     // Wire achievement unlock notification

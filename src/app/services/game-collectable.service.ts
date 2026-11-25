@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { Assets, Graphics, Spritesheet, Text, TextStyle, Texture, Ticker } from 'pixi.js';
-import { gsap } from 'gsap';
+import { gsap } from 'gsap/gsap-core';
 import { GAME_CONFIG, MAX_SHOT_POWER, OFF_SCREEN_BUFFER, THE_MIDDLE } from '../game-constants';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { PowerUpSprite } from '../models/pixijs/power-up-sprite';

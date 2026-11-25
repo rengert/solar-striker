@@ -45,8 +45,8 @@ export class ParticleService {
 
   private readonly application = inject(ApplicationService);
   private readonly particles: Particle[] = [];
-  // finished sprites stay in the layer, hidden, so explosions do not allocate and garbage-collect sprites
-  private readonly pool: Sprite[] = [];
+  // finished particles keep their record and their sprite (hidden in the layer), so emitting allocates nothing
+  private readonly pool: Particle[] = [];
   private glow: Texture | undefined;
   private ring: Texture | undefined;
   private ticking = false;
@@ -61,7 +61,8 @@ export class ParticleService {
 
     const count = Math.min(options.count ?? 1, MAX_PARTICLES - this.particles.length);
     for (let i = 0; i < count; i++) {
-      const sprite = this.pool.pop() ?? this.createSprite();
+      const particle = this.pool.pop() ?? this.createParticle();
+      const sprite = particle.sprite;
       sprite.texture = (options.ring ? this.ring : this.glow)!;
       sprite.visible = true;
       sprite.alpha = options.alpha ?? 1;
@@ -74,17 +75,15 @@ export class ParticleService {
       const speed = (options.speed ?? 0) * (0.4 + Math.random() * 0.6);
       const scale = options.scale ?? 0.5;
       sprite.scale.set(scale);
-      this.particles.push({
-        sprite,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        age: 0,
-        life: (options.life ?? 400) * (0.7 + Math.random() * 0.3),
-        scale,
-        endScale: options.endScale ?? scale,
-        alpha: options.alpha ?? 1,
-        drag: options.drag ?? 1,
-      });
+      particle.vx = Math.cos(angle) * speed;
+      particle.vy = Math.sin(angle) * speed;
+      particle.age = 0;
+      particle.life = (options.life ?? 400) * (0.7 + Math.random() * 0.3);
+      particle.scale = scale;
+      particle.endScale = options.endScale ?? scale;
+      particle.alpha = options.alpha ?? 1;
+      particle.drag = options.drag ?? 1;
+      this.particles.push(particle);
     }
   }
 
@@ -95,7 +94,7 @@ export class ParticleService {
       particle.age += dt;
       if (particle.age >= particle.life) {
         particle.sprite.visible = false;
-        this.pool.push(particle.sprite);
+        this.pool.push(particle);
         this.particles[i] = this.particles[this.particles.length - 1];
         this.particles.pop();
         continue;
@@ -111,10 +110,10 @@ export class ParticleService {
     }
   }
 
-  private createSprite(): Sprite {
+  private createParticle(): Particle {
     const sprite = new Sprite();
     sprite.anchor.set(0.5);
     this.layer.addChild(sprite);
-    return sprite;
+    return { sprite, vx: 0, vy: 0, age: 0, life: 0, scale: 0, endScale: 0, alpha: 0, drag: 1 };
   }
 }

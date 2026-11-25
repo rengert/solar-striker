@@ -1138,4 +1138,32 @@ describe('GameService', () => {
       expect(gameScreenMock.showFloatingText).not.toHaveBeenCalled();
     });
   });
+
+  describe('loadAssets', () => {
+    let loaders: Array<{ init: jasmine.Spy }>;
+
+    beforeEach(() => {
+      loaders = [TranslationService, GameCollectableService, GameEnemyService, GameShipService, GameShotService].map(
+        (token) => TestBed.inject(token as never) as { init: jasmine.Spy },
+      );
+      loaders.forEach((loader) => (loader.init = jasmine.createSpy('init').and.returnValue(Promise.resolve())));
+      spyOn(document.fonts, 'load').and.returnValue(Promise.resolve([]));
+    });
+
+    it('starts every download once and shares it with later callers', async () => {
+      const first = service.loadAssets();
+
+      expect(service.loadAssets()).toBe(first);
+      await first;
+      loaders.forEach((loader) => expect(loader.init).toHaveBeenCalledTimes(1));
+    });
+
+    it('hands a failed download to every caller, so init() fails instead of hanging', async () => {
+      const enemy = TestBed.inject(GameEnemyService) as unknown as { init: jasmine.Spy };
+      enemy.init.and.callFake(() => Promise.reject(Error('offline')));
+
+      await expectAsync(service.loadAssets()).toBeRejectedWithError('offline');
+      await expectAsync(service.loadAssets()).toBeRejectedWithError('offline');
+    });
+  });
 });

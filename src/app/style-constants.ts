@@ -28,3 +28,16 @@ export const fontAwesomeStyle = new TextStyle({
   fontSize: 10, // any size you like
   fill: 0xffffff,
 });
+
+/** Hit points over enemies and meteors; drawn as BitmapText, so all labels share one glyph texture and batch. */
+export const energyLabelStyle = new TextStyle({
+  fontFamily: 'Arial',
+  fontSize: 12,
+  fontWeight: 'bold',
+  fill: 0xffffff,
+  stroke: {
+    color: 0x000000,
+    width: 3,
+  },
+  align: 'center',
+});

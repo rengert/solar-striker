@@ -1,6 +1,7 @@
-import { Container, Sprite, Text, Texture, Ticker } from 'pixi.js';
+import { BitmapText, Container, Sprite, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
+import { energyLabelStyle } from '../../style-constants';
 import { hit } from '../../utils/sprite.util';
 import { ObjectType } from './object-type.enum';
 
@@ -19,7 +20,7 @@ export class GameSprite extends Container {
 
   private readonly ySpeed: number;
   private readonly xSpeed: number;
-  private energyLabel: Text | undefined;
+  private energyLabel: BitmapText | undefined;
   private readonly sprite: Sprite;
 
   readonly anchor: Sprite['anchor'];
@@ -48,20 +49,7 @@ export class GameSprite extends Container {
     this.xSpeed = (Math.random() * speed) / 2;
 
     if (hasEnergy) {
-      const energyLabel = new Text({
-        text: '',
-        style: {
-          fontFamily: 'Arial',
-          fontSize: 12,
-          fontWeight: 'bold',
-          fill: 0xffffff,
-          stroke: {
-            color: 0x000000,
-            width: 3,
-          },
-          align: 'center',
-        },
-      });
+      const energyLabel = new BitmapText({ text: '', style: energyLabelStyle });
       this.setEnergyLabel(energyLabel);
     }
   }
@@ -82,7 +70,7 @@ export class GameSprite extends Container {
     return this.initialEnergyValue;
   }
 
-  private setEnergyLabel(label: Text): void {
+  private setEnergyLabel(label: BitmapText): void {
     this.energyLabel = label;
     // eslint-disable-next-line no-magic-numbers
     this.energyLabel.anchor.set(0.5);

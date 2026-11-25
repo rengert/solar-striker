@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - run: npm install
+      - run: npm ci
       - run: npm run build
       - run: npm run lint
       - run: npx ng test --watch=false --browsers=ChromeHeadlessCI
@@ -40,7 +40,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - run: npm install
+      - run: npm ci
       - run: npm run build
       - run: npx cap sync android
       - run: ./gradlew assembleDebug

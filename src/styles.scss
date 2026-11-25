@@ -1,27 +1,22 @@
 /* You can add global styles to this file, and also import other style files */
 
-@import "@fortawesome/fontawesome-free/css/all.min.css";
-
+/*
+ * Only the Font Awesome solid glyphs the game draws (see `icons` in style-constants.ts) plus ASCII.
+ * 4 kB instead of 119 kB; after adding an icon, regenerate with fonttools:
+ * pyftsubset node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2 --flavor=woff2 \
+ *   --unicodes="U+0020-007E,U+F004,U+F04C,U+F188,U+F51E,U+F54C,U+F57D" --output-file=src/assets/fonts/fa-solid-subset.woff2
+ */
 @font-face {
   font-family: "Font Awesome 6 Free";
-  src: url("@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2") format("woff2");
+  src: url("assets/fonts/fa-solid-subset.woff2") format("woff2");
   font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Font Awesome 6 Free";
-  src: url("@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-
-@font-face {
   font-family: DefaultFont;
-  src: url('assets/kenvector_future.ttf');
+  src: url("assets/fonts/kenvector_future.woff2") format("woff2");
 }
 
 html, body {
