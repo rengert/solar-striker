@@ -1,5 +1,7 @@
 import { ElementRef, Injectable } from '@angular/core';
 import { Application, Assets, Container, Rectangle, Ticker } from 'pixi.js';
+// bundled up front instead of Pixi importing it lazily: saves two chained round trips before the first frame
+import 'pixi.js/browser';
 
 const assets: Record<string, string> = {
   meteor1: 'assets/game/meteors/meteorBrown_small1.png',
@@ -43,15 +45,6 @@ export class ApplicationService {
   }
 
   async init(elementRef: ElementRef): Promise<void> {
-    this.app = new Application();
-    await this.app.init({
-      resizeTo: document.body,
-      backgroundColor: 0x000000,
-      autoDensity: true,
-      // 3x phone screens would render 2.25x the pixels of 2x for no visible gain in a fast game
-      resolution: Math.min(window.devicePixelRatio || 1, MAX_RESOLUTION),
-    });
-
     Assets.add({ alias: 'popup', src: 'assets/ui/navigation-popup.png' });
     Assets.add({
       alias: 'background',
@@ -66,7 +59,18 @@ export class ApplicationService {
       Assets.add({ alias, src: assets[alias] });
     }
 
-    await Assets.load(['background', 'popup', 'clouds', 'button', ...Object.keys(assets)]);
+    // downloads need no renderer, so they overlap with creating the WebGL context
+    const loading = Assets.load(['background', 'popup', 'clouds', 'button', ...Object.keys(assets)]);
+    this.app = new Application();
+    await this.app.init({
+      resizeTo: document.body,
+      backgroundColor: 0x000000,
+      autoDensity: true,
+      skipExtensionImports: true,
+      // 3x phone screens would render 2.25x the pixels of 2x for no visible gain in a fast game
+      resolution: Math.min(window.devicePixelRatio || 1, MAX_RESOLUTION),
+    });
+    await loading;
 
     elementRef.nativeElement.appendChild(this.app!.canvas);
   }

@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { gsap } from 'gsap';
+import { gsap } from 'gsap/gsap-core';
 import { Container, Sprite, Texture, Ticker } from 'pixi.js';
 import { BackgroundSprite } from '../models/pixijs/background-sprite';
 import { CURRENT_SEASON_EVENT } from '../models/season-event.model';

@@ -1,4 +1,4 @@
-import gsap from 'gsap';
+import gsap from 'gsap/gsap-core';
 import { Container, Graphics, Rectangle, Text } from 'pixi.js';
 import { compareEntries, getEntryMode, HighscoreEntry, isSameDay } from '../models/highscore.model';
 import { getWeekIndex } from '../models/weekly-challenge.model';

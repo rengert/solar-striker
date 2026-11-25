@@ -43,8 +43,10 @@ export class PixijsComponent {
     const elementRef = inject(ElementRef);
     const ngZone = inject(NgZone);
     const pixiGame = inject(GameService);
-    void application
-      .init(elementRef)
+    const renderer = application.init(elementRef);
+    // after init() registered the asset aliases, so the downloads run alongside the renderer setup; init() awaits them
+    pixiGame.loadAssets().catch(() => undefined);
+    void renderer
       .then(() => ngZone.runOutsideAngular(() => pixiGame.init()))
       .then(
         // Keep the native splash / inline loader up until the menu is drawn, so the start never shows a black screen.
