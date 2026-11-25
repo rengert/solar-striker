@@ -66,6 +66,8 @@ function openDatabase(): Promise<IDBDatabase> {
   connection ??= new Promise<IDBDatabase>((resolve, reject) => {
     const dbRequest = indexedDB.open('data', DB_VERSION);
     dbRequest.onerror = (): void => reject(Error('IndexedDB database error'));
+    // an old tab still holds an older version open: fail this call instead of hanging every later one; retried next call
+    dbRequest.onblocked = (): void => reject(Error('IndexedDB upgrade blocked by another tab'));
     dbRequest.onupgradeneeded = (): void => migrateDatabase(dbRequest.result);
     dbRequest.onsuccess = (): void => {
       const database = dbRequest.result;
@@ -97,6 +99,7 @@ async function getManyFromStore<T>(storeName: Store, resolver?: (item: T) => boo
   try {
     database = await openDatabase();
   } catch {
+    // on purpose: reads fall back to an empty save, while writes reject, so a failed open never overwrites real data
     return [];
   }
   return new Promise((resolve, reject) => {

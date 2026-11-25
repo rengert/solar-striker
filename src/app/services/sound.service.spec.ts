@@ -61,4 +61,18 @@ describe('SoundService', () => {
     expect(oscillator).not.toHaveBeenCalled();
     expect(source).toHaveBeenCalledTimes(1);
   });
+
+  it('should keep synthesising live when offline rendering fails', async () => {
+    spyOn(OfflineAudioContext.prototype, 'startRendering').and.returnValue(Promise.reject(Error('no rendering')));
+    service.play('click');
+    // eslint-disable-next-line no-magic-numbers
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ctx = (service as any).context as AudioContext;
+    const oscillator = spyOn(ctx, 'createOscillator').and.callThrough();
+
+    service.play('click');
+
+    expect(oscillator).toHaveBeenCalledTimes(1);
+  });
 });

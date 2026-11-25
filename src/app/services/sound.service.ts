@@ -99,7 +99,8 @@ export class SoundService {
   private sfx: GainNode | undefined;
   private music: GainNode | undefined;
   private noise: AudioBuffer | undefined;
-  // pre-rendered notes: one buffer source per play instead of an oscillator, filter and gain node graph
+  // pre-rendered notes: one buffer source per play instead of an oscillator, filter and gain node graph;
+  // keys come from the fixed effect and track tables only, never from runtime values, so the caches stay small
   private readonly sfxBuffers = new Map<string, AudioBuffer | null>();
   private readonly musicBuffers = new Map<string, AudioBuffer | null>();
   private readonly renderQueue: Array<() => void> = [];
