@@ -42,4 +42,23 @@ describe('SoundService', () => {
       service.stopMusic();
     }).not.toThrow();
   });
+
+  it('should play a repeated effect from its pre-rendered buffer', async () => {
+    service.play('laser');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const internals = service as any;
+    // eslint-disable-next-line no-magic-numbers
+    for (let i = 0; i < 100 && ![...internals.sfxBuffers.values()].every(Boolean); i++) {
+      // eslint-disable-next-line no-magic-numbers
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    const ctx = internals.context as AudioContext;
+    const oscillator = spyOn(ctx, 'createOscillator').and.callThrough();
+    const source = spyOn(ctx, 'createBufferSource').and.callThrough();
+
+    service.play('laser');
+
+    expect(oscillator).not.toHaveBeenCalled();
+    expect(source).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { Ticker } from 'pixi.js';
+import { Bounds, Ticker } from 'pixi.js';
 import { AnimatedGameSprite } from '../models/pixijs/animated-game-sprite';
 import { ObjectType } from '../models/pixijs/object-type.enum';
 import { GameSprite } from '../models/pixijs/simple-game-sprite';
@@ -24,6 +24,8 @@ export class ObjectService extends UpdatableService {
   readonly collectables = computed(() => this.objects().filter(filterBy(ObjectType.collectable)));
 
   private readonly destroyedCallbacks = new Map<ObjectType, DestroyedCallback[]>();
+  // reused every frame, one per object slot, so collision checks do not allocate
+  private readonly bounds: Bounds[] = [];
 
   /** Remaining slow-motion time in ms. */
   slowMotionMs = 0;
@@ -59,12 +61,17 @@ export class ObjectService extends UpdatableService {
     }
 
     // getBounds walks the scene graph, so take it once per object instead of once per pair
-    const bounds = objects.map((object) => (object.destroyed ? undefined : object.getBounds()));
+    const bounds = this.bounds;
+    for (let i = 0; i < objects.length; i++) {
+      if (!objects[i].destroyed) {
+        bounds[i] = objects[i].getBounds(false, bounds[i] ?? new Bounds());
+      }
+    }
 
     for (let i = 0; i < objects.length; i++) {
       const object1 = objects[i];
       const bounds1 = bounds[i];
-      if (object1.destroyed || object1.destroying || !bounds1) {
+      if (object1.destroyed || object1.destroying) {
         continue;
       }
 
@@ -76,7 +83,6 @@ export class ObjectService extends UpdatableService {
           object1 === object2 ||
           object2.destroyed ||
           object2.destroying ||
-          !bounds2 ||
           bounds1.maxX <= bounds2.minX ||
           bounds2.maxX <= bounds1.minX ||
           bounds1.maxY <= bounds2.minY ||

@@ -1,6 +1,7 @@
-import { AnimatedSprite, ColorMatrixFilter, FrameObject, Text, Texture, Ticker } from 'pixi.js';
+import { AnimatedSprite, BitmapText, ColorMatrixFilter, FrameObject, Texture, Ticker } from 'pixi.js';
 import { ExplosionService } from '../../services/explosion.service';
 import { ObjectModelType } from '../../services/object.service';
+import { energyLabelStyle } from '../../style-constants';
 import { hit } from '../../utils/sprite.util';
 import { ObjectType } from './object-type.enum';
 
@@ -65,7 +66,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   protected readonly speed: number = 1;
   private _initialEnergy: number | undefined;
   private hitFlashMs = 0;
-  private energyLabel: Text | undefined;
+  private energyLabel: BitmapText | undefined;
 
   constructor(
     readonly type: ObjectType,
@@ -101,21 +102,7 @@ export class AnimatedGameSprite extends AnimatedSprite {
   }
 
   enableEnergyDisplay(): void {
-    this.energyLabel = new Text({
-      text: '',
-      style: {
-        fontFamily: 'Arial',
-        fontSize: 12,
-        fontWeight: 'bold',
-        fill: 0xffffff,
-        stroke: {
-          color: 0x000000,
-          // eslint-disable-next-line no-magic-numbers
-          width: 3,
-        },
-        align: 'center',
-      },
-    });
+    this.energyLabel = new BitmapText({ text: '', style: energyLabelStyle });
     // eslint-disable-next-line no-magic-numbers
     this.energyLabel.anchor.set(0.5);
     this.energyLabel.position.set(0, 0);

@@ -21,6 +21,8 @@ const SFX_VOLUME = 0.5;
 const MUSIC_VOLUME = 0.18;
 const LOOKAHEAD_S = 0.2;
 const SCHEDULER_INTERVAL_MS = 50;
+// Safari has no requestIdleCallback; one pre-render every few frames there
+const RENDER_RETRY_MS = 50;
 
 interface Track {
   bpm: number;
@@ -97,6 +99,10 @@ export class SoundService {
   private sfx: GainNode | undefined;
   private music: GainNode | undefined;
   private noise: AudioBuffer | undefined;
+  // pre-rendered notes: one buffer source per play instead of an oscillator, filter and gain node graph
+  private readonly sfxBuffers = new Map<string, AudioBuffer | null>();
+  private readonly musicBuffers = new Map<string, AudioBuffer | null>();
+  private readonly renderQueue: Array<() => void> = [];
   private musicTimer: number | undefined;
   private nextStepTime = 0;
   private step = 0;
@@ -197,6 +203,8 @@ export class SoundService {
     if (track !== this.track) {
       this.track = track;
       this.step = 0;
+      // only the current loop's notes stay cached, which keeps the memory at a few hundred kB
+      this.musicBuffers.clear();
     }
     if (this.musicTimer !== undefined) {
       return;
@@ -246,24 +254,9 @@ export class SoundService {
     out = this.sfx,
     lowpass?: number,
   ): void {
-    const ctx = this.context!;
-    const osc = ctx.createOscillator();
-    osc.type = type;
-    osc.frequency.setValueAtTime(from, t);
-    if (to !== null) {
-      osc.frequency.exponentialRampToValueAtTime(to, t + duration);
-    }
-    const gain = this.createEnvelope(t, duration, volume);
-    if (lowpass) {
-      const filter = ctx.createBiquadFilter();
-      filter.frequency.value = lowpass;
-      osc.connect(filter).connect(gain);
-    } else {
-      osc.connect(gain);
-    }
-    gain.connect(out!);
-    osc.start(t);
-    osc.stop(t + duration);
+    this.playRendered(`${type}|${from}|${to}|${duration}|${volume}|${lowpass}`, t, duration, out!, (ctx, dest, start) =>
+      playToneOn(ctx, dest, start, type, from, to, duration, volume, lowpass),
+    );
   }
 
   // eslint-disable-next-line max-params
@@ -274,22 +267,70 @@ export class SoundService {
   /** Filtered white noise with a falling cutoff, the body of every explosion and the music's hi-hat. */
   // eslint-disable-next-line max-params
   private playNoise(t: number, cutoff: number, duration: number, volume: number, out = this.sfx): void {
-    const ctx = this.context!;
-    const source = ctx.createBufferSource();
-    source.buffer = this.noise!;
-    const filter = ctx.createBiquadFilter();
-    filter.frequency.setValueAtTime(cutoff, t);
-    filter.frequency.exponentialRampToValueAtTime(60, t + duration);
-    source.connect(filter).connect(this.createEnvelope(t, duration, volume)).connect(out!);
-    source.start(t);
-    source.stop(t + duration);
+    const noise = this.noise!;
+    this.playRendered(`noise|${cutoff}|${duration}|${volume}`, t, duration, out!, (ctx, dest, start) =>
+      playNoiseOn(ctx, dest, start, noise, cutoff, duration, volume),
+    );
   }
 
-  private createEnvelope(t: number, duration: number, volume: number): GainNode {
-    const gain = this.context!.createGain();
-    gain.gain.setValueAtTime(volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-    return gain;
+  /** Plays the cached rendering of a sound; the first time it is synthesised live while an offline copy renders. */
+  // eslint-disable-next-line max-params
+  private playRendered(
+    key: string,
+    t: number,
+    duration: number,
+    out: AudioNode,
+    synth: (ctx: BaseAudioContext, out: AudioNode, t: number) => void,
+  ): void {
+    const ctx = this.context!;
+    const cache = out === this.music ? this.musicBuffers : this.sfxBuffers;
+    const buffer = cache.get(key);
+    if (buffer) {
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(out);
+      source.start(t);
+      return;
+    }
+    synth(ctx, out, t);
+    if (cache.has(key) || typeof OfflineAudioContext === 'undefined') {
+      return;
+    }
+    cache.set(key, null);
+    // rendered when the main thread is idle, so a new sound never costs twice within one frame
+    this.renderQueue.push(() => {
+      // skip notes of a music loop that was switched away from meanwhile
+      if (cache.get(key) !== null) {
+        return;
+      }
+      try {
+        const offline = new OfflineAudioContext(1, Math.ceil(duration * ctx.sampleRate), ctx.sampleRate);
+        synth(offline, offline.destination, 0);
+        offline.startRendering().then(
+          (rendered) => cache.get(key) === null && cache.set(key, rendered),
+          () => undefined,
+        );
+      } catch {
+        // keep synthesising live
+      }
+    });
+    if (this.renderQueue.length === 1) {
+      this.scheduleRender();
+    }
+  }
+
+  private scheduleRender(): void {
+    const run = (): void => {
+      this.renderQueue.shift()?.();
+      if (this.renderQueue.length > 0) {
+        this.scheduleRender();
+      }
+    };
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(run);
+    } else {
+      setTimeout(run, RENDER_RETRY_MS);
+    }
   }
 
   private getContext(): AudioContext | undefined {
@@ -321,6 +362,64 @@ export class SoundService {
     }
     return this.context;
   }
+}
+
+// eslint-disable-next-line max-params
+function playToneOn(
+  ctx: BaseAudioContext,
+  out: AudioNode,
+  t: number,
+  type: OscillatorType,
+  from: number,
+  to: number | null,
+  duration: number,
+  volume: number,
+  lowpass?: number,
+): void {
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(from, t);
+  if (to !== null) {
+    osc.frequency.exponentialRampToValueAtTime(to, t + duration);
+  }
+  const gain = createEnvelope(ctx, t, duration, volume);
+  if (lowpass) {
+    const filter = ctx.createBiquadFilter();
+    filter.frequency.value = lowpass;
+    osc.connect(filter).connect(gain);
+  } else {
+    osc.connect(gain);
+  }
+  gain.connect(out);
+  osc.start(t);
+  osc.stop(t + duration);
+}
+
+// eslint-disable-next-line max-params
+function playNoiseOn(
+  ctx: BaseAudioContext,
+  out: AudioNode,
+  t: number,
+  noise: AudioBuffer,
+  cutoff: number,
+  duration: number,
+  volume: number,
+): void {
+  const source = ctx.createBufferSource();
+  source.buffer = noise;
+  const filter = ctx.createBiquadFilter();
+  filter.frequency.setValueAtTime(cutoff, t);
+  filter.frequency.exponentialRampToValueAtTime(60, t + duration);
+  source.connect(filter).connect(createEnvelope(ctx, t, duration, volume)).connect(out);
+  source.start(t);
+  source.stop(t + duration);
+}
+
+function createEnvelope(ctx: BaseAudioContext, t: number, duration: number, volume: number): GainNode {
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+  return gain;
 }
 
 function readFlag(key: string): boolean {
