@@ -63,7 +63,7 @@ describe('SoundService', () => {
   });
 
   it('should keep synthesising live when offline rendering fails', async () => {
-    spyOn(OfflineAudioContext.prototype, 'startRendering').and.returnValue(Promise.reject(Error('no rendering')));
+    spyOn(OfflineAudioContext.prototype, 'startRendering').and.callFake(() => Promise.reject(Error('no rendering')));
     service.play('click');
     // eslint-disable-next-line no-magic-numbers
     await new Promise((resolve) => setTimeout(resolve, 200));
